@@ -56,13 +56,15 @@ export default function Onboarding() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [formData, setFormData] = useState({
     register: {
+      name: '',
       email: '',
       password: ''
     },
     practiceDetails: {
       practiceName: '',
       practiceSize: '',
-      practiceAddress: ''
+      practiceAddress: '',
+      role: ''
     },
     dataSharingAgreement: {
       name: '',

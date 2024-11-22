@@ -1,27 +1,22 @@
 import { useState } from 'react';
 import { FormField, ActiveButton, PopupMessage } from '@/app/_components/global_components';
 
-export function DataSharingAgreement() {
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: ''
-  });
+export function DataSharingAgreement({ data = { name: '', phone: '', email: '' }, updateData }) {
   const [errors, setErrors] = useState({});
   const [showPopup, setShowPopup] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    updateData({ ...data, [name]: value });
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleSubmit = () => {
     // Basic validation
     const newErrors = {};
-    if (!formData.name) newErrors.name = 'Name is required';
-    if (!formData.phone) newErrors.phone = 'Phone is required';
-    if (!formData.email) newErrors.email = 'Email is required';
+    if (!data.name) newErrors.name = 'Name is required';
+    if (!data.phone) newErrors.phone = 'Phone is required';
+    if (!data.email) newErrors.email = 'Email is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -61,14 +56,13 @@ export function DataSharingAgreement() {
 
       {/* Right Section - Form Fields and Button */}
       <div className="flex-1 flex flex-col items-center">
-        {/* Form Fields with reduced spacing */}
         <div className="flex flex-col gap-2 w-[80%]">
           <FormField
             name="name"
             label="Name"
             type="text"
             required
-            value={formData.name}
+            value={data.name}
             onChange={handleChange}
             error={errors.name}
             placeholder="Enter DPO name"
@@ -79,7 +73,7 @@ export function DataSharingAgreement() {
             label="Phone"
             type="tel"
             required
-            value={formData.phone}
+            value={data.phone}
             onChange={handleChange}
             error={errors.phone}
             placeholder="Enter phone number"
@@ -90,14 +84,13 @@ export function DataSharingAgreement() {
             label="Email"
             type="email"
             required
-            value={formData.email}
+            value={data.email}
             onChange={handleChange}
             error={errors.email}
             placeholder="Enter email address"
           />
         </div>
 
-        {/* Submit Section with reduced top spacing */}
         <div className="flex flex-col items-center gap-2 mt-4">
           <p className="text-sm">I confirm this information is accurate.</p>
           <ActiveButton onClick={handleSubmit}>
