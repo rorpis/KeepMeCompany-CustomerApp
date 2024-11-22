@@ -42,12 +42,12 @@ export function Telephony({ data = {}, updateData }) {
       </div>
 
       {/* Setup Instructions */}
-      <div className="text-center mt-4">
+      <div className="text-center">
         To set this up please call +44 5066 0811 for Surgery Connect,<br/> +44 5066 0811 for XYZ. Our redirection number is +44 5066 0811.
       </div>
 
       {/* Already Called Button */}
-      <div className="flex justify-center mt-8">
+      <div className="flex justify-center">
         <ActiveButton onClick={() => console.log('Already called')}>
           Already Called
         </ActiveButton>
