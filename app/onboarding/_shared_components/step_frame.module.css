@@ -1,0 +1,13 @@
+/* step_frame.module.css */
+.fadeIn {
+  animation: fadeIn 0.8s ease-in forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

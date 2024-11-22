@@ -11,6 +11,11 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+
+    --gray: rgb(80, 80, 80);
+
+    --primary-blue: #3284C2;
+    --primary-blue-hover: #2673AF;
   }
 }
 
