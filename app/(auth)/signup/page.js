@@ -30,10 +30,6 @@ const SignupForm = () => {
         surname: surname
       }
 
-      const formData = new FormData();
-      formData.append('userInfo', JSON.stringify(userInfo));
-      formData.append('idToken', idToken);
-
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       if (!backendUrl) {
         throw new Error('Backend URL is not configured');
@@ -41,15 +37,26 @@ const SignupForm = () => {
       
       const response = await fetch(`${backendUrl}/customer_app_api/user_signup`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
         credentials: 'include',
-        body: formData
+        body: JSON.stringify({ userInfo })
       });
+
+      if (!response.ok) {
+        // Add this to see what's going wrong
+        const errorData = await response.json();
+        console.error('Signup failed:', errorData);
+        throw new Error(errorData.message || 'Signup failed');
+      }
 
       const responseData = await response.json();
       
       if (responseData.registration_message === "success") {
         // Send email verification
-        await userCredential.user.sendEmailVerification();
+        await sendEmailVerification(userCredential.user);
         router.push("/verify-email");
       } else {
         // delete user from firebase if signup fails

@@ -1,0 +1,26 @@
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+  color: black !important;
+  background-color: white !important;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="text"]:focus {
+  color: black !important;
+  background-color: white !important;
+  outline: none;
+  border-color: #0070f3;
+}
+
+input[type="email"]::selection,
+input[type="password"]::selection,
+input[type="text"]::selection {
+  color: black !important;
+  background-color: #e3e3e3;
+} 
