@@ -26,7 +26,7 @@ const OrganisationDashboard = () => {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
         
         const response = await fetch(
-          `${backendUrl}/customer_app_api/organisations/details`,
+          `${backendUrl}/customer_app_api/organisation_details`,
           {
             method: "POST",
             headers: {
@@ -39,8 +39,8 @@ const OrganisationDashboard = () => {
         );
         
         const data = await response.json();
-        setOrganisation(data.organisation);
-        setMembers(data.members);
+        setOrganisation(data.organisation_details);
+        setMembers(data.organisation_details.members);
       } catch (error) {
         console.error("Error fetching organisation:", error);
       } finally {
@@ -56,7 +56,7 @@ const OrganisationDashboard = () => {
     try {
       const idToken = await user.getIdToken();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/organisations/invite`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/organisation_invite`,
         {
           method: "POST",
           headers: {
@@ -67,10 +67,9 @@ const OrganisationDashboard = () => {
         }
       );
       
-      if (response.ok) {
-        setInviteEmail("");
-        alert("Invitation sent successfully!");
-      }
+      setInviteEmail("");
+      alert("Invitation sent successfully!");
+
     } catch (error) {
       alert("Failed to send invitation");
     }
@@ -84,18 +83,15 @@ const OrganisationDashboard = () => {
     <div>
       <header>
         <h1>{organisation.name}</h1>
-        <button onClick={() => router.push("/workbench/organisations/settings")}>
-          Settings
-        </button>
       </header>
 
       <div>
         <section>
           <h2>Address</h2>
-          <p>{organisation.addressLine1}</p>
-          {organisation.addressLine2 && <p>{organisation.addressLine2}</p>}
-          <p>{organisation.city}, {organisation.postcode}</p>
-          <p>{organisation.country}</p>
+          <p>{organisation.address.addressLine1}</p>
+          {organisation.address.addressLine2 && <p>{organisation.address.addressLine2}</p>}
+          <p>{organisation.address.city}, {organisation.address.postcode}</p>
+          <p>{organisation.address.country}</p>
         </section>
 
         <section>
@@ -110,6 +106,19 @@ const OrganisationDashboard = () => {
         <section>
           <h2>Team Members</h2>
           <div>
+            {members.map((member) => (
+              <div key={member.id}>
+                <img 
+                  src={member.photoURL || "/default-avatar.png"} 
+                />
+                <div>
+                  <h3>{member.name} {member.surname} - {member.email}</h3>
+                  <p>{member.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div>
             <form onSubmit={handleInviteMember}>
               <input
                 type="email"
@@ -119,21 +128,6 @@ const OrganisationDashboard = () => {
               />
               <button type="submit">Send Invite</button>
             </form>
-          </div>
-          
-          <div>
-            {members.map((member) => (
-              <div key={member.id}>
-                <img 
-                  src={member.photoURL || "/default-avatar.png"} 
-                  alt={member.displayName} 
-                />
-                <div>
-                  <h3>{member.displayName || member.email}</h3>
-                  <p>{member.role}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
       </div>

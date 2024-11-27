@@ -51,13 +51,7 @@ const WorkbenchDashboard = () => {
 
   return (
     <div className="dashboard">
-      <h1>Your Organizations</h1>
-      
-      <button 
-        onClick={() => router.push("/workbench/organisations/create")}
-      >
-        Create New Organization
-      </button>
+      <h1>Your Organisations</h1>
 
       {loading ? (
         <p>Loading...</p>
@@ -72,6 +66,11 @@ const WorkbenchDashboard = () => {
           ))}
         </div>
       )}
+      <button   
+        onClick={() => router.push("/workbench/organisations/create")}
+      >
+        Create New Organization
+      </button>
     </div>
   );
 };

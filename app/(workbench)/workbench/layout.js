@@ -5,7 +5,7 @@ import { useAuth } from "../../../lib/firebase/authContext";
 import { OrganisationProvider } from '../../../lib/contexts/OrganisationContext';
 
 const WorkbenchLayout = ({ children }) => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   if (!user) {
@@ -13,18 +13,25 @@ const WorkbenchLayout = ({ children }) => {
     return null;
   }
 
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      router.push("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   return (
     <OrganisationProvider>
       <div className="workbench-layout">
         <nav className="sidebar">
           <div className="user-info">
-            <img src={user.photoURL || "/default-avatar.png"} alt="Profile" />
-            <span>{user.displayName || user.email}</span>
+            <span>{user.email}</span>
           </div>
           <ul>
-            <li onClick={() => router.push("/workbench/profile")}>Profile</li>
-            <li onClick={() => router.push("/workbench/organisations")}>Organizations</li>
-            <li onClick={signOut}>Sign Out</li>
+            <li onClick={() => router.push("/workbench")}>Workbench</li>
+            <li onClick={handleSignOut}>Sign Out</li>
           </ul>
         </nav>
         <main className="content">

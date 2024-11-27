@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../../lib/firebase/authContext";
-import useOrganisationStore from "../../../../../lib/stores/organisationStore";
 
 const countries = [
   { code: "GB", name: "United Kingdom" },
@@ -64,7 +63,6 @@ const CreateOrganisation = () => {
       console.log(data);
       if (data.registration_message === "success") {
         console.log("success registration")
-        useOrganisationStore.getState().setSelectedOrgId(data.organisationId);
         router.push("/workbench/organisations/success");
       } else {
         setError(data.message || "Failed to create organization");
