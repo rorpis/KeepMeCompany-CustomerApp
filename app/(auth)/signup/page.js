@@ -3,6 +3,7 @@
 import { createUserWithEmailAndPassword, sendEmailVerification, deleteUser } from "firebase/auth";
 import { auth } from "../../../lib/firebase/config";
 import { useState } from 'react';
+import { useRouter } from "next/navigation";
 
 const SignupForm = () => {
   const [email, setEmail] = useState("");
@@ -11,6 +12,7 @@ const SignupForm = () => {
   const [surname, setSurname] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const router = useRouter();
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -47,8 +49,8 @@ const SignupForm = () => {
       
       if (responseData.registration_message === "success") {
         // Send email verification
-        await sendEmailVerification(userCredential.user);
-        setSuccessMessage('A verification email has been sent. Please check your inbox.');
+        await userCredential.user.sendEmailVerification();
+        router.push("/verify-email");
       } else {
         // delete user from firebase if signup fails
         await deleteUser(userCredential.user);
