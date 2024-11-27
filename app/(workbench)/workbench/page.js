@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../lib/firebase/authContext";
+import { useOrganisation } from '../../../lib/contexts/OrganisationContext';
 
 const WorkbenchDashboard = () => {
   const [organisations, setOrganisations] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { user } = useAuth();
+  const { setSelectedOrgId } = useOrganisation();
 
   useEffect(() => {
     const fetchOrganisations = async () => {
@@ -19,14 +21,18 @@ const WorkbenchDashboard = () => {
         const response = await fetch(
           `${backendUrl}/customer_app_api/user_organisations`,
           {
+            method: 'POST',
             headers: {
+              "Content-Type": "application/json",
               Authorization: `Bearer ${idToken}`,
             },
             credentials: 'include',
+            body: JSON.stringify({}),
           }
         );
         
         const data = await response.json();
+        console.log(data);
         setOrganisations(data.organisations);
       } catch (error) {
         console.error("Error fetching organisations:", error);
@@ -38,12 +44,16 @@ const WorkbenchDashboard = () => {
     fetchOrganisations();
   }, [user]);
 
+  const handleOrgClick = (orgId) => {
+    setSelectedOrgId(orgId);
+    router.push('/workbench/organisations/dashboard');
+  };
+
   return (
     <div className="dashboard">
       <h1>Your Organizations</h1>
       
       <button 
-        className="create-org-button"
         onClick={() => router.push("/workbench/organisations/create")}
       >
         Create New Organization
@@ -54,9 +64,10 @@ const WorkbenchDashboard = () => {
       ) : (
         <div className="org-grid">
           {organisations.map((org) => (
-            <div key={org.id} className="org-card" onClick={() => router.push(`/workbench/organisations/${org.id}`)}>
+            <div key={org.id} className="org-card" onClick={() => handleOrgClick(org.id)}>
               <h3>{org.name}</h3>
-              <p>{org.role}</p>
+              <p>{org.address.city}, {org.address.country}</p>
+              {/* <p>Role: {org.members.find(member => member.member === user.uid)?.role || 'Unknown'}</p> */}
             </div>
           ))}
         </div>

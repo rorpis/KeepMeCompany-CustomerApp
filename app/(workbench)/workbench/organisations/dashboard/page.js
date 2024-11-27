@@ -1,31 +1,40 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../../lib/firebase/authContext";
+import { useOrganisation } from '../../../../../lib/contexts/OrganisationContext';
 
 const OrganisationDashboard = () => {
-  const { id } = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { selectedOrgId } = useOrganisation();
   const [organisation, setOrganisation] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
 
   useEffect(() => {
+    if (!selectedOrgId) {
+      router.push('/workbench');
+      return;
+    }
+
     const fetchOrganisationDetails = async () => {
       try {
         const idToken = await user.getIdToken();
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
         
         const response = await fetch(
-          `${backendUrl}/customer_app_api/organisations/${id}`,
+          `${backendUrl}/customer_app_api/organisations/details`,
           {
+            method: "POST",
             headers: {
+              "Content-Type": "application/json",
               Authorization: `Bearer ${idToken}`,
             },
             credentials: 'include',
+            body: JSON.stringify({ orgId: selectedOrgId }),
           }
         );
         
@@ -40,21 +49,21 @@ const OrganisationDashboard = () => {
     };
 
     fetchOrganisationDetails();
-  }, [id, user]);
+  }, [selectedOrgId, user, router]);
 
   const handleInviteMember = async (e) => {
     e.preventDefault();
     try {
       const idToken = await user.getIdToken();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/organisations/${id}/invite`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/organisations/invite`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ email: inviteEmail }),
+          body: JSON.stringify({ orgId: selectedOrgId, email: inviteEmail }),
         }
       );
       
@@ -67,22 +76,21 @@ const OrganisationDashboard = () => {
     }
   };
 
+  if (!selectedOrgId) return null;
   if (loading) return <div>Loading...</div>;
   if (!organisation) return <div>Organisation not found</div>;
 
   return (
-    <div className="org-dashboard">
-      <header className="org-header">
+    <div>
+      <header>
         <h1>{organisation.name}</h1>
-        <div className="org-actions">
-          <button onClick={() => router.push(`/workbench/organisations/${id}/settings`)}>
-            Settings
-          </button>
-        </div>
+        <button onClick={() => router.push("/workbench/organisations/settings")}>
+          Settings
+        </button>
       </header>
 
-      <div className="org-details">
-        <section className="address-section">
+      <div>
+        <section>
           <h2>Address</h2>
           <p>{organisation.addressLine1}</p>
           {organisation.addressLine2 && <p>{organisation.addressLine2}</p>}
@@ -90,7 +98,7 @@ const OrganisationDashboard = () => {
           <p>{organisation.country}</p>
         </section>
 
-        <section className="numbers-section">
+        <section>
           <h2>Registered Numbers</h2>
           <ul>
             {organisation.registeredNumbers.map((number, index) => (
@@ -99,9 +107,9 @@ const OrganisationDashboard = () => {
           </ul>
         </section>
 
-        <section className="members-section">
+        <section>
           <h2>Team Members</h2>
-          <div className="invite-member">
+          <div>
             <form onSubmit={handleInviteMember}>
               <input
                 type="email"
@@ -113,15 +121,14 @@ const OrganisationDashboard = () => {
             </form>
           </div>
           
-          <div className="members-list">
+          <div>
             {members.map((member) => (
-              <div key={member.id} className="member-card">
+              <div key={member.id}>
                 <img 
                   src={member.photoURL || "/default-avatar.png"} 
                   alt={member.displayName} 
-                  className="member-avatar"
                 />
-                <div className="member-info">
+                <div>
                   <h3>{member.displayName || member.email}</h3>
                   <p>{member.role}</p>
                 </div>
