@@ -15,10 +15,13 @@ const Login = () => {
     e.preventDefault();
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      if (!userCredential.user.emailVerified) {
+      await userCredential.user.reload();
+      const freshUser = auth.currentUser;
+      
+      if (!freshUser.emailVerified) {
         router.push("/verify-email");
       } else {
-        router.push("/dashboard");
+        router.push("/workbench");
       }
     } catch (err) {
       setError(err.message);

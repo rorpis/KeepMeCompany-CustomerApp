@@ -1,9 +1,25 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../../../lib/firebase/authContext";
 
 const VerifyEmail = () => {
   const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const checkVerification = async () => {
+      if (user) {
+        await user.reload();
+        if (user.emailVerified) {
+          router.push("/workbench");
+        }
+      }
+    };
+
+    checkVerification();
+  }, [user, router]);
 
   return (
     <div>
