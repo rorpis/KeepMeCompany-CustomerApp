@@ -62,7 +62,7 @@ const CreateOrganisation = () => {
       const data = await response.json();
       
       if (data.success) {
-        router.push(`/workbench/organisations/${data.organisationId}`);
+        router.push("/workbench/organisations/success");
       } else {
         setError(data.message || "Failed to create organization");
       }

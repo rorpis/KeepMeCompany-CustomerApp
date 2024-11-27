@@ -1,0 +1,16 @@
+.form-group input,
+.form-group select,
+.form-group textarea {
+  color: black;
+  background-color: white;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+/* For any disabled inputs */
+.form-group input:disabled {
+  background-color: #f5f5f5;
+  color: #666;
+} 
