@@ -63,13 +63,17 @@ const OrganisationDashboard = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ orgId: selectedOrgId, email: inviteEmail }),
+          body: JSON.stringify({ orgId: selectedOrgId, email: inviteEmail, role: "viewer" }),
         }
       );
       
       setInviteEmail("");
-      alert("Invitation sent successfully!");
-
+      const data = await response.json();
+      if (data.invitation_message === "success") {
+        alert("Invitation sent successfully!");
+      } else {
+        setError(data.message || "Failed to send invitation");
+      }
     } catch (error) {
       alert("Failed to send invitation");
     }
