@@ -23,22 +23,21 @@ const WorkbenchLayout = ({ children }) => {
   };
 
   return (
-    <OrganisationProvider>
-      <div className="workbench-layout">
-        <nav className="sidebar">
-          <div className="user-info">
-            <span>{user.email}</span>
-          </div>
-          <ul>
-            <li onClick={() => router.push("/workbench")}>Workbench</li>
-            <li onClick={handleSignOut}>Sign Out</li>
-          </ul>
-        </nav>
-        <main className="content">
-          {children}
-        </main>
-      </div>
-    </OrganisationProvider>
+    <div className="workbench-layout">
+      <nav className="sidebar">
+        <div className="user-info">
+          <span>{user.email}</span>
+        </div>
+        <ul>
+          <li onClick={() => router.push("/workbench")}>Workbench</li>
+          <li onClick={() => router.push("/intake")}>Intake</li>
+          <li onClick={handleSignOut}>Sign Out</li>
+        </ul>
+      </nav>
+      <main className="content">
+        {children}
+      </main>
+    </div>
   );
 };
 
