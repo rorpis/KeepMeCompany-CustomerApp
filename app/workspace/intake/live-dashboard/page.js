@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from "next/navigation";
-import { useAuth } from "../../../lib/firebase/authContext";
-import { useOrganisation } from '../../../lib/contexts/OrganisationContext';
-import { listenToConversations } from '../../../lib/firebase/realTimeMethods';
+import { useAuth } from "../../../../lib/firebase/authContext";
+import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
+import { listenToConversations } from '../../../../lib/firebase/realTimeMethods';
 
 const TriageDashboard = () => {
   const { user, loading, emailVerified } = useAuth();
@@ -44,11 +44,6 @@ const TriageDashboard = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h2 className="text-sm text-gray-500">Organisation</h2>
-        <h1 className="text-2xl font-bold">{organisationDetails?.name || 'Loading...'}</h1>
-      </div>
-      
       <h2 className="text-xl font-semibold mb-4">Call Backlog</h2>
       <ul className="space-y-2">
         {conversations.map(conversation => (

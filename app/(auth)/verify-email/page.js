@@ -13,7 +13,7 @@ const VerifyEmail = () => {
       if (user) {
         await user.reload();
         if (user.emailVerified) {
-          router.push("/workbench");
+          router.push("/workspace");
         }
       }
     };

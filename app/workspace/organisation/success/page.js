@@ -10,8 +10,8 @@ const OrganisationSuccess = () => {
       <h1>Organization Created Successfully!</h1>
       <p>Your organization has been set up and is ready to use.</p>
       
-      <button onClick={() => router.push("/workbench")}>
-        Return to Workbench
+      <button onClick={() => router.push("/workspace")}>
+        Return to Home
       </button>
     </div>
   );
