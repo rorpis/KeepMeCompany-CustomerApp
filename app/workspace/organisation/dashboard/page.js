@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../../../../../lib/firebase/authContext";
-import { useOrganisation } from '../../../../../lib/contexts/OrganisationContext';
+import { useAuth } from "../../../../lib/firebase/authContext";
+import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 
 const OrganisationDashboard = () => {
   const router = useRouter();
@@ -13,7 +13,7 @@ const OrganisationDashboard = () => {
 
   useEffect(() => {
     if (!selectedOrgId) {
-      router.push('/workbench');
+      router.push('/workspace');
     }
   }, [selectedOrgId, router]);
 

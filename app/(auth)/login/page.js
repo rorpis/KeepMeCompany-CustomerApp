@@ -21,7 +21,7 @@ const Login = () => {
       if (!freshUser.emailVerified) {
         router.push("/verify-email");
       } else {
-        router.push("/workbench");
+        router.push("/workspace");
       }
     } catch (err) {
       setError(err.message);

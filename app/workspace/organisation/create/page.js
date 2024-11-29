@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../../../../../lib/firebase/authContext";
+import { useAuth } from "../../../../lib/firebase/authContext";
 
 const countries = [
   { code: "GB", name: "United Kingdom" },
@@ -20,25 +20,8 @@ const CreateOrganisation = () => {
     postcode: "",
     city: "",
     country: "",
-    registeredNumbers: [""],
   });
   const [error, setError] = useState("");
-
-  const addPhoneNumber = () => {
-    setFormData(prev => ({
-      ...prev,
-      registeredNumbers: [...prev.registeredNumbers, ""]
-    }));
-  };
-
-  const updatePhoneNumber = (index, value) => {
-    const newNumbers = [...formData.registeredNumbers];
-    newNumbers[index] = value;
-    setFormData(prev => ({
-      ...prev,
-      registeredNumbers: newNumbers
-    }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,7 +46,7 @@ const CreateOrganisation = () => {
       console.log(data);
       if (data.registration_message === "success") {
         console.log("success registration")
-        router.push("/workbench/organisations/success");
+        router.push("/workspace/organisation/success");
       } else {
         setError(data.message || "Failed to create organization");
       }
@@ -142,22 +125,6 @@ const CreateOrganisation = () => {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="form-group">
-          <label>Registered Phone Numbers</label>
-          {formData.registeredNumbers.map((number, index) => (
-            <input
-              key={index}
-              type="tel"
-              value={number}
-              onChange={(e) => updatePhoneNumber(index, e.target.value)}
-              placeholder="Enter phone number"
-            />
-          ))}
-          <button type="button" onClick={addPhoneNumber}>
-            Add Another Number
-          </button>
         </div>
 
         {error && <div className="error-message">{error}</div>}

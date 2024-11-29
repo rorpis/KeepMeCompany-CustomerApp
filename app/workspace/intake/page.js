@@ -9,7 +9,7 @@ const IntakeMainScreen = () => {
     {
       title: "Live Dashboard",
       description: "View real-time intake data",
-      path: "/intake/live-dashboard",
+      path: "/workspace/intake/live-dashboard",
     },
     // More options can be added here later
   ];
