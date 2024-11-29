@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "../lib/firebase/authContext";
 import { OrganisationProvider } from "../lib/contexts/OrganisationContext";
+import { UserProvider } from '../lib/contexts/UserContext';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -21,14 +22,20 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <AuthProvider>
-      <OrganisationProvider>
-        <html lang="en">
-          <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-            {children}
-          </body>
-        </html>
-      </OrganisationProvider>
-    </AuthProvider>
+    <html>
+      <body>
+        <AuthProvider>
+          <UserProvider>
+            <OrganisationProvider>
+              <html lang="en">
+                <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+                  {children}
+                </body>
+              </html>
+            </OrganisationProvider>
+          </UserProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

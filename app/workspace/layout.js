@@ -3,23 +3,21 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../lib/firebase/authContext";
 import { useOrganisation } from "../../lib/contexts/OrganisationContext";
+import { useUser } from "../../lib/contexts/UserContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const WorkspaceLayout = ({ children }) => {
   const { user, signOut } = useAuth();
+  const { userDetails } = useUser();
   const { organisations, selectedOrgId, setSelectedOrgId, loading } = useOrganisation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const router = useRouter();
 
   const getInitials = () => {
-    if (!user?.name) return "U";
-    return user.name
-      .split(" ")
-      .map(name => name[0])
-      .join("")
-      .toUpperCase();
+    if (!userDetails) return "U";
+    return `${userDetails.name[0]}${userDetails.surname[0]}`.toUpperCase();
   };
 
   const handleSignOut = async () => {

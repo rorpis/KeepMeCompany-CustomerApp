@@ -1,22 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useUser } from "../../lib/contexts/UserContext";
 import { useOrganisation } from "../../lib/contexts/OrganisationContext";
 import Link from "next/link";
 
 const WorkspaceDashboard = () => {
-  const { organisations, loading, selectedOrg } = useOrganisation();
+  const { userDetails, loading: userLoading } = useUser();
+  const { selectedOrg, loading: orgLoading } = useOrganisation();
   const router = useRouter();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading...</p>
-      </div>
-    );
+  if (userLoading || orgLoading) {
+    return <div>Loading...</div>;
   }
 
-  if (!organisations.length) {
+  if (!selectedOrg) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">
@@ -39,7 +37,7 @@ const WorkspaceDashboard = () => {
         {/* Welcome Section */}
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-2">
-            Welcome to {selectedOrg?.name}
+            Hi {userDetails?.name}, Welcome to {selectedOrg?.name}
           </h1>
           <p className="text-gray-600">
             {selectedOrg?.address.addressLine1} {selectedOrg?.address.addressLine2} {selectedOrg?.address.postcode} {selectedOrg?.address.city}
@@ -51,7 +49,7 @@ const WorkspaceDashboard = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Patient Intake</h2>
             <p className="text-gray-600 mb-4">
-              Start a new patient intake session or view existing records
+              View and Manage your Inbound Calls
             </p>
             <Link 
               href="/workspace/intake" 
