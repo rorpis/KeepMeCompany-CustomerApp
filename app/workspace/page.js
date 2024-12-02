@@ -60,6 +60,19 @@ const WorkspaceDashboard = () => {
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Patient Remote Monitoring</h2>
+            <p className="text-gray-600 mb-4">
+              View and Manage your Outbound Calls
+            </p>
+            <Link 
+              href="/workspace/remote-monitoring" 
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Go to Patient Remote Monitoring →
+            </Link>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Organisation Dashboard</h2>
             <p className="text-gray-600 mb-4">
               View analytics and manage organisation settings

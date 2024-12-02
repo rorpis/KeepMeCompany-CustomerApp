@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Eye, EyeOff, X } from 'lucide-react';
 
-export function ActiveButton({ onClick, children }) {
+export function ActiveButton({ onClick, children, type = "button", ...props }) {
   return (
     <button 
       onClick={onClick}
+      type={type}
+      {...props}
       className="px-4 py-2 bg-[var(--primary-blue)] hover:bg-[var(--primary-blue-hover)] text-white font-bold rounded transition-colors duration-200"
     >
       {children}

@@ -1,59 +1,88 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../../../lib/firebase/authContext";
+import { useState, useEffect } from 'react';
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
+import { TriageDashboard } from '../../../_components/triageDashboard';
 import { listenToConversations } from '../../../../lib/firebase/realTimeMethods';
 
-const TriageDashboard = () => {
-  const { user, loading, emailVerified } = useAuth();
-  const { selectedOrgId, organisationDetails, loading_organisation } = useOrganisation();
-  const router = useRouter();
-
+const TriageDashboardPage = () => {
+  const { selectedOrgId, organisationDetails } = useOrganisation();
   const [conversations, setConversations] = useState([]);
+  const [startDate, setStartDate] = useState(new Date(new Date().setHours(0,0,0,0)).toISOString().slice(0, 16));
+  const [endDate, setEndDate] = useState(new Date(new Date().setHours(23,59,59,999)).toISOString().slice(0, 16));
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login"); // Redirect to login if not authenticated
-    } else if (user && !emailVerified) {
-      router.push("/verify-email"); // Redirect to a verify-email page if email not verified
+    if (!organisationDetails?.registeredNumbers?.length) {
+      setIsLoading(false);
+      return;
     }
-  }, [user, loading, emailVerified, router]);
 
-  useEffect(() => {
-    const unsubscribe = listenToConversations("+442078701183", (snapshot) => {
-      const customerConversations = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setConversations(customerConversations);
-    });
+    console.log(organisationDetails);
 
-    return () => unsubscribe(); // Clean up the listener on component unmount
-  }, [user]);
+    const unsubscribe = listenToConversations(
+      organisationDetails.registeredNumbers,
+      new Date(startDate),
+      new Date(endDate),
+      (snapshot) => {
+        const customerConversations = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setConversations(customerConversations);
+        setIsLoading(false);
+      }
+    );
 
-  if (loading) return <p>Loading...</p>;
+    return () => unsubscribe();
+  }, [organisationDetails?.registeredNumbers, startDate, endDate]);
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "Unknown Date"; // Handle missing/invalid dates
-    const date = timestamp.toDate(); // Convert Firestore Timestamp to JS Date
-    const options = { year: "numeric", month: "long", day: "numeric", hour: "2-digit",  minute: "2-digit"};
-    return date.toLocaleDateString("en-GB", options);
-  };
+  if (isLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
+
+  if (!organisationDetails?.registeredNumbers?.length) {
+    return <div className="p-6">No registered numbers found for this organisation.</div>;
+  }
 
   return (
     <div className="p-6">
       <h2 className="text-xl font-semibold mb-4">Call Backlog</h2>
-      <ul className="space-y-2">
-        {conversations.map(conversation => (
-          <li key={conversation.id} className="p-3 bg-white rounded shadow">
-            Call {conversation.callSid}: {conversation.patientName} - {conversation.patientDateOfBirth} - {conversation.summaryURL} - {formatDate(conversation.createdAt)}
-          </li>
-        ))}
-      </ul>
+      
+      {/* Date Filter Section */}
+      <div className="mb-6 flex gap-4 items-center">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+          <input
+            type="datetime-local"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border rounded p-2"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+          <input
+            type="datetime-local"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            min={startDate}
+            className="border rounded p-2"
+          />
+        </div>
+      </div>
+
+      <TriageDashboard 
+        calls={conversations} 
+        markAsViewed={(index) => {
+          console.log('Marking call as viewed:', conversations[index].id);
+          // send message to backend, and handle the change in the front. 
+          // in backend store timestamp and user that marked it as viewed
+          // In the Front, add the "Viewed By" in the viewed tab
+        }} 
+      />
     </div>
   );
 };
 
-export default TriageDashboard;
+export default TriageDashboardPage;
