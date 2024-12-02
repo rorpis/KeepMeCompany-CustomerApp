@@ -47,27 +47,27 @@ const TriageDashboardPage = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Call Backlog</h2>
+      <h2 className="text-xl font-semibold mb-4 text-text-primary">Call Backlog</h2>
       
       {/* Date Filter Section */}
       <div className="mb-6 flex gap-4 items-center">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">From</label>
           <input
             type="datetime-local"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="border rounded p-2"
+            className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">To</label>
           <input
             type="datetime-local"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             min={startDate}
-            className="border rounded p-2"
+            className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
           />
         </div>
       </div>
@@ -76,9 +76,6 @@ const TriageDashboardPage = () => {
         calls={conversations} 
         markAsViewed={(index) => {
           console.log('Marking call as viewed:', conversations[index].id);
-          // send message to backend, and handle the change in the front. 
-          // in backend store timestamp and user that marked it as viewed
-          // In the Front, add the "Viewed By" in the viewed tab
         }} 
       />
     </div>
