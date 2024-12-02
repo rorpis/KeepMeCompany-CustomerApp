@@ -16,6 +16,11 @@ const RemoteMonitoringMainScreen = () => {
       description: "Set follow up call with patient",
       path: "/workspace/remote-monitoring/create-follow-up",
     },
+    {
+      title: "Upcoming Follow Ups",
+      description: "View and Edit scheduled follow up calls",
+      path: "/workspace/remote-monitoring/upcoming-follow-up",
+    },
   ];
 
   return (
