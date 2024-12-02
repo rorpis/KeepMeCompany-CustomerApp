@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { HoverTooltip } from '@/app/_components/global_components';
+import { RED_FLAG_SYMPTOMS, PROTOCOL_QUESTIONS } from '@/app/config/emergency-triage/protocol-questions';
 
 // Component for the timeline step text
 function TimelineSteps() {
@@ -24,19 +25,16 @@ function TimelineSteps() {
 function RedFlagSymptoms() {
   const content = (
     <ol className="list-decimal pl-4 space-y-1">
-      <li>Stroke</li>
-      <li>Chest Pain</li>
-      <li>Breathing Difficulty</li>
-      <li>Severe Allergic Reaction</li>
-      <li>Major Bleeding</li>
-      <li>Loss of Consciousness</li>
+      {RED_FLAG_SYMPTOMS.map((symptom, index) => (
+        <li key={index}>{symptom}</li>
+      ))}
     </ol>
   );
 
   return (
     <div className="mt-4 text-sm text-center italic cursor-help">
       <HoverTooltip content={content}>
-        6 Red Flag Symptoms
+        {RED_FLAG_SYMPTOMS.length} Red Flag Symptoms
       </HoverTooltip>
     </div>
   );
@@ -44,15 +42,6 @@ function RedFlagSymptoms() {
 
 // Component for the protocol questions table
 function ProtocolQuestionsTable() {
-  const protocols = {
-    Stroke: ['F - Face: "Can they smile normally?"', 'A - Arms: "Can they lift both arms?"', 'S - Speech: "Is speech normal?"', 'T - Time: "When did it start?"'],
-    'Chest Pain': ['T - Time: "When did it start?"', 'I - Intensity: "How severe?"', 'M - Movement: "Does it move anywhere?"', 'E - Extras: "Any other symptoms?"'],
-    'Breathing Difficulty': ['A - Asthma: "Do you have asthma?"', 'I - Inhaler: "Used inhaler?"', 'R - Response: "Has it helped?"'],
-    'Severe Allergic Reaction': ['A - Allergen: "What caused this?"', 'L - Location: "Where\'s the reaction?"', 'E - EpiPen: "Do you have one?"', 'R - Response: "Have you used it?"', 'T - Time: "When did this start?"'],
-    'Major Bleeding': ['R - Rate: "How fast bleeding?"', 'E - Extent: "How much blood?"', 'D - Direct pressure: "Pressure applied?"'],
-    'Loss of Consciousness': ['A - Alert: "Are they alert?"', 'V - Voice: "Responding to voice?"', 'P - Pain: "Responding to pain?"', 'U - Unresponsive: "Completely unresponsive?"']
-  };
-
   const content = (
     <table className="w-full">
       <thead>
@@ -62,7 +51,7 @@ function ProtocolQuestionsTable() {
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-500">
-        {Object.entries(protocols).map(([condition, questions]) => (
+        {Object.entries(PROTOCOL_QUESTIONS).map(([condition, questions]) => (
           <tr key={condition}>
             <td className="py-2 pr-4">{condition}</td>
             <td className="py-2">
@@ -144,8 +133,9 @@ export function EmergencyProtocol({ data = {}, updateData }) {
   const [confirmed, setConfirmed] = useState(false);
 
   const handleCheckboxChange = (e) => {
-    setConfirmed(e.target.checked);
-    updateData({ confirmed: e.target.checked });
+    const isChecked = e.target.checked;
+    setConfirmed(isChecked);
+    updateData({ confirmed: isChecked });
   };
 
   return (

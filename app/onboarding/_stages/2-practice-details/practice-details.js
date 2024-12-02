@@ -1,12 +1,23 @@
 import { useState } from 'react';
-import { FormField } from '@/app/_components/global_components';
+import { FormField } from '@/app/_components/FormComponents';
+import { formatNumber, parseFormattedNumber } from '@/app/_utils/number-formatting';
 
-export default function PracticeDetails({ data = { practiceName: '', practiceSize: '', practiceAddress: '' }, updateData }) {
+export default function PracticeDetails({ data = { practiceName: '', practiceSize: '', practiceAddress: '', role: '' }, updateData }) {
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    updateData({ ...data, [name]: value });
+    
+    // Format the practice size when it changes
+    if (name === 'practiceSize') {
+      const rawValue = parseFormattedNumber(value);
+      if (rawValue === '' || /^\d*$/.test(rawValue)) {
+        updateData({ ...data, [name]: formatNumber(rawValue) });
+      }
+    } else {
+      updateData({ ...data, [name]: value });
+    }
+    
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -42,13 +53,12 @@ export default function PracticeDetails({ data = { practiceName: '', practiceSiz
       <FormField
         name="practiceSize"
         label="Practice Size (# of Patients)"
-        type="number"
+        type="text"
         required={false}
         value={data.practiceSize}
         onChange={handleChange}
         error={errors.practiceSize}
         placeholder="Enter number of patients"
-        step="1000"
       />
 
       <FormField

@@ -1,4 +1,4 @@
-import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
+import { ActiveButton, SecondaryButton, ConditionalButton } from '@/app/_components/global_components';
 import styles from './step_frame.module.css';
 
 export default function StepFrame({ 
@@ -6,8 +6,32 @@ export default function StepFrame({
   children,
   onNext,
   onBack,
-  showSkip = false
+  showSkip = false,
+  data = {},
+  requirements = { fields: [], checks: [], customChecks: [] },
+  hideNextButton = false
 }) {
+  const checkRequirements = () => {
+    // If using new checks format, prioritize it
+    if (requirements.checks?.length > 0) {
+      return requirements.checks.every(check => check.check(data));
+    }
+
+    // Fall back to legacy format if no checks defined
+    const fieldsValid = requirements.fields?.length 
+      ? requirements.fields.every(field => {
+          const value = data?.[field]?.toString().trim();
+          return value !== undefined && value !== '';
+        })
+      : true;
+
+    const customChecksValid = requirements.customChecks?.length
+      ? requirements.customChecks.every(check => check(data))
+      : true;
+
+    return fieldsValid && customChecksValid;
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
       <div className="w-full max-w-[60vw] flex flex-col">
@@ -41,9 +65,19 @@ export default function StepFrame({
                 </SecondaryButton>
               </div>
             )}
-            <ActiveButton onClick={onNext}>
-              Next
-            </ActiveButton>
+            {!hideNextButton && (
+              <ConditionalButton
+                onClick={onNext}
+                conditions={[
+                  { 
+                    check: checkRequirements(),
+                    message: 'Please complete all required fields'
+                  }
+                ]}
+              >
+                Next
+              </ConditionalButton>
+            )}
           </div>
         </div>
       </div>

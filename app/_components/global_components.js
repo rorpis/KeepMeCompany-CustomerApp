@@ -5,7 +5,7 @@ export function ActiveButton({ onClick, children }) {
   return (
     <button 
       onClick={onClick}
-      className="px-4 py-2 bg-[var(--primary-blue)] hover:bg-[var(--primary-blue-hover)] text-white font-bold rounded transition-colors duration-200"
+      className="px-4 py-2 bg-[var(--primary-blue)] hover:bg-[var(--primary-blue-hover)] text-white font-bold rounded transition-all duration-300 ease-in-out"
     >
       {children}
     </button>
@@ -16,99 +16,65 @@ export function SecondaryButton({ onClick, children }) {
     return (
       <button 
         onClick={onClick}
-        className="px-4 py-2 border border-[var(--gray)] text-[var(--gray)] hover:bg-[var(--gray)] hover:text-black font-bold rounded transition-colors duration-200"
+        className="px-4 py-2 border border-[var(--gray)] text-[var(--gray)] hover:bg-[var(--gray)] hover:text-black font-bold rounded transition-all duration-300 ease-in-out"
       >
         {children}
       </button>
     );
   }
 
-export function FormField({
-    label,
-    type = 'text',
-    value,
-    onChange,
-    error,
-    required = false,
-    placeholder = '',
-    disabled = false,
-    name,
-    step = 1,
-    options = []
+export function ConditionalButton({ 
+    onClick,
+    children,
+    conditions = [],
+    disabled = false
 }) {
-    const [showPassword, setShowPassword] = useState(false);
-    const isPassword = type === 'password';
-  
+    const [showError, setShowError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
+    const allConditionsMet = conditions.length === 0 || conditions.every(c => c.check);
+
+    const handleClick = () => {
+        if (conditions.length > 0) {
+          const failedCondition = conditions.find(c => !c.check);
+          if (failedCondition) {
+              setErrorMessage(failedCondition.message);
+              setShowError(true);
+              setTimeout(() => setShowError(false), 3000);
+              return;
+          }
+        }
+        if (typeof onClick === 'function') {
+            onClick();
+        }
+    };
+
     return (
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
+      <div className="relative">
+        <button 
+          onClick={handleClick}
+          disabled={disabled}
+          className={`
+            px-4 py-2 rounded font-bold
+            transition-all duration-700 ease-in-out
+            ${allConditionsMet 
+              ? 'bg-[var(--primary-blue)] hover:bg-[var(--primary-blue-hover)] text-white border-transparent' 
+              : 'border border-[var(--gray)] text-[var(--gray)] hover:bg-[var(--gray)] hover:text-black'}
+            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+          `}
+        >
+          {children}
+        </button>
   
-        <div className="relative">
-          {type === 'select' ? (
-            <select
-              value={value}
-              onChange={onChange}
-              disabled={disabled}
-              name={name}
-              className={`
-                w-full p-2 rounded
-                bg-transparent
-                border ${error ? 'border-red-500' : 'border-[var(--gray)]'}
-                text-[var(--foreground)]
-                focus:outline-none focus:border-[var(--primary-blue)]
-                disabled:opacity-50 disabled:cursor-not-allowed
-              `}
-            >
-              <option value="" disabled>{placeholder || 'Select an option'}</option>
-              {options.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type={isPassword ? (showPassword ? 'text' : 'password') : type}
-              value={value}
-              onChange={onChange}
-              disabled={disabled}
-              placeholder={placeholder}
-              name={name}
-              step={step}
-              className={`
-                w-full p-2 rounded
-                bg-transparent
-                border ${error ? 'border-red-500' : 'border-[var(--gray)]'}
-                text-[var(--foreground)]
-                placeholder:text-[var(--gray)]
-                focus:outline-none focus:border-[var(--primary-blue)]
-                disabled:opacity-50 disabled:cursor-not-allowed
-                ${isPassword ? 'pr-10' : ''}
-              `}
-            />
-          )}
-          
-          {isPassword && (
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--gray)] hover:text-[var(--foreground)] transition-colors"
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          )}
-        </div>
-  
-        {error && (
-          <p className="mt-1 text-sm text-red-500">{error}</p>
+        {showError && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-4 py-2 bg-red-500 text-white rounded text-sm whitespace-nowrap animate-fade-in">
+            {errorMessage}
+          </div>
         )}
       </div>
     );
 }
-
+  
 export function PopupMessage({ message, type = 'success', onClose, duration = 3000 }) {
   const [isVisible, setIsVisible] = useState(true);
 
@@ -180,3 +146,5 @@ export function HoverTooltip({ children, content, width = 'w-64', position = 'ce
     </div>
   );
 }
+
+

@@ -1,6 +1,7 @@
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "../lib/firebase/authContext";
+import { AnimatePresence } from 'framer-motion'
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -20,14 +21,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <AuthProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+    <html lang="en">
+      <body>
+        <main className="animate-fade-in">
           {children}
-        </body>
-      </html>
-    </AuthProvider>
+        </main>
+      </body>
+    </html>
   );
 }

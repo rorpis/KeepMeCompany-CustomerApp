@@ -1,8 +1,13 @@
-import { ActiveButton } from '@/app/_components/global_components';
+import { ConditionalButton } from '@/app/_components/global_components';
 
-export function Telephony({ data = {}, updateData }) {
+export function Telephony({ data = {}, updateData, onSuccess }) {
+  const handleClick = () => {
+    updateData({ called: true });
+    onSuccess?.();  // Trigger navigation if onSuccess is provided
+  };
+
   return (
-    <div className="w-full max-w-3xl mx-auto flex flex-col gap-8">
+    <div className="w-full max-w-3xl mx-auto flex flex-col gap-6">
       {/* Timeline Options */}
       <div className="relative w-full pt-8 pb-16">
         {/* Text Options */}
@@ -22,7 +27,7 @@ export function Telephony({ data = {}, updateData }) {
         <div className="absolute left-0 right-0 h-3.5 bg-gray-700 top-[50%] translate-y-[1.6rem] rounded-full border-2 border-white" />
 
         {/* Circles */} 
-        <div className="grid grid-cols-3 gap-x-4 translate-y-[15%] justify-center relative z-10">
+        <div className="grid grid-cols-3 gap-x-4 translate-y-[18%] justify-center relative z-10">
           <div className="flex flex-col items-center group relative">
             <div className="w-16 h-16 rounded-full bg-gray-700 border-2 border-white text-white flex items-center justify-center text-lg font-bold">
               1
@@ -48,9 +53,13 @@ export function Telephony({ data = {}, updateData }) {
 
       {/* Already Called Button */}
       <div className="flex justify-center">
-        <ActiveButton onClick={() => console.log('Already called')}>
+        <ConditionalButton 
+          onClick={handleClick}
+          conditions={[]}
+          formValidation={{}}
+        >
           Already Called
-        </ActiveButton>
+        </ConditionalButton>
       </div>
     </div>
   );
