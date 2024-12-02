@@ -3,3 +3,22 @@
 @tailwind utilities;
 
 /* Add any custom styles needed */
+
+:root {
+  /* Background Colors */
+  --background-main: #000000;
+  --background-elevated: #222222;
+  --background-secondary: #333333;
+  
+  /* Text Colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #9CA3AF;
+  
+  /* Other colors remain the same */
+}
+
+/* Apply the background color to the body */
+body {
+  background-color: var(--background-main);
+  color: var(--text-primary);
+}

@@ -15,21 +15,21 @@ export const TeamMembers = ({ organisationDetails, onInviteMember }) => {
   };
 
   return (
-    <section className="bg-white shadow rounded-lg p-6 md:col-span-2">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Team Members</h2>
+    <section className="bg-bg-elevated rounded-lg p-6">
+      <h2 className="text-lg font-medium text-text-primary mb-4">Team Members</h2>
       <div className="space-y-4">
         {organisationDetails.members.map((member) => (
-          <div key={member.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-            <div className="h-12 w-12 rounded-full bg-indigo-600 flex items-center justify-center">
-              <span className="text-white font-medium text-sm">
+          <div key={member.id} className="flex items-center space-x-4 p-4 bg-bg-secondary rounded-lg">
+            <div className="h-12 w-12 rounded-full bg-primary-blue flex items-center justify-center">
+              <span className="text-text-primary font-medium text-sm">
                 {getInitials(member.name, member.surname)}
               </span>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-900">
+              <h3 className="text-sm font-medium text-text-primary">
                 {member.name} {member.surname} - {member.email}
               </h3>
-              <p className="text-sm text-gray-500 capitalize">{member.role}</p>
+              <p className="text-sm text-text-secondary capitalize">{member.role}</p>
             </div>
           </div>
         ))}
@@ -41,11 +41,11 @@ export const TeamMembers = ({ organisationDetails, onInviteMember }) => {
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             placeholder="Enter email to invite"
-            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="flex-1 rounded-md bg-bg-secondary border-border-main text-text-primary placeholder:text-text-secondary focus:border-primary-blue focus:ring-primary-blue"
           />
-          <button type="submit">
+          <ActiveButton type="submit">
             Send Invite
-          </button>
+          </ActiveButton>
         </form>
       </div>
     </section>

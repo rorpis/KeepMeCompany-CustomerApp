@@ -105,43 +105,55 @@ const OrganisationDashboard = () => {
   if (!organisationDetails) return <div>Organisation not found</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-semibold text-gray-900">{organisationDetails.name}</h1>
+    <div className="min-h-screen bg-bg-main">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-bg-elevated rounded-lg p-6 mb-8">
+          <h1 className="text-2xl font-bold mb-2 text-text-primary">
+            {organisationDetails.name}
+          </h1>
+          <p className="text-text-secondary">
+            {organisationDetails.address.addressLine1}
+          </p>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <section className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Address</h2>
-            <div className="text-gray-600">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Address Card */}
+          <div className="bg-bg-elevated rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-text-primary">Address</h2>
+            <div className="text-text-secondary">
               <p>{organisationDetails.address.addressLine1}</p>
-              {organisationDetails.address.addressLine2 && <p>{organisationDetails.address.addressLine2}</p>}
+              {organisationDetails.address.addressLine2 && (
+                <p>{organisationDetails.address.addressLine2}</p>
+              )}
               <p>{organisationDetails.address.city}, {organisationDetails.address.postcode}</p>
-              <p>{organisationDetails.address.country}</p>
             </div>
-          </section>
+          </div>
 
-          <section className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Registered Numbers</h2>
-            <ul className="text-gray-600">
+          {/* Registered Numbers Card */}
+          <div className="bg-bg-elevated rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-text-primary">Registered Numbers</h2>
+            <div className="text-text-secondary">
               {organisationDetails.registeredNumbers.map((number, index) => (
-                <li key={index}>{number}</li>
+                <p key={index}>{number}</p>
               ))}
-            </ul>
-          </section>
+            </div>
+          </div>
 
-          <TeamMembers 
-            organisationDetails={organisationDetails}
-            onInviteMember={handleInviteMember}
-          />
+          {/* Team Members Section */}
+          <div className="md:col-span-2">
+            <TeamMembers 
+              organisationDetails={organisationDetails}
+              onInviteMember={handleInviteMember}
+            />
+          </div>
 
-          <PatientList 
-            patientList={patientList}
-            onUploadList={handleUploadPatientList}
-          />
+          {/* Patient List Section */}
+          <div className="md:col-span-2">
+            <PatientList 
+              patientList={patientList}
+              onUploadList={handleUploadPatientList}
+            />
+          </div>
         </div>
       </div>
     </div>
