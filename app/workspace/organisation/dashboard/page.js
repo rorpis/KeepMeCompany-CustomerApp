@@ -11,42 +11,14 @@ import { PatientList } from '../_components/PatientList';
 const OrganisationDashboard = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const { selectedOrgId, organisationDetails, loading } = useOrganisation();
+  const { selectedOrgId, organisationDetails, loading, refreshOrganisationDetails } = useOrganisation();
   const { userDetails, loading: userLoading } = useUser();
-  const [patientList, setPatientList] = useState([]);
 
   useEffect(() => {
     if (!selectedOrgId) {
       router.push('/workspace');
     }
   }, [selectedOrgId, router]);
-
-  useEffect(() => {
-    const fetchPatientList = async () => {
-      try {
-        const idToken = await user.getIdToken();
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/get_patient_list`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({ orgId: selectedOrgId }),
-          }
-        );
-        const data = await response.json();
-        setPatientList(data.patientList);
-      } catch (error) {
-        console.error("Failed to fetch patient list", error);
-      }
-    };
-
-    if (selectedOrgId) {
-      fetchPatientList();
-    }
-  }, [selectedOrgId, user]);
 
   const handleInviteMember = async (email) => {
     try {
@@ -74,30 +46,34 @@ const OrganisationDashboard = () => {
     }
   };
 
-  const handleUploadPatientList = async (file, columnMapping) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("orgId", selectedOrgId);
-    formData.append("nameColumn", columnMapping.nameColumn);
-    formData.append("dobColumn", columnMapping.dobColumn);
+  const handleUploadPatientList = async (patients) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/upload_patient_list`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ 
+            orgId: selectedOrgId,
+            patient_list: patients
+          }),
+        }
+      );
 
-    const idToken = await user.getIdToken();
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/upload_patient_list`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: formData,
+      const data = await response.json();
+      if (data.upload_message === "success") {
+        await refreshOrganisationDetails();
+        return true;
       }
-    );
-    const data = await response.json();
-    if (data.success) {
-      setPatientList(data.patientList);
-      return true;
+      throw new Error(data.message || "Failed to update patient list");
+    } catch (error) {
+      console.error("Failed to upload patient list:", error);
+      throw error;
     }
-    throw new Error("Failed to update patient list");
   };
 
   if (!selectedOrgId) return null;
@@ -150,7 +126,7 @@ const OrganisationDashboard = () => {
           {/* Patient List Section */}
           <div className="md:col-span-2">
             <PatientList 
-              patientList={patientList}
+              patientList={organisationDetails.patientList || []}
               onUploadList={handleUploadPatientList}
             />
           </div>

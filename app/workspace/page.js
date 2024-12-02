@@ -7,7 +7,7 @@ import Link from "next/link";
 
 const WorkspaceDashboard = () => {
   const { userDetails, loading: userLoading } = useUser();
-  const { selectedOrg, loading: orgLoading } = useOrganisation();
+  const { selectedOrg, organisationDetails, loading: orgLoading } = useOrganisation();
   const router = useRouter();
 
   if (userLoading || orgLoading) {
@@ -20,10 +20,10 @@ const WorkspaceDashboard = () => {
       <div className="max-w-7xl mx-auto mb-12">
         <div className="bg-bg-elevated rounded-lg p-8">
           <h1 className="text-2xl font-bold text-text-primary mb-2">
-            Hi {userDetails?.name}, Welcome to {selectedOrg?.name}
+            Hi {userDetails?.name}, Welcome to {organisationDetails?.name}
           </h1>
           <p className="text-text-secondary">
-            {selectedOrg?.address?.addressLine1}
+            {organisationDetails?.address?.addressLine1}
           </p>
         </div>
       </div>

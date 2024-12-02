@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, FileWarning, FileCheck, X } from 'lucide-react';
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
 
@@ -6,6 +6,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [csvFile, setCsvFile] = useState(null);
   const [csvPreview, setCsvPreview] = useState(null);
+  const [parsedPatients, setParsedPatients] = useState(null);
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [columnMapping, setColumnMapping] = useState({
@@ -25,11 +26,25 @@ export const PatientList = ({ patientList, onUploadList }) => {
           line.split(',').map(cell => cell.trim())
         );
         setCsvFile(file);
-        setCsvPreview({ headers, rows });
+        setCsvPreview({ headers, rows, allRows: lines.slice(1) });
       }
     };
     reader.readAsText(file);
   };
+
+  useEffect(() => {
+    if (csvPreview && columnMapping.nameColumn && columnMapping.dobColumn) {
+      const headers = csvPreview.headers;
+      const patients = csvPreview.allRows.map(line => {
+        const values = line.split(',').map(value => value.trim());
+        return {
+          customerName: values[headers.indexOf(columnMapping.nameColumn)],
+          dateOfBirth: values[headers.indexOf(columnMapping.dobColumn)]
+        };
+      });
+      setParsedPatients(patients);
+    }
+  }, [csvPreview, columnMapping]);
 
   const validateFile = (file) => {
     if (file.type !== 'text/csv') {
@@ -73,12 +88,17 @@ export const PatientList = ({ patientList, onUploadList }) => {
       return;
     }
 
+    if (!parsedPatients || parsedPatients.length === 0) {
+      setError("No valid patient data to upload");
+      return;
+    }
+
     try {
-      await onUploadList(csvFile, columnMapping);
+      await onUploadList(parsedPatients);
       setIsUploadModalOpen(false);
       handleRemoveFile();
     } catch (error) {
-      setError("Failed to upload CSV");
+      setError("Failed to upload patient list");
     }
   };
 
@@ -110,7 +130,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
                   {patient.customerName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
-                  {patient.DateOfBirth}
+                  {patient.dateOfBirth}
                 </td>
               </tr>
             ))}

@@ -137,6 +137,13 @@ const WorkspaceLayout = ({ children }) => {
               Patient Intake
             </Link>
             <Link
+              href="/workspace/remote-monitoring"
+              className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Remote Monitoring
+            </Link>
+            <Link
               href="/workspace/organisation/dashboard"
               className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
