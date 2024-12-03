@@ -1,15 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
-    NEXT_PUBLIC_FIREBASE_CONFIG: process.env.NEXT_PUBLIC_FIREBASE_CONFIG,
-    NEXT_PUBLIC_FIREBASE_CONFIG_apiKey: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_apiKey,
-    NEXT_PUBLIC_FIREBASE_CONFIG_appId: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_appId,
-    NEXT_PUBLIC_FIREBASE_CONFIG_authDomain: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_authDomain,
-    NEXT_PUBLIC_FIREBASE_CONFIG_measurementId: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_measurementId,
-    NEXT_PUBLIC_FIREBASE_CONFIG_messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_messagingSenderId,
-    NEXT_PUBLIC_FIREBASE_CONFIG_projectId: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_projectId,
-    NEXT_PUBLIC_FIREBASE_CONFIG_storageBucket: process.env.NEXT_PUBLIC_FIREBASE_CONFIG_storageBucket,
+    NEXT_PUBLIC_BACKEND_URL: "https://keep-me-company-backend-b450f889ef90.herokuapp.com",
+    NEXT_PUBLIC_FIREBASE_CONFIG_apiKey: "AIzaSyBap0GJ9EogEOqRpaerGtXvysfam2n93cw",
+    NEXT_PUBLIC_FIREBASE_CONFIG_appId: "1:1099500018898:web:02b80dc6f1be388979a10b",
+    NEXT_PUBLIC_FIREBASE_CONFIG_authDomain: "keepmecompanyai.firebaseapp.com",
+    NEXT_PUBLIC_FIREBASE_CONFIG_measurementId: "G-HEEH2GZVH0",
+    NEXT_PUBLIC_FIREBASE_CONFIG_messagingSenderId: "1099500018898",
+    NEXT_PUBLIC_FIREBASE_CONFIG_projectId: "keepmecompanyai",
+    NEXT_PUBLIC_FIREBASE_CONFIG_storageBucket: "keepmecompanyai.firebasestorage.app",
   },
 };
 
