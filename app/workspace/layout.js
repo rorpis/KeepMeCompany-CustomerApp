@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../lib/firebase/authContext";
 import { useOrganisation } from "../../lib/contexts/OrganisationContext";
 import { useUser } from "../../lib/contexts/UserContext";
@@ -8,12 +8,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const WorkspaceLayout = ({ children }) => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { userDetails } = useUser();
   const { organisations, selectedOrgId, setSelectedOrgId, loading } = useOrganisation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const router = useRouter();
+  const profileMenuRef = useRef(null);
 
   const getInitials = () => {
     if (!userDetails) return "U";
@@ -22,7 +23,7 @@ const WorkspaceLayout = ({ children }) => {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
       router.push("/login");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -39,8 +40,12 @@ const WorkspaceLayout = ({ children }) => {
   };
 
   const handleClickOutside = (e) => {
-    if (isMenuOpen && !e.target.closest('.side-menu') && !e.target.closest('.burger-button')) {
+    if (
+      (isMenuOpen && !e.target.closest('.side-menu') && !e.target.closest('.burger-button')) ||
+      (isProfileOpen && profileMenuRef.current && !profileMenuRef.current.contains(e.target))
+    ) {
       setIsMenuOpen(false);
+      setIsProfileOpen(false);
     }
   };
 
@@ -49,7 +54,7 @@ const WorkspaceLayout = ({ children }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isProfileOpen]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -88,14 +93,33 @@ const WorkspaceLayout = ({ children }) => {
               </select>
             </div>
 
-            {/* Profile Button */}
-            <div className="flex items-center">
+            {/* Profile Button and Dropdown */}
+            <div className="relative flex items-center">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="h-8 w-8 rounded-full bg-bg-secondary text-text-primary flex items-center justify-center"
               >
                 {getInitials()}
               </button>
+
+              {/* Profile Dropdown */}
+              {isProfileOpen && (
+                <div
+                  ref={profileMenuRef}
+                  className="absolute right-0 top-10 w-48 bg-bg-elevated border border-border-main rounded-md shadow-lg py-1 z-50"
+                >
+                  <div className="px-4 py-2 text-sm text-text-secondary">
+                    {userDetails?.name} {userDetails?.surname}
+                  </div>
+                  <div className="border-t border-border-main"></div>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-bg-secondary"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
