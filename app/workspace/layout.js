@@ -6,11 +6,12 @@ import { useOrganisation } from "../../lib/contexts/OrganisationContext";
 import { useUser } from "../../lib/contexts/UserContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "../_components/LoadingSpinner";
 
 const WorkspaceLayout = ({ children }) => {
-  const { user, logout } = useAuth();
-  const { userDetails } = useUser();
-  const { organisations, selectedOrgId, setSelectedOrgId, loading } = useOrganisation();
+  const { user, logout, loading: authLoading } = useAuth();
+  const { userDetails, loading: userLoading } = useUser();
+  const { organisations, selectedOrgId, setSelectedOrgId, loading: orgLoading } = useOrganisation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const router = useRouter();
@@ -56,8 +57,29 @@ const WorkspaceLayout = ({ children }) => {
     };
   }, [isMenuOpen, isProfileOpen]);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  // Check if any context is still loading
+  const isLoading = authLoading || userLoading || orgLoading;
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  // Show loading spinner while any context is loading
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  // Show nothing if user is not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
+  // Show nothing if essential data is missing
+  if (!userDetails) {
+    return null;
   }
 
   return (
