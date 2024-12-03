@@ -8,10 +8,10 @@ export function Telephony({ data = {}, updateData }) {
         {/* Text Options */}
         <div className="grid grid-cols-3 gap-x-4">
           <div className="text-center mx-auto w-[80%] italic">
-            "If you would like to skip the queue and speak with an AI and please press 1"
+          &quot;If you would like to skip the queue and speak with an AI and please press 1&quot;
           </div>
           <div className="text-center mx-auto w-[80%] italic">
-            "If you would prefer to speak with a receptionist press 2"
+          &quot;If you would prefer to speak with a receptionist press 2&quot;
           </div>
           <div className="text-center mx-auto w-[80%] italic">
             ...(other options)
