@@ -13,26 +13,35 @@ const TriageDashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!organisationDetails?.registeredNumbers?.length) {
-      setIsLoading(false);
-      return;
-    }
+    let unsubscribe = () => {};
 
-    console.log(organisationDetails);
+    const initializeListener = async () => {
+      if (!organisationDetails?.registeredNumbers?.length) {
+        setIsLoading(false);
+        return;
+      }
 
-    const unsubscribe = listenToConversations(
-      organisationDetails.registeredNumbers,
-      new Date(startDate),
-      new Date(endDate),
-      (snapshot) => {
-        const customerConversations = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setConversations(customerConversations);
+      try {
+        unsubscribe = listenToConversations(
+          organisationDetails.registeredNumbers,
+          new Date(startDate),
+          new Date(endDate),
+          (snapshot) => {
+            const customerConversations = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setConversations(customerConversations);
+            setIsLoading(false);
+          }
+        );
+      } catch (error) {
+        console.error('Error initializing conversation listener:', error);
         setIsLoading(false);
       }
-    );
+    };
+
+    initializeListener();
 
     return () => unsubscribe();
   }, [organisationDetails?.registeredNumbers, startDate, endDate]);
