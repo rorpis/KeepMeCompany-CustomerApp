@@ -44,7 +44,7 @@ const TriageDashboardPage = () => {
     initializeListener();
 
     return () => unsubscribe();
-  }, [organisationDetails?.registeredNumbers, startDate, endDate]);
+  }, [organisationDetails?.registeredNumbers, organisationDetails, startDate, endDate]);
 
   if (isLoading) {
     return <div className="p-6">Loading...</div>;
