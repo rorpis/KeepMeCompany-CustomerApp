@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, FileWarning, FileCheck, X } from 'lucide-react';
+import { Upload, FileWarning, FileCheck, X, Download } from 'lucide-react';
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
 
 export const PatientList = ({ patientList, onUploadList }) => {
@@ -102,40 +102,70 @@ export const PatientList = ({ patientList, onUploadList }) => {
     }
   };
 
+  const handleDownloadCsv = () => {
+    // Create CSV content
+    const headers = ['Patient Name,Date of Birth'];
+    const rows = patientList.map(patient => 
+      `${patient.customerName},${patient.dateOfBirth}`
+    );
+    const csvContent = [headers, ...rows].join('\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'patient_list.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <section className="bg-bg-elevated rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium text-text-primary">Patient List</h2>
-        <ActiveButton onClick={() => setIsUploadModalOpen(true)}>
-          Update Patient List
-        </ActiveButton>
+        <div className="flex gap-2">
+          <SecondaryButton onClick={handleDownloadCsv}>
+            <Download size={16} className="mr-2" />
+            Download CSV
+          </SecondaryButton>
+          <ActiveButton onClick={() => setIsUploadModalOpen(true)}>
+            <Upload size={16} className="mr-2" />
+            Update Patient List
+          </ActiveButton>
+        </div>
       </div>
 
+      {/* Scrollable table container */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-border-main">
-          <thead className="bg-bg-secondary">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                Patient Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                Date of Birth
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-main">
-            {patientList.map((patient, index) => (
-              <tr key={index} className="hover:bg-bg-secondary">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                  {patient.customerName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
-                  {patient.dateOfBirth}
-                </td>
+        <div className="max-h-[60vh] overflow-y-auto">
+          <table className="min-w-full divide-y divide-border-main">
+            <thead className="bg-bg-secondary sticky top-0 z-10">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                  Patient Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                  Date of Birth
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border-main bg-bg-elevated">
+              {patientList.map((patient, index) => (
+                <tr key={index} className="hover:bg-bg-secondary">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                    {patient.customerName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                    {patient.dateOfBirth}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Upload Modal */}
