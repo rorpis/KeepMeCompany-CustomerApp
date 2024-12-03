@@ -5,7 +5,7 @@ import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 import { TriageDashboard } from '../../../_components/triageDashboard';
 import { listenToConversations } from '../../../../lib/firebase/realTimeMethods';
 
-const TriageDashboardPage = () => {
+const RemoteMonitoringDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
   const [conversations, setConversations] = useState([]);
   const [startDate, setStartDate] = useState(new Date(new Date().setHours(0,0,0,0)).toISOString().slice(0, 16));
@@ -82,4 +82,4 @@ const TriageDashboardPage = () => {
   );
 };
 
-export default TriageDashboardPage;
+export default RemoteMonitoringDashboardPage;

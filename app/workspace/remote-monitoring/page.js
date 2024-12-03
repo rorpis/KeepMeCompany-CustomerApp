@@ -2,21 +2,30 @@
 
 import { useRouter } from "next/navigation";
 
-const IntakeMainScreen = () => {
+const RemoteMonitoringMainScreen = () => {
   const router = useRouter();
 
   const navigationCards = [
     {
       title: "Live Dashboard",
-      description: "View real-time intake data",
-      path: "/workspace/intake/live-dashboard",
+      description: "View real-time monitoring data",
+      path: "/workspace/remote-monitoring/live-dashboard",
     },
-    // More options can be added here later
+    {
+      title: "Create Follow Up",
+      description: "Set follow up call with patient",
+      path: "/workspace/remote-monitoring/create-follow-up",
+    },
+    {
+      title: "Upcoming Follow Ups",
+      description: "View and Edit scheduled follow up calls",
+      path: "/workspace/remote-monitoring/upcoming-follow-up",
+    },
   ];
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Patient Intake</h1>
+      <h1 className="text-2xl font-bold mb-6">Remote Monitoring</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {navigationCards.map((card, index) => (
           <div
@@ -35,4 +44,4 @@ const IntakeMainScreen = () => {
   );
 };
 
-export default IntakeMainScreen; 
+export default RemoteMonitoringMainScreen; 

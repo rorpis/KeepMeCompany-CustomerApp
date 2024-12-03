@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../lib/firebase/authContext";
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
+import { useUser } from '../../../../lib/contexts/UserContext';
+import { TeamMembers } from '../_components/TeamMembers';
+import { PatientList } from '../_components/PatientList';
 
 const OrganisationDashboard = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const { selectedOrgId, organisationDetails, loading } = useOrganisation();
-  const [inviteEmail, setInviteEmail] = useState("");
+  const { selectedOrgId, organisationDetails, loading, refreshOrganisationDetails } = useOrganisation();
+  const { userDetails, loading: userLoading } = useUser();
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -17,8 +20,7 @@ const OrganisationDashboard = () => {
     }
   }, [selectedOrgId, router]);
 
-  const handleInviteMember = async (e) => {
-    e.preventDefault();
+  const handleInviteMember = async (email) => {
     try {
       const idToken = await user.getIdToken();
       const response = await fetch(
@@ -29,19 +31,48 @@ const OrganisationDashboard = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ orgId: selectedOrgId, email: inviteEmail, role: "viewer" }),
+          body: JSON.stringify({ orgId: selectedOrgId, email, role: "viewer" }),
         }
       );
       
-      setInviteEmail("");
       const data = await response.json();
       if (data.invitation_message === "success") {
         alert("Invitation sent successfully!");
       } else {
-        setError(data.message || "Failed to send invitation");
+        alert(data.message || "Failed to send invitation");
       }
     } catch (error) {
       alert("Failed to send invitation");
+    }
+  };
+
+  const handleUploadPatientList = async (patients) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/upload_patient_list`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ 
+            orgId: selectedOrgId,
+            patient_list: patients
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.upload_message === "success") {
+        await refreshOrganisationDetails();
+        return true;
+      }
+      throw new Error(data.message || "Failed to update patient list");
+    } catch (error) {
+      console.error("Failed to upload patient list:", error);
+      throw error;
     }
   };
 
@@ -50,56 +81,56 @@ const OrganisationDashboard = () => {
   if (!organisationDetails) return <div>Organisation not found</div>;
 
   return (
-    <div>
-      <header>
-        <h1>{organisationDetails.name}</h1>
-      </header>
+    <div className="min-h-screen bg-bg-main">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-bg-elevated rounded-lg p-6 mb-8">
+          <h1 className="text-2xl font-bold mb-2 text-text-primary">
+            {organisationDetails.name}
+          </h1>
+          <p className="text-text-secondary">
+            {organisationDetails.address.addressLine1}
+          </p>
+        </div>
 
-      <div>
-        <section>
-          <h2>Address</h2>
-          <p>{organisationDetails.address.addressLine1}</p>
-          {organisationDetails.address.addressLine2 && <p>{organisationDetails.address.addressLine2}</p>}
-          <p>{organisationDetails.address.city}, {organisationDetails.address.postcode}</p>
-          <p>{organisationDetails.address.country}</p>
-        </section>
-
-        <section>
-          <h2>Registered Numbers</h2>
-          <ul>
-            {organisationDetails.registeredNumbers.map((number, index) => (
-              <li key={index}>{number}</li>
-            ))}
-          </ul>
-        </section>
-
-        <section>
-          <h2>Team Members</h2>
-          <div>
-            {organisationDetails.members.map((member) => (
-              <div key={member.id}>
-                <img 
-                  src={member.photoURL || "/default-avatar.png"} 
-                />
-                <div>
-                  <h3>{member.name} {member.surname} - {member.email}</h3>
-                  <p>{member.role}</p>
-                </div>
-              </div>
-            ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Address Card */}
+          <div className="bg-bg-elevated rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-text-primary">Address</h2>
+            <div className="text-text-secondary">
+              <p>{organisationDetails.address.addressLine1}</p>
+              {organisationDetails.address.addressLine2 && (
+                <p>{organisationDetails.address.addressLine2}</p>
+              )}
+              <p>{organisationDetails.address.city}, {organisationDetails.address.postcode}</p>
+            </div>
           </div>
-          <div>
-            <form onSubmit={handleInviteMember}>
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="Enter email to invite"
-              />
-              <button type="submit">Send Invite</button>
-            </form>
+
+          {/* Registered Numbers Card */}
+          <div className="bg-bg-elevated rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-text-primary">Registered Numbers</h2>
+            <div className="text-text-secondary">
+              {organisationDetails.registeredNumbers.map((number, index) => (
+                <p key={index}>{number}</p>
+              ))}
+            </div>
           </div>
-        </section>
+
+          {/* Team Members Section */}
+          <div className="md:col-span-2">
+            <TeamMembers 
+              organisationDetails={organisationDetails}
+              onInviteMember={handleInviteMember}
+            />
+          </div>
+
+          {/* Patient List Section */}
+          <div className="md:col-span-2">
+            <PatientList 
+              patientList={organisationDetails.patientList || []}
+              onUploadList={handleUploadPatientList}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

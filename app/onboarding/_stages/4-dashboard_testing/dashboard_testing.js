@@ -35,7 +35,9 @@ export function DashboardTesting({ data = {}, updateData }) {
           (endTime.getTime() - startTime.getTime()) / calls.length;
 
         const processedCalls = calls.map((call, index) => ({
-          ...call,
+          patientName: call.patientName,
+          patientDateOfBirth: call.patientDateOfBirth,
+          summaryURL: call.summaryURL,
           viewed: false,
           timestamp: new Date(startTime.getTime() + index * interval),
         }));
