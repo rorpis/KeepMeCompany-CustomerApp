@@ -14,10 +14,12 @@ export function ActiveButton({ onClick, children, type = "button", ...props }) {
   );
 }
 
-export function SecondaryButton({ onClick, children }) {
+export function SecondaryButton({ onClick, children, type = "button", ...props }) {
     return (
       <button 
         onClick={onClick}
+        type={type}
+        {...props}
         className="px-4 py-2 border border-[var(--gray)] text-[var(--gray)] hover:bg-[var(--gray)] hover:text-black font-bold rounded transition-colors duration-200"
       >
         {children}

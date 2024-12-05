@@ -7,8 +7,8 @@ const RemoteMonitoringMainScreen = () => {
 
   const navigationCards = [
     {
-      title: "Live Dashboard",
-      description: "View real-time monitoring data",
+      title: "Dashboard",
+      description: "View past follow ups data",
       path: "/workspace/remote-monitoring/live-dashboard",
     },
     {
