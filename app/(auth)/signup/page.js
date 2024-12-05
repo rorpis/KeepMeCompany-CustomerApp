@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword, sendEmailVerification, deleteUser } fro
 import { auth } from "../../../lib/firebase/config";
 import { useState } from 'react';
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
 
 const SignupForm = () => {
   const [email, setEmail] = useState("");
@@ -69,50 +70,103 @@ const SignupForm = () => {
   };
 
   return (
-    <div>
-      <h2>Signup</h2>
-      <form onSubmit={handleSignup}>
-        <div>
-          <label>Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+    <div className="min-h-screen bg-bg-main flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-text-primary mb-2">
+            Create Your Account
+          </h1>
+          <p className="text-text-secondary mb-8">
+            Join KeepMeCompany to get started
+          </p>
         </div>
-        <div>
-          <label>Surname</label>
-          <input
-            type="text"
-            value={surname}
-            onChange={(e) => setSurname(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Sign Up</button>
-      </form>
 
-      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-      {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
+        <div className="bg-bg-elevated rounded-lg p-8 shadow-sm border border-border-main">
+          <form onSubmit={handleSignup} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-text-primary">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-text-primary">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  value={surname}
+                  onChange={(e) => setSurname(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              />
+            </div>
+
+            {errorMessage && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span className="block sm:inline">{errorMessage}</span>
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+                <span className="block sm:inline">{successMessage}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+            >
+              Sign Up
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-text-secondary">
+              Already have an account?{' '}
+              <Link href="/login" className="text-primary-blue hover:text-primary-blue/80">
+                Login here
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

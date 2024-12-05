@@ -36,6 +36,7 @@ const formatCallData = (call) => {
   };
 
   return {
+    id: call.id,
     patientName: call.patientName || call.patient?.name || 'Unknown',
     patientDateOfBirth: call.patientDateOfBirth || call.patient?.dateOfBirth || 'Unknown',
     summaryURL: call.summaryURL || call.transcriptionUrl || '#',
@@ -45,11 +46,15 @@ const formatCallData = (call) => {
   };
 };
 
-export function TriageDashboard({ calls, markAsViewed }) {
-  const [activeTab, setActiveTab] = useState('new'); // 'new' or 'viewed'
+export function TriageDashboard({ 
+  calls, 
+  markAsViewed, 
+  isRemoteMonitoring = false,
+  onViewResults 
+}) {
+  const [activeTab, setActiveTab] = useState('new');
   const formattedCalls = calls.map(formatCallData);
   
-  // Split calls into viewed and non-viewed
   const viewedCalls = formattedCalls.filter(call => call.viewed);
   const nonViewedCalls = formattedCalls.filter(call => !call.viewed);
 
@@ -59,7 +64,7 @@ export function TriageDashboard({ calls, markAsViewed }) {
         <tr>
           <th className="border border-gray-300 px-4 py-2">Patient Name</th>
           <th className="border border-gray-300 px-4 py-2">Date of Birth</th>
-          <th className="border border-gray-300 px-4 py-2">Summary Link</th>
+          <th className="border border-gray-300 px-4 py-2">Summary</th>
           <th className="border border-gray-300 px-4 py-2">Call Timestamp</th>
           {showMarkAsViewed && <th className="border border-gray-300 px-4 py-2">Actions</th>}
         </tr>
@@ -75,14 +80,23 @@ export function TriageDashboard({ calls, markAsViewed }) {
               {call.patientDateOfBirth}
             </td>
             <td className="border border-gray-300 px-4 py-2 text-black">
-              <a
-                href={call.summaryURL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 underline"
-              >
-                View Summary
-              </a>
+              {isRemoteMonitoring ? (
+                <button
+                  onClick={() => onViewResults(call)}
+                  className="text-primary-blue hover:text-primary-blue/80"
+                >
+                  View Results
+                </button>
+              ) : (
+                <a
+                  href={call.summaryURL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 underline"
+                >
+                  View Summary
+                </a>
+              )}
             </td>
             <td className="border border-gray-300 px-4 py-2 text-black">
               {call.formattedTimestamp}
@@ -105,7 +119,6 @@ export function TriageDashboard({ calls, markAsViewed }) {
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
-      {/* Custom Tabs */}
       <div className="flex w-full mb-4 border-b">
         <button
           className={`px-4 py-2 ${
@@ -129,7 +142,6 @@ export function TriageDashboard({ calls, markAsViewed }) {
         </button>
       </div>
 
-      {/* Tab Content */}
       {activeTab === 'new' && (
         <CallsTable calls={nonViewedCalls} showMarkAsViewed={true} />
       )}

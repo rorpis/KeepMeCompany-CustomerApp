@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 import { TriageDashboard } from '../../../_components/triageDashboard';
-import { listenToConversations } from '../../../../lib/firebase/realTimeMethods';
+import ResultsTable from '../_components/ResultsTable';
+import { listenToConversationsFollowUps } from '../../../../lib/firebase/realTimeMethods';
+import { Dialog } from '@headlessui/react';
 
 const RemoteMonitoringDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
@@ -11,6 +13,8 @@ const RemoteMonitoringDashboardPage = () => {
   const [startDate, setStartDate] = useState(new Date(new Date().setHours(0,0,0,0)).toISOString().slice(0, 16));
   const [endDate, setEndDate] = useState(new Date(new Date().setHours(23,59,59,999)).toISOString().slice(0, 16));
   const [isLoading, setIsLoading] = useState(true);
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState(null);
 
   useEffect(() => {
     if (!organisationDetails?.registeredNumbers?.length) {
@@ -18,17 +22,23 @@ const RemoteMonitoringDashboardPage = () => {
       return;
     }
 
-    console.log(organisationDetails);
-
-    const unsubscribe = listenToConversations(
+    const unsubscribe = listenToConversationsFollowUps(
       organisationDetails.registeredNumbers,
       new Date(startDate),
       new Date(endDate),
       (snapshot) => {
-        const customerConversations = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const customerConversations = snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter(conversation => {
+            // Find matching patient in patientList
+            return organisationDetails.patientList.some(patient => 
+              patient.customerName === conversation.patientName &&
+              patient.dateOfBirth === conversation.patientDateOfBirth
+            );
+          });
         setConversations(customerConversations);
         setIsLoading(false);
       }
@@ -36,6 +46,11 @@ const RemoteMonitoringDashboardPage = () => {
 
     return () => unsubscribe();
   }, [organisationDetails?.registeredNumbers, startDate, endDate]);
+
+  const handleViewResults = (conversation) => {
+    setSelectedConversation(conversation);
+    setIsResultsOpen(true);
+  };
 
   if (isLoading) {
     return <div className="p-6">Loading...</div>;
@@ -74,10 +89,40 @@ const RemoteMonitoringDashboardPage = () => {
 
       <TriageDashboard 
         calls={conversations} 
+        isRemoteMonitoring={true}
+        onViewResults={handleViewResults}
         markAsViewed={(index) => {
           console.log('Marking call as viewed:', conversations[index].id);
+          setConversations(prevConversations => {
+            const updatedConversations = [...prevConversations];
+            updatedConversations[index].viewed = true;
+            return updatedConversations;
+          });
         }} 
       />
+
+      {/* Results Table Dialog */}
+      <Dialog open={isResultsOpen} onClose={() => setIsResultsOpen(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-4xl w-full rounded bg-bg-elevated p-6">
+            <Dialog.Title className="text-xl font-semibold mb-4 text-text-primary">
+              Conversation Results
+            </Dialog.Title>
+            {selectedConversation && (
+              <ResultsTable 
+                callId={selectedConversation.id} 
+                key={selectedConversation.id}
+              />
+            )}
+            <div className="mt-4 flex justify-end">
+              <button onClick={() => setIsResultsOpen(false)} className="px-4 py-2 bg-bg-secondary text-text-primary rounded hover:bg-bg-secondary/80">
+                Close
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 };

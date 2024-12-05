@@ -13,38 +13,35 @@ const TriageDashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let unsubscribe = () => {};
+    if (!organisationDetails?.registeredNumbers?.length) {
+      setIsLoading(false);
+      return;
+    }
 
-    const initializeListener = async () => {
-      if (!organisationDetails?.registeredNumbers?.length) {
+    const unsubscribe = listenToConversations(
+      organisationDetails.registeredNumbers,
+      new Date(startDate),
+      new Date(endDate),
+      (snapshot) => {
+        const customerConversations = snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter(conversation => {
+            // Find matching patient in patientList
+            return organisationDetails.patientList.some(patient => 
+              patient.customerName === conversation.patientName &&
+              patient.dateOfBirth === conversation.patientDateOfBirth
+            );
+          });
+        setConversations(customerConversations);
         setIsLoading(false);
-        return;
       }
-
-      try {
-        unsubscribe = listenToConversations(
-          organisationDetails.registeredNumbers,
-          new Date(startDate),
-          new Date(endDate),
-          (snapshot) => {
-            const customerConversations = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-            setConversations(customerConversations);
-            setIsLoading(false);
-          }
-        );
-      } catch (error) {
-        console.error('Error initializing conversation listener:', error);
-        setIsLoading(false);
-      }
-    };
-
-    initializeListener();
+    );
 
     return () => unsubscribe();
-  }, [organisationDetails?.registeredNumbers, organisationDetails, startDate, endDate]);
+  }, [organisationDetails?.registeredNumbers, startDate, endDate]);
 
   if (isLoading) {
     return <div className="p-6">Loading...</div>;
@@ -85,6 +82,11 @@ const TriageDashboardPage = () => {
         calls={conversations} 
         markAsViewed={(index) => {
           console.log('Marking call as viewed:', conversations[index].id);
+          setConversations(prevConversations => {
+            const updatedConversations = [...prevConversations];
+            updatedConversations[index].viewed = true;
+            return updatedConversations;
+          });
         }} 
       />
     </div>

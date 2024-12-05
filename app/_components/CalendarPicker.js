@@ -1,23 +1,34 @@
 import React, { useState, useEffect } from 'react';
 
-const TwoWeekCalendar = () => {
-  const [selectedDates, setSelectedDates] = useState(new Set());
+const TwoWeekCalendar = ({ onDatesSelect, selectedDates }) => {
+  const [internalSelectedDates, setInternalSelectedDates] = useState(new Set(selectedDates));
   const [calendarDays, setCalendarDays] = useState([]);
   
+  useEffect(() => {
+    setInternalSelectedDates(new Set(selectedDates));
+  }, [selectedDates]);
+
   useEffect(() => {
     const generateTwoWeeks = () => {
       const days = [];
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time part for proper date comparison
       
-      // Start from today
-      for (let i = 0; i < 14; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
+      // Find the most recent Monday (or today if it's Monday)
+      const startDate = new Date(today);
+      const daysSinceMonday = startDate.getDay() === 0 ? 6 : startDate.getDay() - 1;
+      startDate.setDate(startDate.getDate() - daysSinceMonday);
+      
+      // Generate 14 days starting from Monday
+      for (let i = 0; i < 28; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
         days.push({
           date: date,
           dayOfMonth: date.getDate(),
           dayOfWeek: date.toLocaleString('en-US', { weekday: 'short' }),
-          isToday: i === 0
+          isToday: date.getTime() === today.getTime(),
+          isPast: date < today
         });
       }
       return days;
@@ -27,8 +38,11 @@ const TwoWeekCalendar = () => {
   }, []);
 
   const toggleDate = (date) => {
+    // Don't allow selecting past dates
+    if (date < new Date().setHours(0, 0, 0, 0)) return;
+
     const dateStr = date.toDateString();
-    const newSelected = new Set(selectedDates);
+    const newSelected = new Set(internalSelectedDates);
     
     if (newSelected.has(dateStr)) {
       newSelected.delete(dateStr);
@@ -36,17 +50,8 @@ const TwoWeekCalendar = () => {
       newSelected.add(dateStr);
     }
     
-    setSelectedDates(newSelected);
-  };
-
-  const handleStartFollowUps = () => {
-    // Convert Set to Array of dates for easier backend processing
-    const selectedDatesArray = Array.from(selectedDates);
-    console.log('Selected dates for follow-ups:', selectedDatesArray);
-    
-    // Here you would typically send this to your backend
-    // For example:
-    // await axios.post('/api/follow-ups', { dates: selectedDatesArray });
+    setInternalSelectedDates(newSelected);
+    if (onDatesSelect) onDatesSelect(newSelected);
   };
 
   return (
@@ -57,11 +62,11 @@ const TwoWeekCalendar = () => {
         </h2>
       </div>
       
-      <div className="grid grid-cols-7 gap-4 mb-8">
-        {/* Day headers */}
-        {calendarDays.slice(0, 7).map((day, index) => (
+      <div className="grid grid-cols-7 gap-4">
+        {/* Day headers - Starting with Monday */}
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
           <div key={`header-${index}`} className="text-center text-gray-500 font-medium">
-            {day.dayOfWeek}
+            {day}
           </div>
         ))}
         
@@ -70,12 +75,15 @@ const TwoWeekCalendar = () => {
           <button
             key={index}
             onClick={() => toggleDate(day.date)}
+            disabled={day.isPast}
             className={`
               w-12 h-12 rounded-full flex items-center justify-center text-lg
               transition-colors duration-200 relative
-              ${selectedDates.has(day.date.toDateString())
-                ? 'text-black ring-2 ring-red-400 bg-red-100'
-                : 'hover:bg-gray-100'
+              ${day.isPast 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : internalSelectedDates.has(day.date.toDateString())
+                  ? 'text-black ring-2 ring-red-400 bg-red-100'
+                  : 'hover:bg-gray-100'
               }
               ${day.isToday 
                 ? 'ring-2 ring-blue-400 font-bold' 
@@ -91,24 +99,6 @@ const TwoWeekCalendar = () => {
             )}
           </button>
         ))}
-      </div>
-
-      {/* Submit Button */}
-      <div className="text-center">
-        <button
-          onClick={handleStartFollowUps}
-          className={`
-            px-6 py-3 rounded-lg bg-blue-600 text-white font-medium
-            transition-colors duration-200
-            ${selectedDates.size > 0 
-              ? 'hover:bg-blue-700' 
-              : 'opacity-50 cursor-not-allowed'
-            }
-          `}
-          disabled={selectedDates.size === 0}
-        >
-          Start Follow-Ups ({selectedDates.size} dates selected)
-        </button>
       </div>
     </div>
   );
