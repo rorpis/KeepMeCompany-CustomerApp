@@ -8,8 +8,21 @@ import { listenToConversations } from '../../../../lib/firebase/realTimeMethods'
 const TriageDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
   const [conversations, setConversations] = useState([]);
-  const [startDate, setStartDate] = useState(new Date(new Date().setHours(0,0,0,0)).toISOString().slice(0, 16));
-  const [endDate, setEndDate] = useState(new Date(new Date().setHours(23,59,59,999)).toISOString().slice(0, 16));
+  
+  // Set startDate to 1 week ago
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7); // Subtract 7 days
+    date.setHours(0, 0, 0, 0); // Set to start of day
+    return date.toISOString().slice(0, 16);
+  });
+  
+  // Keep endDate as today
+  const [endDate, setEndDate] = useState(() => {
+    const date = new Date();
+    date.setHours(23, 59, 59, 999); // Set to end of day
+    return date.toISOString().slice(0, 16);
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

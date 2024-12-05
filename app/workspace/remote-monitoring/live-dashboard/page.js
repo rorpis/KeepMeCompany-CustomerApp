@@ -10,8 +10,17 @@ import { Dialog } from '@headlessui/react';
 const RemoteMonitoringDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
   const [conversations, setConversations] = useState([]);
-  const [startDate, setStartDate] = useState(new Date(new Date().setHours(0,0,0,0)).toISOString().slice(0, 16));
-  const [endDate, setEndDate] = useState(new Date(new Date().setHours(23,59,59,999)).toISOString().slice(0, 16));
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    date.setHours(0, 0, 0, 0);
+    return date.toISOString().slice(0, 16);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const date = new Date();
+    date.setHours(23, 59, 59, 999);
+    return date.toISOString().slice(0, 16);
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
