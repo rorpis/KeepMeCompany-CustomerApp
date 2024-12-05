@@ -61,6 +61,21 @@ const WorkspaceDashboard = () => {
             </div>
           </Link>
 
+          {/* Scribe Card */}
+          <Link href="#" className="block">
+            <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
+              <h2 className="text-xl font-semibold text-text-primary mb-4">
+                In-Consultation Scribe
+              </h2>
+              <p className="text-text-secondary mb-4">
+                Transcribe your consultations in real-time
+              </p>
+              <span className="text-primary-blue hover:text-primary-blue-hover inline-flex items-center">
+                Go to In-Consultation Scribe →
+              </span>
+            </div>
+          </Link>
+
           {/* Organisation Dashboard Card */}
           <Link href="/workspace/organisation/dashboard" className="block">
             <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
