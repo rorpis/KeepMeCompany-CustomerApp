@@ -7,13 +7,14 @@ import { ActiveButton, SecondaryButton } from '@/app/_components/global_componen
 import { useAuth } from '../../../../lib/firebase/authContext';
 import LoadingSpinner from "../../../_components/LoadingSpinner";
 import TwoWeekCalendar from "../../../_components/CalendarPicker";
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 const callingCodes = [
-  { code: "+44", country: "UK (+44)" },
-  { code: "+33", country: "FR (+33)" },
-  { code: "+34", country: "ES (+34)" },
-  { code: "+49", country: "DE (+49)" },
-  { code: "+56", country: "CL (+56)" },
+  { code: "44", country: "UK (+44)" },
+  { code: "33", country: "FR (+33)" },
+  { code: "34", country: "ES (+34)" },
+  { code: "49", country: "DE (+49)" },
+  { code: "56", country: "CL (+56)" }
 ];
 
 export const FollowUpScheduler = () => {
@@ -29,6 +30,38 @@ export const FollowUpScheduler = () => {
   const [scheduledDates, setScheduledDates] = useState([]);
   const [scheduledTimes, setScheduledTimes] = useState({});
   const [selectedCode, setSelectedCode] = useState("44");
+  const [phoneError, setPhoneError] = useState('');
+
+  const handlePhoneNumberChange = (e) => {
+    let value = e.target.value;
+    
+    // Remove any leading zero
+    if (value.startsWith('0')) {
+      value = value.substring(1);
+    }
+    
+    // Only allow digits
+    value = value.replace(/[^\d]/g, '');
+    
+    setPhoneNumber(value);
+  };
+
+  const validatePhoneNumber = () => {
+    const fullNumber = `+${selectedCode}${phoneNumber}`;
+    const phoneNumberObj = parsePhoneNumberFromString(fullNumber);
+    if (!phoneNumberObj || !phoneNumberObj.isValid()) {
+      setPhoneError('Invalid phone number for the selected country.');
+      return false;
+    }
+    setPhoneError('');
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validatePhoneNumber()) {
+      setCurrentStep(2);
+    }
+  };
 
   const handleScheduleCall = async () => {
     try {
@@ -142,15 +175,15 @@ export const FollowUpScheduler = () => {
             <input
               type="tel"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={handlePhoneNumberChange}
               placeholder="Enter phone number"
               className="w-full bg-bg-secondary border border-border-main rounded-r p-2 text-text-primary"
             />
           </div>
-          
+          {phoneError && <p className="text-red-500">{phoneError}</p>}
           <div className="flex justify-end mt-6">
             <SecondaryButton
-              onClick={() => setCurrentStep(2)}
+              onClick={handleNext}
               disabled={!selectedPatient || !phoneNumber.trim()}
             >
               Next
