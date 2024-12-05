@@ -8,6 +8,13 @@ import { useAuth } from '../../../../lib/firebase/authContext';
 import LoadingSpinner from "../../../_components/LoadingSpinner";
 import TwoWeekCalendar from "../../../_components/CalendarPicker";
 
+const callingCodes = [
+  { code: "+44", country: "UK (+44)" },
+  { code: "+33", country: "FR (+33)" },
+  { code: "+34", country: "ES (+34)" },
+  { code: "+49", country: "DE (+49)" },
+  { code: "+56", country: "CL (+56)" },
+];
 
 export const FollowUpScheduler = () => {
   const router = useRouter();
@@ -21,6 +28,7 @@ export const FollowUpScheduler = () => {
   const [isGeneratingObjectives, setIsGeneratingObjectives] = useState(false);
   const [scheduledDates, setScheduledDates] = useState([]);
   const [scheduledTimes, setScheduledTimes] = useState({});
+  const [selectedCode, setSelectedCode] = useState("44");
 
   const handleScheduleCall = async () => {
     try {
@@ -50,7 +58,7 @@ export const FollowUpScheduler = () => {
           patientDateOfBirth: selectedPatientDetails.dateOfBirth,
           scheduledFor: scheduledFor,
           objectives: objectives,
-          phoneNumber: `+44${phoneNumber}`,
+          phoneNumber: `+${selectedCode}${phoneNumber}`,
         }),
       });
       
@@ -120,15 +128,23 @@ export const FollowUpScheduler = () => {
           </select>
           
           <div className="flex items-center">
-            <span className="bg-bg-secondary border border-border-main rounded-l p-2 text-text-primary">
-              +44
-            </span>
+            <select
+              value={selectedCode}
+              onChange={(e) => setSelectedCode(e.target.value)}
+              className="bg-bg-secondary border border-r-0 border-border-main rounded-l p-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            >
+              {callingCodes.map((code) => (
+                <option key={code.code} value={code.code}>
+                  {code.country}
+                </option>
+              ))}
+            </select>
             <input
               type="tel"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="Enter phone number"
-              className="w-full bg-bg-secondary border-t border-r border-b border-border-main rounded-r p-2 text-text-primary"
+              className="w-full bg-bg-secondary border border-border-main rounded-r p-2 text-text-primary"
             />
           </div>
           
@@ -145,7 +161,7 @@ export const FollowUpScheduler = () => {
 
       {currentStep === 2 && (
         <div className="space-y-6">
-          <h3 className="text-xl font-medium text-text-primary mb-6">Step 2: Set Instructions & Objectives</h3>
+          <h3 className="text-xl font-medium text-text-primary mb-6">Step 2: Generate Objectives or Set them manually</h3>
           
           <div className="grid grid-cols-2 gap-8">
             {/* Left Column - Instructions */}

@@ -62,7 +62,7 @@ const WorkspaceDashboard = () => {
           </Link>
 
           {/* Scribe Card */}
-          <Link href="#" className="block">
+          <Link href="/workspace/scribe" className="block">
             <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
                 In-Consultation Scribe
