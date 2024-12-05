@@ -30,7 +30,7 @@ const VerifyEmail = () => {
             Verify Your Email
           </h1>
           <p className="text-text-secondary mb-8">
-            We've sent you a verification link
+            We&apos;ve sent you a verification link
           </p>
         </div>
 
@@ -68,7 +68,7 @@ const VerifyEmail = () => {
 
         <div className="text-center">
           <p className="text-text-secondary text-sm">
-            Didn't receive the email?{' '}
+            Didn&apos;t receive the email?{' '}
             <button 
               onClick={() => user?.sendEmailVerification()} 
               className="text-primary-blue hover:text-primary-blue/80 font-medium"
