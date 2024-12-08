@@ -11,6 +11,7 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
       lastMessage: '',
       firstObjectives: [],
       lastObjectives: [],
+      patientVerificationEnabled: false,
     },
     remoteMonitoring: {
       firstMessage: '',
@@ -29,6 +30,7 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
           lastMessage: organisationDetails.settings.patientIntake?.lastMessage || '',
           firstObjectives: organisationDetails.settings.patientIntake?.firstObjectives || [],
           lastObjectives: organisationDetails.settings.patientIntake?.lastObjectives || [],
+          patientVerificationEnabled: organisationDetails.settings.patientIntake?.patientVerificationEnabled || false,
         },
         remoteMonitoring: {
           firstMessage: organisationDetails.settings.remoteMonitoring?.firstMessage || '',
@@ -85,6 +87,37 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
     <div className="bg-bg-elevated rounded-lg p-6 space-y-4">
       <h3 className="text-xl font-semibold text-text-primary">{title}</h3>
       
+      {section === 'patientIntake' && (
+        <div className="flex items-center justify-between py-2 border-b border-border-main">
+          <div>
+            <label className="text-sm font-medium text-text-primary">Patient Verification</label>
+            <p className="text-xs text-text-secondary">Enable patient verification step during intake</p>
+          </div>
+          <button
+            onClick={() => setSettings(prev => ({
+              ...prev,
+              patientIntake: {
+                ...prev.patientIntake,
+                patientVerificationEnabled: !prev.patientIntake.patientVerificationEnabled
+              }
+            }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              settings.patientIntake.patientVerificationEnabled 
+                ? 'bg-green-200 focus:ring-green-500' 
+                : 'bg-red-200 focus:ring-red-500'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
+                settings.patientIntake.patientVerificationEnabled 
+                  ? 'translate-x-6 bg-green-600' 
+                  : 'translate-x-1 bg-red-600'
+              }`}
+            />
+          </button>
+        </div>
+      )}
+
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">First Message</label>
