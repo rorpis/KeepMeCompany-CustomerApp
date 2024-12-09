@@ -32,6 +32,10 @@ export const FollowUpScheduler = () => {
   const [selectedCode, setSelectedCode] = useState("44");
   const [phoneError, setPhoneError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  const [activeTab, setActiveTab] = useState('manual');
+  const [selectedPreset, setSelectedPreset] = useState('');
 
   const handlePhoneNumberChange = (e) => {
     let value = e.target.value;
@@ -45,6 +49,30 @@ export const FollowUpScheduler = () => {
     value = value.replace(/[^\d]/g, '');
     
     setPhoneNumber(value);
+  };
+
+  const handleSavePreset = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/save_preset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await user.getIdToken()}`
+        },
+        body: JSON.stringify({
+          organisationId: organisationDetails.id,
+          title: presetName,
+          objectives: objectives,
+        }),
+      });
+  
+      if (response.ok) {
+        setShowPresetModal(false);
+        setPresetName('');
+      }
+    } catch (error) {
+      console.error('Error saving preset:', error);
+    }
   };
 
   const filteredPatients = useMemo(() => {
@@ -269,73 +297,161 @@ export const FollowUpScheduler = () => {
 
       {currentStep === 2 && (
         <div className="space-y-6">
-          <h3 className="text-xl font-medium text-text-primary mb-6">Step 2: Generate Objectives or Set them manually</h3>
+          <h3 className="text-xl font-medium text-text-primary mb-6">Step 2: Set Follow-up Objectives</h3>
           
-          <div className="grid grid-cols-2 gap-8">
-            {/* Left Column - Instructions */}
-            <div>
-              <label className="block text-text-primary font-medium mb-2">Instructions:</label>
-              <textarea
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                placeholder="John has bacterial pneumonia. I\'m prescribing amoxicillin 500mg three times a day for 7 days, along with bed rest and increased fluid intake."
-                className="w-full h-48 bg-bg-secondary border border-border-main rounded p-2 text-text-primary mb-2"
-              />
-              <div className="flex justify-end">
-                <ActiveButton
-                  onClick={handleGenerateObjectives}
-                  disabled={!instructions.trim() || isGeneratingObjectives}
-                >
-                  Generate Objectives
-                </ActiveButton>
-              </div>
-            </div>
-
-            {/* Right Column - Objectives List */}
-            <div className="relative min-h-[16rem]">
-              <label className="block text-text-primary font-medium mb-2">Objectives:</label>
-              {isGeneratingObjectives && (
-                <div className="absolute inset-0 flex items-center justify-center bg-bg-elevated/50 z-10 rounded">
-                  <LoadingSpinner />
-                </div>
-              )}
-              <div className="space-y-2">
-                {objectives.map((objective, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={objective}
-                      onChange={(e) => {
-                        const newObjectives = [...objectives];
-                        newObjectives[index] = e.target.value;
-                        setObjectives(newObjectives);
-                      }}
-                      className="bg-bg-secondary border border-border-main p-2 rounded flex-grow"
-                    />
-                    <button
-                      onClick={() => {
-                        setObjectives(objectives.filter((_, i) => i !== index));
-                      }}
-                      className="text-text-secondary hover:text-text-primary"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <input
-                  type="text"
-                  placeholder="Add new objective..."
-                  className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && e.target.value.trim()) {
-                      setObjectives([...objectives, e.target.value.trim()]);
-                      e.target.value = '';
-                    }
-                  }}
-                />
-              </div>
-            </div>
+          {/* Tabs */}
+          <div className="flex space-x-4 border-b border-border-main mb-6">
+            <button
+              onClick={() => setActiveTab('manual')}
+              className={`pb-2 px-4 ${
+                activeTab === 'manual'
+                  ? 'border-b-2 border-primary-blue text-primary-blue'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Manual Input
+            </button>
+            <button
+              onClick={() => setActiveTab('preset')}
+              className={`pb-2 px-4 ${
+                activeTab === 'preset'
+                  ? 'border-b-2 border-primary-blue text-primary-blue'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Use Preset
+            </button>
           </div>
+
+          {activeTab === 'manual' ? (
+            <div className="grid grid-cols-2 gap-8">
+              {/* Left Column - Instructions */}
+              <div>
+                <label className="block text-text-primary font-medium mb-2">Instructions:</label>
+                <textarea
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder="John has bacterial pneumonia. I'm prescribing amoxicillin 500mg three times a day for 7 days, along with bed rest and increased fluid intake."
+                  className="w-full h-48 bg-bg-secondary border border-border-main rounded p-2 text-text-primary mb-2"
+                />
+                <div className="flex justify-end">
+                  <ActiveButton
+                    onClick={handleGenerateObjectives}
+                    disabled={!instructions.trim() || isGeneratingObjectives}
+                  >
+                    Generate Objectives
+                  </ActiveButton>
+                </div>
+              </div>
+
+              {/* Right Column - Objectives List */}
+              <div className="relative min-h-[16rem]">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-text-primary font-medium">Objectives:</label>
+                  <SecondaryButton
+                    onClick={() => setShowPresetModal(true)}
+                    disabled={objectives.length === 0}
+                  >
+                    Save as Preset
+                  </SecondaryButton>
+                </div>
+                {isGeneratingObjectives && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-bg-elevated/50 z-10 rounded">
+                    <LoadingSpinner />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  {objectives.map((objective, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={objective}
+                        onChange={(e) => {
+                          const newObjectives = [...objectives];
+                          newObjectives[index] = e.target.value;
+                          setObjectives(newObjectives);
+                        }}
+                        className="bg-bg-secondary border border-border-main p-2 rounded flex-grow"
+                      />
+                      <button
+                        onClick={() => setObjectives(objectives.filter((_, i) => i !== index))}
+                        className="text-text-secondary hover:text-text-primary"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="Add new objective..."
+                    className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && e.target.value.trim()) {
+                        setObjectives([...objectives, e.target.value.trim()]);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-text-primary font-medium mb-2">Select Preset:</label>
+                  <select
+                    value={selectedPreset}
+                    onChange={(e) => {
+                      setSelectedPreset(e.target.value);
+                      if (e.target.value) {
+                        const preset = organisationDetails?.settings?.remoteMonitoring?.presets?.find(
+                          p => p.title === e.target.value
+                        );
+                        if (preset) {
+                          setObjectives(preset.objectives);
+                        }
+                      }
+                    }}
+                    className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
+                  >
+                    <option value="">Select a preset</option>
+                    {organisationDetails?.settings?.remoteMonitoring?.presets?.map((preset, index) => (
+                      <option key={index} value={preset.title}>
+                        {preset.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="relative min-h-[16rem]">
+                  <label className="block text-text-primary font-medium mb-2">Selected Objectives:</label>
+                  <div className="space-y-2">
+                    {objectives.map((objective, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={objective}
+                          onChange={(e) => {
+                            const newObjectives = [...objectives];
+                            newObjectives[index] = e.target.value;
+                            setObjectives(newObjectives);
+                          }}
+                          className="bg-bg-secondary border border-border-main p-2 rounded flex-grow"
+                        />
+                        <button
+                          onClick={() => setObjectives(objectives.filter((_, i) => i !== index))}
+                          className="text-text-secondary hover:text-text-primary"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between mt-8">
             <SecondaryButton 
@@ -437,6 +553,35 @@ export const FollowUpScheduler = () => {
             >
               Schedule Follow-ups
             </ActiveButton>
+          </div>
+        </div>
+      )}
+      {/* Save Preset Modal */}
+      {showPresetModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-bg-elevated p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h3 className="text-lg font-medium text-text-primary mb-4">Save as Preset</h3>
+            <input
+              type="text"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder="Enter preset name"
+              className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <SecondaryButton onClick={() => {
+                setShowPresetModal(false);
+                setPresetName('');
+              }}>
+                Cancel
+              </SecondaryButton>
+              <ActiveButton
+                onClick={handleSavePreset}
+                disabled={!presetName.trim()}
+              >
+                Save
+              </ActiveButton>
+            </div>
           </div>
         </div>
       )}
