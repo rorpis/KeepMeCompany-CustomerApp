@@ -7,11 +7,17 @@ import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 import { useUser } from '../../../../lib/contexts/UserContext';
 import { TeamMembers } from '../_components/TeamMembers';
 import { PatientList } from '../_components/PatientList';
+import { Settings } from '../_components/Settings';
 
 const OrganisationDashboard = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const { selectedOrgId, organisationDetails, loading, refreshOrganisationDetails } = useOrganisation();
+  const { 
+    selectedOrgId, 
+    organisationDetails, 
+    loading, 
+    refreshOrganisationDetails: refreshDetails
+  } = useOrganisation();
   const { userDetails, loading: userLoading } = useUser();
 
   useEffect(() => {
@@ -66,13 +72,56 @@ const OrganisationDashboard = () => {
 
       const data = await response.json();
       if (data.upload_message === "success") {
-        await refreshOrganisationDetails();
+        if (typeof refreshDetails === 'function') {
+          await refreshDetails();
+        } else {
+          console.warn('Refresh function not available');
+          // Optionally reload the page as fallback
+          window.location.reload();
+        }
         return true;
       }
       throw new Error(data.message || "Failed to update patient list");
     } catch (error) {
       console.error("Failed to upload patient list:", error);
       throw error;
+    }
+  };
+
+  const handleUpdateSettings = async (settings) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/update_organisation_settings`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ 
+            organisationId: selectedOrgId,
+            settings 
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.update_message === "success") {
+        if (typeof refreshDetails === 'function') {
+          await refreshDetails();
+        } else {
+          console.warn('Refresh function not available');
+          // Optionally reload the page as fallback
+          window.location.reload();
+        }
+        alert("Settings updated successfully!");
+      } else {
+        throw new Error(data.message || "Failed to update settings");
+      }
+    } catch (error) {
+      console.error("Failed to update settings:", error);
+      alert("Failed to update settings");
     }
   };
 
@@ -128,6 +177,14 @@ const OrganisationDashboard = () => {
             <PatientList 
               patientList={organisationDetails.patientList || []}
               onUploadList={handleUploadPatientList}
+            />
+          </div>
+
+          {/* Settings Section */}
+          <div className="md:col-span-2 mt-6">
+            <Settings 
+              organisationDetails={organisationDetails}
+              onUpdateSettings={handleUpdateSettings}
             />
           </div>
         </div>

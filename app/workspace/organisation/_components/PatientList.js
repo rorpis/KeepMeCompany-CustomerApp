@@ -11,7 +11,8 @@ export const PatientList = ({ patientList, onUploadList }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [columnMapping, setColumnMapping] = useState({
     nameColumn: '',
-    dobColumn: ''
+    dobColumn: '',
+    phoneColumn: ''
   });
 
   const handleFileRead = (file) => {
@@ -39,7 +40,8 @@ export const PatientList = ({ patientList, onUploadList }) => {
         const values = line.split(',').map(value => value.trim());
         return {
           customerName: values[headers.indexOf(columnMapping.nameColumn)],
-          dateOfBirth: values[headers.indexOf(columnMapping.dobColumn)]
+          dateOfBirth: values[headers.indexOf(columnMapping.dobColumn)],
+          phoneNumber: columnMapping.phoneColumn ? values[headers.indexOf(columnMapping.phoneColumn)] : null
         };
       });
       setParsedPatients(patients);
@@ -103,14 +105,12 @@ export const PatientList = ({ patientList, onUploadList }) => {
   };
 
   const handleDownloadCsv = () => {
-    // Create CSV content
-    const headers = ['Patient Name,Date of Birth'];
+    const headers = ['Patient Name,Date of Birth,Phone Number'];
     const rows = patientList.map(patient => 
-      `${patient.customerName},${patient.dateOfBirth}`
+      `${patient.customerName},${patient.dateOfBirth},${patient.phoneNumber || ''}`
     );
     const csvContent = [headers, ...rows].join('\n');
-
-    // Create and trigger download
+  
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -150,6 +150,9 @@ export const PatientList = ({ patientList, onUploadList }) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                   Date of Birth
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                  Phone Number
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-main bg-bg-elevated">
@@ -160,6 +163,9 @@ export const PatientList = ({ patientList, onUploadList }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                     {patient.dateOfBirth}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                    {patient.phoneNumber || 'Not provided'}
                   </td>
                 </tr>
               ))}
@@ -239,7 +245,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
                 </div>
 
                 {/* Column Mapping */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-3 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-text-primary mb-1">
                       Name Column
@@ -268,6 +274,25 @@ export const PatientList = ({ patientList, onUploadList }) => {
                       onChange={(e) => setColumnMapping(prev => ({
                         ...prev,
                         dobColumn: e.target.value
+                      }))}
+                      className="w-full rounded-md bg-bg-secondary border-border-main text-text-primary"
+                    >
+                      <option value="">Select column</option>
+                      {csvPreview.headers.map((header, index) => (
+                        <option key={index} value={header}>{header}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1">
+                      Phone Number Column
+                    </label>
+                    <select
+                      value={columnMapping.phoneColumn}
+                      onChange={(e) => setColumnMapping(prev => ({
+                        ...prev,
+                        phoneColumn: e.target.value
                       }))}
                       className="w-full rounded-md bg-bg-secondary border-border-main text-text-primary"
                     >
