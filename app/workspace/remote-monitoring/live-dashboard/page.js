@@ -41,13 +41,13 @@ const RemoteMonitoringDashboardPage = () => {
             id: doc.id,
             ...doc.data(),
           }))
-          .filter(conversation => {
+          /* .filter(conversation => {
             // Find matching patient in patientList
             return organisationDetails.patientList.some(patient => 
               patient.customerName === conversation.patientName &&
               patient.dateOfBirth === conversation.patientDateOfBirth
             );
-          });
+          }); */
         setConversations(customerConversations);
         setIsLoading(false);
       }

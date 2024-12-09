@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
@@ -31,6 +31,7 @@ export const FollowUpScheduler = () => {
   const [scheduledTimes, setScheduledTimes] = useState({});
   const [selectedCode, setSelectedCode] = useState("44");
   const [phoneError, setPhoneError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handlePhoneNumberChange = (e) => {
     let value = e.target.value;
@@ -45,6 +46,16 @@ export const FollowUpScheduler = () => {
     
     setPhoneNumber(value);
   };
+
+  const filteredPatients = useMemo(() => {
+    if (!searchTerm.trim()) return organisationDetails?.patientList || [];
+    
+    return organisationDetails?.patientList?.filter(patient => 
+      `${patient.customerName} - ${patient.dateOfBirth}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    );
+  }, [organisationDetails?.patientList, searchTerm]);
 
   const validatePhoneNumber = () => {
     const fullNumber = `+${selectedCode}${phoneNumber}`;
@@ -78,7 +89,8 @@ export const FollowUpScheduler = () => {
         date: dateStr,
         time: scheduledTimes[dateStr] || "10:00"
       }));
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
+        // const response = await fetch(`http://localhost:8000/customer_app_api/follow_ups/schedule_call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,6 +118,37 @@ export const FollowUpScheduler = () => {
       
     } catch (error) {
       console.error('Error scheduling follow-up:', error);
+    }
+  };
+
+  const handlePatientSelect = (e) => {
+    const patientId = e.target.value;
+    setSelectedPatient(patientId);
+    
+    // Find the selected patient's details
+    const selectedPatientDetails = organisationDetails?.patientList?.find(
+      patient => `${patient.customerName} - ${patient.dateOfBirth}` === patientId
+    );
+
+    // If patient has a stored phone number, pre-populate it
+    if (selectedPatientDetails?.phoneNumber) {
+      const phoneStr = selectedPatientDetails.phoneNumber.replace(/\D/g, ''); // Remove non-digits
+      
+      // Check if the number starts with a country code
+      const matchedCode = callingCodes.find(code => phoneStr.startsWith(code.code));
+      if (matchedCode) {
+        setSelectedCode(matchedCode.code);
+        setPhoneNumber(phoneStr.substring(matchedCode.code.length));
+      } else {
+        // If no country code found, default to selected code and full number
+        setPhoneNumber(phoneStr);
+      }
+      
+      setPhoneError(''); // Clear any existing errors
+    } else {
+      // Reset phone fields if no stored number
+      setPhoneNumber('');
+      setPhoneError('');
     }
   };
 
@@ -147,18 +190,50 @@ export const FollowUpScheduler = () => {
       {currentStep === 1 && (
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-text-primary mb-4">Step 1: Select Patient</h3>
-          <select
-            value={selectedPatient}
-            onChange={(e) => setSelectedPatient(e.target.value)}
-            className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary mb-4"
-          >
-            <option value="">Select a patient</option>
-            {organisationDetails?.patientList?.map((patient, index) => (
-              <option key={index} value={patient.id}>
-                {patient.customerName} - {patient.dateOfBirth}
-              </option>
-            ))}
-          </select>
+          
+          <div className="relative">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search patients..."
+                className="w-full bg-bg-secondary border border-border-main rounded-t p-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            
+            <select
+              value={selectedPatient}
+              onChange={handlePatientSelect}
+              className="w-full bg-bg-secondary border border-t-0 border-border-main rounded-b p-2 text-text-primary max-h-60 focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              size={Math.min(10, filteredPatients.length + 1)}
+            >
+              <option value="">Select a patient</option>
+              {filteredPatients.map((patient, index) => (
+                <option 
+                  key={index} 
+                  value={`${patient.customerName} - ${patient.dateOfBirth}`}
+                  className="py-1 px-2 hover:bg-bg-main"
+                >
+                  {patient.customerName} - {patient.dateOfBirth}
+                </option>
+              ))}
+            </select>
+            
+            {filteredPatients.length === 0 && searchTerm && (
+              <div className="absolute w-full bg-bg-secondary border border-t-0 border-border-main rounded-b p-2 text-text-secondary text-center">
+                No patients found
+              </div>
+            )}
+          </div>
           
           <div className="flex items-center">
             <select
