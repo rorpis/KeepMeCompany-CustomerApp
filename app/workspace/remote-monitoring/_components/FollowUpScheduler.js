@@ -317,6 +317,9 @@ export const FollowUpScheduler = () => {
                   className="py-1 px-2 hover:bg-bg-main"
                 >
                   {patient.customerName} - {patient.dateOfBirth}
+                  {patient.lastScheduled && (
+                    <> | (Last Scheduled: {patient.lastScheduled})</>
+                  )}
                 </option>
               ))}
             </select>

@@ -20,6 +20,13 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
       lastObjectives: [],
     }
   });
+  const variables = [
+    { label: 'Patient Name', value: '@PatientName' },
+    { label: 'Organisation Name', value: '@OrganisationName' },
+  ];
+  const insertVariable = (message, variable) => {
+    return message + ' ' + variable; // Append the variable to the message
+  };
 
   // Initialize settings from organisationDetails when component mounts or when organisationDetails changes
   useEffect(() => {
