@@ -32,10 +32,14 @@ export const FollowUpScheduler = () => {
   const [selectedCode, setSelectedCode] = useState("44");
   const [phoneError, setPhoneError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Preset related state
+  const [activeTab, setActiveTab] = useState('manual');
+  const [selectedPresetIndex, setSelectedPresetIndex] = useState(null);
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [presetName, setPresetName] = useState('');
-  const [activeTab, setActiveTab] = useState('manual');
-  const [selectedPreset, setSelectedPreset] = useState('');
+  const [isEditingPreset, setIsEditingPreset] = useState(false);
+
 
   const handlePhoneNumberChange = (e) => {
     let value = e.target.value;
@@ -72,6 +76,67 @@ export const FollowUpScheduler = () => {
       }
     } catch (error) {
       console.error('Error saving preset:', error);
+    }
+  };
+
+  const handleEditPreset = async () => {
+    try {
+      const updatedPresets = [...organisationDetails.settings.remoteMonitoring.presets];
+      updatedPresets[selectedPresetIndex] = {
+        title: presetName,
+        objectives: objectives,
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/update_presets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await user.getIdToken()}`
+        },
+        body: JSON.stringify({
+          organisationId: organisationDetails.id,
+          presets: updatedPresets,
+        }),
+      });
+
+      if (response.ok) {
+        setShowPresetModal(false);
+        setPresetName('');
+        setIsEditingPreset(false);
+        setSelectedPresetIndex(null);
+        // Refresh organisation details to get updated presets
+      }
+    } catch (error) {
+      console.error('Error updating preset:', error);
+    }
+  };
+
+  const handleDeletePreset = async (presetIndex) => {
+    if (!window.confirm('Are you sure you want to delete this preset?')) return;
+
+    try {
+      const updatedPresets = [...organisationDetails.settings.remoteMonitoring.presets];
+      updatedPresets.splice(presetIndex, 1); // Remove the preset at the specified index
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/update_presets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await user.getIdToken()}`
+        },
+        body: JSON.stringify({
+          organisationId: organisationDetails.id,
+          presets: updatedPresets,
+        }),
+      });
+
+      if (response.ok) {
+        setSelectedPresetIndex(null);
+        setObjectives([]);
+        // Refresh organisation details to get updated presets
+      }
+    } catch (error) {
+      console.error('Error deleting preset:', error);
     }
   };
 
@@ -400,28 +465,58 @@ export const FollowUpScheduler = () => {
               <div className="grid grid-cols-2 gap-8">
                 <div>
                   <label className="block text-text-primary font-medium mb-2">Select Preset:</label>
-                  <select
-                    value={selectedPreset}
-                    onChange={(e) => {
-                      setSelectedPreset(e.target.value);
-                      if (e.target.value) {
-                        const preset = organisationDetails?.settings?.remoteMonitoring?.presets?.find(
-                          p => p.title === e.target.value
-                        );
-                        if (preset) {
-                          setObjectives(preset.objectives);
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedPresetIndex !== null ? selectedPresetIndex : ''}
+                      onChange={(e) => {
+                        const index = e.target.value;
+                        if (index) {
+                          const preset = organisationDetails?.settings?.remoteMonitoring?.presets[index];
+                          setSelectedPresetIndex(index);
+                          setPresetName(preset.title);
+                          setObjectives([...preset.objectives]);
+                        } else {
+                          setSelectedPresetIndex(null);
+                          setPresetName('');
+                          setObjectives([]);
                         }
-                      }
-                    }}
-                    className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
-                  >
-                    <option value="">Select a preset</option>
-                    {organisationDetails?.settings?.remoteMonitoring?.presets?.map((preset, index) => (
-                      <option key={index} value={preset.title}>
-                        {preset.title}
-                      </option>
-                    ))}
-                  </select>
+                      }}
+                      className="flex-grow bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
+                    >
+                      <option value="">Select a preset</option>
+                      {organisationDetails?.settings?.remoteMonitoring?.presets?.map((preset, index) => (
+                        <option key={index} value={index}>
+                          {preset.title}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedPresetIndex !== null && (
+                      <>
+                        <button
+                          onClick={() => {
+                            const preset = organisationDetails?.settings?.remoteMonitoring?.presets[selectedPresetIndex];
+                            if (preset) {
+                              setIsEditingPreset(true);
+                              setShowPresetModal(true);
+                            }
+                          }}
+                          className="p-2 text-text-secondary hover:text-primary-blue"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeletePreset(selectedPresetIndex)}
+                          className="p-2 text-text-secondary hover:text-red-500"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="relative min-h-[16rem]">
@@ -447,6 +542,17 @@ export const FollowUpScheduler = () => {
                         </button>
                       </div>
                     ))}
+                    <input
+                      type="text"
+                      placeholder="Add new objective..."
+                      className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && e.target.value.trim()) {
+                          setObjectives([...objectives, e.target.value.trim()]);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -454,16 +560,12 @@ export const FollowUpScheduler = () => {
           )}
 
           <div className="flex justify-between mt-8">
-            <SecondaryButton 
-              onClick={() => setCurrentStep(1)}
-              className="text-lg px-6 py-3"
-            >
+            <SecondaryButton onClick={() => setCurrentStep(1)}>
               Back
             </SecondaryButton>
             <SecondaryButton
               onClick={() => setCurrentStep(3)}
               disabled={objectives.length === 0}
-              className="text-lg px-6 py-3"
             >
               Confirm Objectives
             </SecondaryButton>
@@ -560,7 +662,9 @@ export const FollowUpScheduler = () => {
       {showPresetModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-bg-elevated p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h3 className="text-lg font-medium text-text-primary mb-4">Save as Preset</h3>
+            <h3 className="text-lg font-medium text-text-primary mb-4">
+              {isEditingPreset ? 'Edit Preset' : 'Save as Preset'}
+            </h3>
             <input
               type="text"
               value={presetName}
@@ -572,14 +676,15 @@ export const FollowUpScheduler = () => {
               <SecondaryButton onClick={() => {
                 setShowPresetModal(false);
                 setPresetName('');
+                setIsEditingPreset(false);
               }}>
                 Cancel
               </SecondaryButton>
               <ActiveButton
-                onClick={handleSavePreset}
+                onClick={isEditingPreset ? handleEditPreset : handleSavePreset}
                 disabled={!presetName.trim()}
               >
-                Save
+                {isEditingPreset ? 'Update' : 'Save'}
               </ActiveButton>
             </div>
           </div>
