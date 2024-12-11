@@ -20,12 +20,101 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
       lastObjectives: [],
     }
   });
+  const [showDropdown, setShowDropdown] = useState({
+    patientIntake: {
+      firstMessage: false,
+      lastMessage: false
+    },
+    remoteMonitoring: {
+      firstMessage: false,
+      lastMessage: false
+    }
+  });
+  
   const variables = [
     { label: 'Patient Name', value: '@PatientName' },
     { label: 'Organisation Name', value: '@OrganisationName' },
   ];
-  const insertVariable = (message, variable) => {
-    return message + ' ' + variable; // Append the variable to the message
+  const [filteredVariables, setFilteredVariables] = useState(variables);
+
+  const insertVariableFirstMessage = (variable, section) => {
+    const newMessage = settings[section].firstMessage.replace(/@.*$/, variable); // Replace the last part after '@'
+    setSettings(prev => ({
+      ...prev,
+      [section]: { ...prev[section], firstMessage: newMessage }
+    }))
+    setShowDropdown(false);
+  };
+
+  const insertVariableLastMessage = (variable, section) => {
+    const newMessage = settings[section].firstMessage.replace(/@.*$/, variable); // Replace the last part after '@'
+    setSettings(prev => ({
+      ...prev,
+      [section]: { ...prev[section], lastMessage: newMessage }
+    }))
+    setShowDropdown(false);
+  };
+
+  const handleInputChangeFirstMessage = (e, section) => {
+
+    const value = e.target.value;
+
+    setSettings(prev => ({
+      ...prev,
+      [section]: { ...prev[section], firstMessage: value }
+    }))
+
+    // Show dropdown if '@' is typed
+    if (value.endsWith('@')) {
+      setShowDropdown(prev => ({
+        ...prev,
+        [section]: { ...prev[section], firstMessage: true }
+      }))
+    } else {
+      setShowDropdown(prev => ({
+        ...prev,
+        [section]: { ...prev[section], firstMessage: false }
+      }))
+    }
+
+    // Filter variables based on input
+    if (value.includes('@')) {
+      const searchTerm = value.split('@').pop();
+      setFilteredVariables(variables.filter(v => v.label.toLowerCase().includes(searchTerm.toLowerCase())));
+    } else {
+      setFilteredVariables(variables);
+    }
+  };
+
+  const handleInputChangeLastMessage = (e, section) => {
+
+    const value = e.target.value;
+
+    setSettings(prev => ({
+      ...prev,
+      [section]: { ...prev[section], lastMessage: value }
+    }))
+
+    // Show dropdown if '@' is typed
+    if (value.endsWith('@')) {
+      setShowDropdown(prev => ({
+        ...prev,
+        [section]: { ...prev[section], lastMessage: true }
+      }))
+    } else {
+      setShowDropdown(prev => ({
+        ...prev,
+        [section]: { ...prev[section], lastMessage: false }
+      }))
+    }
+
+    // Filter variables based on input
+    if (value.includes('@')) {
+      const searchTerm = value.split('@').pop();
+      setFilteredVariables(variables.filter(v => v.label.toLowerCase().includes(searchTerm.toLowerCase())));
+    } else {
+      setFilteredVariables(variables);
+    }
   };
 
   // Initialize settings from organisationDetails when component mounts or when organisationDetails changes
@@ -130,26 +219,46 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
           <label className="block text-sm font-medium text-text-primary mb-2">First Message</label>
           <textarea
             value={settings[section].firstMessage}
-            onChange={(e) => setSettings(prev => ({
-              ...prev,
-              [section]: { ...prev[section], firstMessage: e.target.value }
-            }))}
+            onChange={(e) => handleInputChangeFirstMessage(e, section)}
             className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary"
             rows={3}
           />
+          <div className="px-3 text-gray-500">@ Variables</div>
+          {showDropdown[section] && showDropdown[section].firstMessage && (
+            <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
+              {filteredVariables.map((varItem) => (
+                <div
+                  onClick={() => insertVariableFirstMessage(varItem.value, section)}
+                  className="p-2 hover:bg-gray-200 cursor-pointer"
+                >
+                  {varItem.label}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">Last Message</label>
           <textarea
             value={settings[section].lastMessage}
-            onChange={(e) => setSettings(prev => ({
-              ...prev,
-              [section]: { ...prev[section], lastMessage: e.target.value }
-            }))}
+            onChange={(e) => handleInputChangeLastMessage(e, section)}
             className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary"
             rows={3}
           />
+          <div className="px-3 text-gray-500">@ Variables</div>
+          {showDropdown[section] && showDropdown[section].lastMessage && (
+            <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
+              {filteredVariables.map((varItem) => (
+                <div
+                  onClick={() => insertVariableLastMessage(varItem.value, section)}
+                  className="p-2 hover:bg-gray-200 cursor-pointer"
+                >
+                  {varItem.label}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
