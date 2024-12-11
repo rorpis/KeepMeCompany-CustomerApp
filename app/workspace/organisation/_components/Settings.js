@@ -228,6 +228,7 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
             <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
               {filteredVariables.map((varItem) => (
                 <div
+                  key={section-'firstMessage'-'dropdown'}
                   onClick={() => insertVariableFirstMessage(varItem.value, section)}
                   className="p-2 hover:bg-gray-200 cursor-pointer"
                 >
@@ -251,6 +252,7 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
             <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
               {filteredVariables.map((varItem) => (
                 <div
+                  key={section-'lastMessage'-'dropdown'}
                   onClick={() => insertVariableLastMessage(varItem.value, section)}
                   className="p-2 hover:bg-gray-200 cursor-pointer"
                 >
