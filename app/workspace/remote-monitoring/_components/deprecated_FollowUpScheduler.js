@@ -41,6 +41,8 @@ export const FollowUpScheduler = () => {
   const [presetName, setPresetName] = useState('');
   const [isEditingPreset, setIsEditingPreset] = useState(false);
 
+  const [selectedPatients, setSelectedPatients] = useState(new Map()); // Map of patientId -> {phoneNumber, countryCode}
+  const [selectionMode, setSelectionMode] = useState('single'); // 'single' or 'multiple'
 
   const handlePhoneNumberChange = (e) => {
     let value = e.target.value;
@@ -171,19 +173,18 @@ export const FollowUpScheduler = () => {
   const handleScheduleCall = async () => {
     setIsScheduling(true);
     try {
-      // Get the selected patient details
-      const selectedPatientDetails = organisationDetails?.patientList?.find(
-        patient => `${patient.customerName} - ${patient.dateOfBirth}` === selectedPatient
-      );
-
-      if (!selectedPatientDetails) {
-        throw new Error('Selected patient not found');
-      }
+      const patients = selectionMode === 'single' 
+        ? [{ patientId: selectedPatient, phoneNumber: `+${selectedCode}${phoneNumber}` }]
+        : Array.from(selectedPatients.entries()).map(([patientId, data]) => ({
+            patientId,
+            phoneNumber: `+${data.countryCode}${data.phoneNumber}`
+          }));
 
       const scheduledFor = Array.from(scheduledDates).map(dateStr => ({
         date: dateStr,
         time: scheduledTimes[dateStr] || "10:00"
       }));
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
         method: 'POST',
         headers: {
@@ -192,12 +193,19 @@ export const FollowUpScheduler = () => {
         },
         body: JSON.stringify({
           organisationId: organisationDetails.id,
-          patientId: selectedPatient,
-          patientName: selectedPatientDetails.customerName,
-          patientDateOfBirth: selectedPatientDetails.dateOfBirth,
-          scheduledFor: scheduledFor,
-          objectives: objectives,
-          phoneNumber: `+${selectedCode}${phoneNumber}`,
+          patients: patients.map(p => {
+            const patientDetails = organisationDetails?.patientList?.find(
+              patient => `${patient.customerName} - ${patient.dateOfBirth}` === p.patientId
+            );
+            return {
+              patientId: p.patientId,
+              patientName: patientDetails.customerName,
+              patientDateOfBirth: patientDetails.dateOfBirth,
+              phoneNumber: p.phoneNumber,
+            };
+          }),
+          scheduledFor,
+          objectives,
         }),
       });
       
@@ -278,8 +286,36 @@ export const FollowUpScheduler = () => {
 
       {currentStep === 1 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-text-primary mb-4">Step 1: Select Patient</h3>
+          <h3 className="text-lg font-medium text-text-primary mb-4">Step 1: Select Patient(s)</h3>
           
+          <div className="flex space-x-4 border-b border-border-main mb-6">
+            <button
+              onClick={() => setSelectionMode('single')}
+              className={`pb-2 px-4 ${
+                selectionMode === 'single'
+                  ? 'border-b-2 border-primary-blue text-primary-blue'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Single Patient
+            </button>
+            <button
+              onClick={() => {
+                setSelectionMode('multiple');
+                setSelectedPatients(new Map());
+                setSelectedPatient('');
+                setPhoneNumber('');
+              }}
+              className={`pb-2 px-4 ${
+                selectionMode === 'multiple'
+                  ? 'border-b-2 border-primary-blue text-primary-blue'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Multiple Patients
+            </button>
+          </div>
+
           <div className="relative">
             <div className="relative">
               <input
@@ -300,10 +336,52 @@ export const FollowUpScheduler = () => {
             </div>
             
             <select
-              value={selectedPatient}
-              onChange={handlePatientSelect}
+              value={selectionMode === 'single' ? selectedPatient : ''}
+              onChange={selectionMode === 'single' ? handlePatientSelect : undefined}
+              multiple={selectionMode === 'multiple'}
               className="w-full bg-bg-secondary border border-t-0 border-border-main rounded-b p-2 text-text-primary max-h-60 focus:outline-none focus:ring-2 focus:ring-primary-blue"
               size={Math.min(10, filteredPatients.length + 1)}
+              onClick={(e) => {
+                if (selectionMode === 'multiple') {
+                  const option = e.target;
+                  const patientId = option.value;
+                  if (!patientId) return;
+
+                  const newSelectedPatients = new Map(selectedPatients);
+                  if (selectedPatients.has(patientId)) {
+                    newSelectedPatients.delete(patientId);
+                  } else {
+                    // Find the selected patient's details
+                    const selectedPatientDetails = organisationDetails?.patientList?.find(
+                      patient => `${patient.customerName} - ${patient.dateOfBirth}` === patientId
+                    );
+
+                    let phoneNumber = '';
+                    let countryCode = selectedCode;
+
+                    // If patient has a stored phone number, pre-populate it
+                    if (selectedPatientDetails?.phoneNumber) {
+                      const phoneStr = selectedPatientDetails.phoneNumber.replace(/\D/g, ''); // Remove non-digits
+                      
+                      // Check if the number starts with a country code
+                      const matchedCode = callingCodes.find(code => phoneStr.startsWith(code.code));
+                      if (matchedCode) {
+                        countryCode = matchedCode.code;
+                        phoneNumber = phoneStr.substring(matchedCode.code.length);
+                      } else {
+                        // If no country code found, default to selected code and full number
+                        phoneNumber = phoneStr;
+                      }
+                    }
+
+                    newSelectedPatients.set(patientId, { 
+                      phoneNumber, 
+                      countryCode 
+                    });
+                  }
+                  setSelectedPatients(newSelectedPatients);
+                }
+              }}
             >
               <option value="">Select a patient</option>
               {filteredPatients.map((patient, index) => (
@@ -319,43 +397,117 @@ export const FollowUpScheduler = () => {
                 </option>
               ))}
             </select>
-            
-            {filteredPatients.length === 0 && searchTerm && (
-              <div className="absolute w-full bg-bg-secondary border border-t-0 border-border-main rounded-b p-2 text-text-secondary text-center">
-                No patients found
+          </div>
+
+          {selectionMode === 'single' ? (
+            // Single patient mode - show phone input and next button
+            <>
+              <div className="flex items-center">
+                <select
+                  value={selectedCode}
+                  onChange={(e) => setSelectedCode(e.target.value)}
+                  className="bg-bg-secondary border border-r-0 border-border-main rounded-l p-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                >
+                  {callingCodes.map((code) => (
+                    <option key={code.code} value={code.code}>
+                      {code.country}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={handlePhoneNumberChange}
+                  placeholder="Enter phone number"
+                  className="w-full bg-bg-secondary border border-border-main rounded-r p-2 text-text-primary"
+                />
               </div>
-            )}
-          </div>
-          
-          <div className="flex items-center">
-            <select
-              value={selectedCode}
-              onChange={(e) => setSelectedCode(e.target.value)}
-              className="bg-bg-secondary border border-r-0 border-border-main rounded-l p-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-blue"
-            >
-              {callingCodes.map((code) => (
-                <option key={code.code} value={code.code}>
-                  {code.country}
-                </option>
-              ))}
-            </select>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={handlePhoneNumberChange}
-              placeholder="Enter phone number"
-              className="w-full bg-bg-secondary border border-border-main rounded-r p-2 text-text-primary"
-            />
-          </div>
-          {phoneError && <p className="text-red-500">{phoneError}</p>}
-          <div className="flex justify-end mt-6">
-            <SecondaryButton
-              onClick={handleNext}
-              disabled={!selectedPatient || !phoneNumber.trim()}
-            >
-              Next
-            </SecondaryButton>
-          </div>
+              {phoneError && <p className="text-red-500">{phoneError}</p>}
+              <div className="flex justify-end mt-6">
+                <SecondaryButton
+                  onClick={handleNext}
+                  disabled={!selectedPatient || !phoneNumber.trim()}
+                >
+                  Next
+                </SecondaryButton>
+              </div>
+            </>
+          ) : (
+            // Multiple patients mode - show selected patients list with phone inputs
+            <div className="mt-4 space-y-6">
+              {selectedPatients.size > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-text-primary font-medium">Selected Patients:</h4>
+                  <div className="space-y-2">
+                    {Array.from(selectedPatients.entries()).map(([patientId, data]) => {
+                      const patient = filteredPatients.find(
+                        p => `${p.customerName} - ${p.dateOfBirth}` === patientId
+                      );
+                      return (
+                        <div key={patientId} className="flex items-center gap-4 bg-bg-secondary p-3 rounded border border-border-main">
+                          <div className="flex-grow">
+                            {patient?.customerName} - {patient?.dateOfBirth}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={data.countryCode}
+                              onChange={(e) => {
+                                const newSelectedPatients = new Map(selectedPatients);
+                                newSelectedPatients.set(patientId, {
+                                  ...data,
+                                  countryCode: e.target.value
+                                });
+                                setSelectedPatients(newSelectedPatients);
+                              }}
+                              className="bg-bg-secondary border border-r-0 border-border-main rounded-l p-2 text-text-primary"
+                            >
+                              {callingCodes.map((code) => (
+                                <option key={code.code} value={code.code}>
+                                  {code.country}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="tel"
+                              value={data.phoneNumber}
+                              onChange={(e) => {
+                                const newSelectedPatients = new Map(selectedPatients);
+                                newSelectedPatients.set(patientId, {
+                                  ...data,
+                                  phoneNumber: e.target.value.replace(/[^\d]/g, '')
+                                });
+                                setSelectedPatients(newSelectedPatients);
+                              }}
+                              placeholder="Enter phone number"
+                              className="w-40 bg-bg-secondary border border-border-main rounded-r p-2 text-text-primary"
+                            />
+                            <button
+                              onClick={() => {
+                                const newSelectedPatients = new Map(selectedPatients);
+                                newSelectedPatients.delete(patientId);
+                                setSelectedPatients(newSelectedPatients);
+                              }}
+                              className="text-text-secondary hover:text-text-primary"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-end mt-4">
+                    <SecondaryButton
+                      onClick={handleNext}
+                      disabled={Array.from(selectedPatients.values()).some(data => !data.phoneNumber.trim())}
+                    >
+                      Next
+                    </SecondaryButton>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
