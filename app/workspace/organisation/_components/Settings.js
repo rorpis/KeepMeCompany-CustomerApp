@@ -38,81 +38,109 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
   const [filteredVariables, setFilteredVariables] = useState(variables);
 
   const insertVariableFirstMessage = (variable, section) => {
-    const newMessage = settings[section].firstMessage.replace(/@.*$/, variable); // Replace the last part after '@'
+    const input = document.querySelector(`textarea[name="${section}-firstMessage"]`);
+    const cursorPosition = input.selectionStart;
+    const textBeforeCursor = settings[section].firstMessage.substring(0, cursorPosition);
+    const textAfterCursor = settings[section].firstMessage.substring(cursorPosition);
+    
+    // Find the start of the @ symbol before cursor
+    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+    const newMessage = textBeforeCursor.substring(0, lastAtSymbol) + variable + textAfterCursor;
+    
     setSettings(prev => ({
       ...prev,
       [section]: { ...prev[section], firstMessage: newMessage }
-    }))
-    setShowDropdown(false);
+    }));
+    setShowDropdown(prev => ({
+      ...prev,
+      [section]: { ...prev[section], firstMessage: false }
+    }));
   };
 
   const insertVariableLastMessage = (variable, section) => {
-    const newMessage = settings[section].firstMessage.replace(/@.*$/, variable); // Replace the last part after '@'
+    const input = document.querySelector(`textarea[name="${section}-lastMessage"]`);
+    const cursorPosition = input.selectionStart;
+    const textBeforeCursor = settings[section].lastMessage.substring(0, cursorPosition);
+    const textAfterCursor = settings[section].lastMessage.substring(cursorPosition);
+    
+    // Find the start of the @ symbol before cursor
+    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+    const newMessage = textBeforeCursor.substring(0, lastAtSymbol) + variable + textAfterCursor;
+    
     setSettings(prev => ({
       ...prev,
       [section]: { ...prev[section], lastMessage: newMessage }
-    }))
-    setShowDropdown(false);
+    }));
+    setShowDropdown(prev => ({
+      ...prev,
+      [section]: { ...prev[section], lastMessage: false }
+    }));
   };
 
   const handleInputChangeFirstMessage = (e, section) => {
-
     const value = e.target.value;
-
+    const cursorPosition = e.target.selectionStart;
+    
     setSettings(prev => ({
       ...prev,
       [section]: { ...prev[section], firstMessage: value }
-    }))
+    }));
 
-    // Show dropdown if '@' is typed
-    if (value.endsWith('@')) {
+    // Get text before cursor
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    
+    // Show dropdown if there's an @ symbol before the cursor
+    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+    if (lastAtSymbol !== -1) {
       setShowDropdown(prev => ({
         ...prev,
         [section]: { ...prev[section], firstMessage: true }
-      }))
+      }));
+      
+      // Filter variables based on text after @
+      const searchTerm = textBeforeCursor.substring(lastAtSymbol + 1);
+      setFilteredVariables(variables.filter(v => 
+        v.label.toLowerCase().includes(searchTerm.toLowerCase())
+      ));
     } else {
       setShowDropdown(prev => ({
         ...prev,
         [section]: { ...prev[section], firstMessage: false }
-      }))
-    }
-
-    // Filter variables based on input
-    if (value.includes('@')) {
-      const searchTerm = value.split('@').pop();
-      setFilteredVariables(variables.filter(v => v.label.toLowerCase().includes(searchTerm.toLowerCase())));
-    } else {
+      }));
       setFilteredVariables(variables);
     }
   };
 
   const handleInputChangeLastMessage = (e, section) => {
-
     const value = e.target.value;
-
+    const cursorPosition = e.target.selectionStart;
+    
     setSettings(prev => ({
       ...prev,
       [section]: { ...prev[section], lastMessage: value }
-    }))
+    }));
 
-    // Show dropdown if '@' is typed
-    if (value.endsWith('@')) {
+    // Get text before cursor
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    
+    // Show dropdown if there's an @ symbol before the cursor
+    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+    if (lastAtSymbol !== -1) {
       setShowDropdown(prev => ({
         ...prev,
         [section]: { ...prev[section], lastMessage: true }
-      }))
+      }));
+      
+      // Filter variables based on text after @
+      const searchTerm = textBeforeCursor.substring(lastAtSymbol + 1);
+      setFilteredVariables(variables.filter(v => 
+        v.label.toLowerCase().includes(searchTerm.toLowerCase())
+      ));
     } else {
       setShowDropdown(prev => ({
         ...prev,
         [section]: { ...prev[section], lastMessage: false }
-      }))
-    }
-
-    // Filter variables based on input
-    if (value.includes('@')) {
-      const searchTerm = value.split('@').pop();
-      setFilteredVariables(variables.filter(v => v.label.toLowerCase().includes(searchTerm.toLowerCase())));
-    } else {
+      }));
       setFilteredVariables(variables);
     }
   };
@@ -218,17 +246,18 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">First Message</label>
           <textarea
+            name={`${section}-firstMessage`}
             value={settings[section].firstMessage}
             onChange={(e) => handleInputChangeFirstMessage(e, section)}
             className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary"
             rows={3}
           />
           <div className="px-3 text-gray-500">@ Variables</div>
-          {showDropdown[section] && showDropdown[section].firstMessage && (
+          {showDropdown[section]?.firstMessage && (
             <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
               {filteredVariables.map((varItem) => (
                 <div
-                  key={section-'firstMessage'-'dropdown'}
+                  key={`${section}-first-${varItem.value}`}
                   onClick={() => insertVariableFirstMessage(varItem.value, section)}
                   className="p-2 hover:bg-gray-200 cursor-pointer"
                 >
@@ -242,17 +271,18 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">Last Message</label>
           <textarea
+            name={`${section}-lastMessage`}
             value={settings[section].lastMessage}
             onChange={(e) => handleInputChangeLastMessage(e, section)}
             className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary"
             rows={3}
           />
           <div className="px-3 text-gray-500">@ Variables</div>
-          {showDropdown[section] && showDropdown[section].lastMessage && (
+          {showDropdown[section]?.lastMessage && (
             <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
               {filteredVariables.map((varItem) => (
                 <div
-                  key={section-'lastMessage'-'dropdown'}
+                  key={`${section}-last-${varItem.value}`}
                   onClick={() => insertVariableLastMessage(varItem.value, section)}
                   className="p-2 hover:bg-gray-200 cursor-pointer"
                 >

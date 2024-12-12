@@ -32,6 +32,7 @@ export const FollowUpScheduler = () => {
   const [selectedCode, setSelectedCode] = useState("44");
   const [phoneError, setPhoneError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
 
   // Preset related state
   const [activeTab, setActiveTab] = useState('manual');
@@ -168,6 +169,7 @@ export const FollowUpScheduler = () => {
   };
 
   const handleScheduleCall = async () => {
+    setIsScheduling(true);
     try {
       // Get the selected patient details
       const selectedPatientDetails = organisationDetails?.patientList?.find(
@@ -182,8 +184,7 @@ export const FollowUpScheduler = () => {
         date: dateStr,
         time: scheduledTimes[dateStr] || "10:00"
       }));
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
-        // const response = await fetch(`http://localhost:8000/customer_app_api/follow_ups/schedule_call`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -200,17 +201,12 @@ export const FollowUpScheduler = () => {
         }),
       });
       
-      // Reset form and show success message
-      /* setCurrentStep(1);
-      setSelectedPatient('');
-      setObjectives([]);
-      setScheduledDates(new Set());
-      setScheduledTimes({}); */
-
       router.push('/workspace/remote-monitoring');
       
     } catch (error) {
       console.error('Error scheduling follow-up:', error);
+    } finally {
+      setIsScheduling(false);
     }
   };
 
@@ -318,7 +314,7 @@ export const FollowUpScheduler = () => {
                 >
                   {patient.customerName} - {patient.dateOfBirth}
                   {patient.lastScheduled && (
-                    <> | (Last Scheduled: {patient.lastScheduled})</>
+                    ` | (Last Scheduled: ${new Date(patient.lastScheduled.date).toLocaleDateString()} ${patient.lastScheduled.time})`
                   )}
                 </option>
               ))}
@@ -577,7 +573,12 @@ export const FollowUpScheduler = () => {
       )}
 
       {currentStep === 3 && (
-        <div className="space-y-4">
+        <div className="space-y-4 relative">
+          {isScheduling && (
+            <div className="absolute inset-0 bg-bg-elevated/50 flex items-center justify-center z-10 rounded">
+              <LoadingSpinner />
+            </div>
+          )}
           <h3 className="text-lg font-medium text-text-primary mb-4">Step 3: Schedule Calls</h3>
           
           <div className="grid grid-cols-2 gap-8">
@@ -654,9 +655,9 @@ export const FollowUpScheduler = () => {
             </SecondaryButton>
             <ActiveButton
               onClick={handleScheduleCall}
-              disabled={!scheduledDates.size}
+              disabled={!scheduledDates.size || isScheduling}
             >
-              Schedule Follow-ups
+              {isScheduling ? 'Scheduling...' : 'Schedule Follow-ups'}
             </ActiveButton>
           </div>
         </div>
