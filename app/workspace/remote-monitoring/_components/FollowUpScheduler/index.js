@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,7 @@ import StepThree from './steps/StepThree';
 import PresetModal from './PresetModal';
 import LoadingSpinner from "@/app/_components/LoadingSpinner";
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
+import CallTypeSelector from './steps/CallTypeSelector';
 
 const callingCodes = [
   { code: "44", country: "UK (+44)" },
@@ -144,6 +145,71 @@ export const FollowUpScheduler = () => {
         time: scheduledTimes[dateStr] || "10:00"
       }));
 
+      console.log(scheduledFor);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await user.getIdToken()}`
+        },
+        body: JSON.stringify({
+          organisationId: organisationDetails.id,
+          patients,
+          objectives,
+          scheduledFor
+        }),
+      });
+
+      if (response.ok) {
+        router.push('/workspace/remote-monitoring');
+      }
+    } catch (error) {
+      console.error('Error scheduling calls:', error);
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const handleCallNow = async () => {
+    const currentDate = new Date();
+    const dateStr = currentDate.toLocaleDateString('en-US', { 
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const timeStr = currentDate.toTimeString().slice(0, 5);
+    
+    // Create the scheduled data
+    const dates = new Set([dateStr]);
+    const times = { [dateStr]: timeStr };
+    
+    // Set the state
+    setScheduledDates(dates);
+    setScheduledTimes(times);
+    
+    // Create the scheduledFor array directly instead of relying on state
+    const scheduledFor = Array.from(dates).map(date => ({
+      date: date,
+      time: times[date]
+    }));
+    
+    // Call handleScheduleCall with the data we just created
+    try {
+      setIsScheduling(true);
+      const patients = Array.from(selectedPatients.entries()).map(([patientId, data]) => {
+        const patientDetails = organisationDetails?.patientList?.find(
+          patient => `${patient.customerName} - ${patient.dateOfBirth}` === patientId
+        );
+        return {
+          patientId,
+          patientName: patientDetails.customerName,
+          patientDateOfBirth: patientDetails.dateOfBirth,
+          phoneNumber: `+${data.countryCode}${data.phoneNumber}`
+        };
+      });
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
         method: 'POST',
         headers: {
@@ -176,6 +242,7 @@ export const FollowUpScheduler = () => {
           <span className={`w-4 h-4 rounded-full ${currentStep >= 1 ? 'bg-primary-blue' : 'bg-border-main'}`} />
           <span className={`w-4 h-4 rounded-full ${currentStep >= 2 ? 'bg-primary-blue' : 'bg-border-main'}`} />
           <span className={`w-4 h-4 rounded-full ${currentStep >= 3 ? 'bg-primary-blue' : 'bg-border-main'}`} />
+          <span className={`w-4 h-4 rounded-full ${currentStep >= 4 ? 'bg-primary-blue' : 'bg-border-main'}`} />
         </div>
       </div>
 
@@ -213,12 +280,19 @@ export const FollowUpScheduler = () => {
       )}
 
       {currentStep === 3 && (
+        <CallTypeSelector
+          onCallNow={handleCallNow}
+          onSchedule={() => setCurrentStep(4)}
+        />
+      )}
+
+      {currentStep === 4 && (
         <StepThree
           scheduledDates={scheduledDates}
           setScheduledDates={setScheduledDates}
           scheduledTimes={scheduledTimes}
           setScheduledTimes={setScheduledTimes}
-          onBack={() => setCurrentStep(2)}
+          onBack={() => setCurrentStep(3)}
           onSchedule={handleScheduleCall}
           isScheduling={isScheduling}
         />

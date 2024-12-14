@@ -68,40 +68,42 @@ const TriageDashboardPage = () => {
     <div className="p-6">
       <h2 className="text-xl font-semibold mb-4 text-text-primary">Call Backlog</h2>
       
-      {/* Date Filter Section */}
-      <div className="mb-6 flex gap-4 items-center">
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">From</label>
-          <input
-            type="datetime-local"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
-          />
+      <div className="max-w-[65%] mx-auto">
+        {/* Date Filter Section */}
+        <div className="mb-6 flex gap-4 items-center">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">From</label>
+            <input
+              type="datetime-local"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">To</label>
+            <input
+              type="datetime-local"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate}
+              className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">To</label>
-          <input
-            type="datetime-local"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            min={startDate}
-            className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
-          />
-        </div>
-      </div>
 
-      <TriageDashboard 
-        calls={conversations} 
-        markAsViewed={(index) => {
-          console.log('Marking call as viewed:', conversations[index].id);
-          setConversations(prevConversations => {
-            const updatedConversations = [...prevConversations];
-            updatedConversations[index].viewed = true;
-            return updatedConversations;
-          });
-        }} 
-      />
+        <TriageDashboard 
+          calls={conversations} 
+          markAsViewed={(index) => {
+            console.log('Marking call as viewed:', conversations[index].id);
+            setConversations(prevConversations => {
+              const updatedConversations = [...prevConversations];
+              updatedConversations[index].viewed = true;
+              return updatedConversations;
+            });
+          }} 
+        />
+      </div>
     </div>
   );
 };
