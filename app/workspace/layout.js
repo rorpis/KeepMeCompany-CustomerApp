@@ -64,8 +64,11 @@ const WorkspaceLayout = ({ children }) => {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
+    } else if (!authLoading && user && !userDetails && !userLoading) {
+      // Only redirect if we've tried and failed to load user details
+      router.push('/login');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, userDetails, userLoading, router]);
 
   // Show loading spinner while any context is loading
   if (isLoading) {
