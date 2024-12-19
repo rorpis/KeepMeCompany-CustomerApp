@@ -7,6 +7,7 @@ import { useUser } from "../../lib/contexts/UserContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "../_components/LoadingSpinner";
+import LanguageSelector from "../_components/LanguageSelector";
 
 const WorkspaceLayout = ({ children }) => {
   const { user, logout, loading: authLoading } = useAuth();
@@ -114,23 +115,26 @@ const WorkspaceLayout = ({ children }) => {
               </button>
 
               {/* Organisation Selector */}
-              <select
-                value={selectedOrgId || ""}
-                onChange={handleOrganizationChange}
-                className="bg-bg-secondary text-text-primary rounded-md border-none px-4 py-2 focus:ring-1 focus:ring-primary-blue"
-              >
-                <option value="">Select Organization</option>
-                {organisations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
-                <option value="create-new">Create new organization</option>
-              </select>
+              <div className="flex items-center space-x-4">
+                <select
+                  value={selectedOrgId || ""}
+                  onChange={handleOrganizationChange}
+                  className="bg-bg-secondary text-text-primary rounded-md border-none px-4 py-2 focus:ring-1 focus:ring-primary-blue"
+                >
+                  <option value="">Select Organization</option>
+                  {organisations.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                  <option value="create-new">Create new organization</option>
+                </select>
+              </div>
             </div>
 
             {/* Profile Button and Dropdown */}
-            <div className="relative flex items-center">
+            <div className="relative flex items-center space-x-6">
+              <LanguageSelector />
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="h-8 w-8 rounded-full bg-bg-secondary text-text-primary flex items-center justify-center"
