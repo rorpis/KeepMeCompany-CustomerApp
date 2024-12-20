@@ -7,12 +7,14 @@ import { auth, googleProvider } from "../../../lib/firebase/config";
 import Link from 'next/link';
 import { GoogleAuthProvider } from 'firebase/auth';
 import { useLanguage } from "../../../lib/contexts/LanguageContext";
+import LoadingSpinner from '../../_components/LoadingSpinner';
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -22,6 +24,8 @@ const Login = () => {
         if (user.email.endsWith('@keepmecompanyai.com') || user.emailVerified) {
           router.push("/workspace");
         } else {
+          // Sign out if email is not verified
+          await auth.signOut();
           router.push("/verify-email");
         }
       }
@@ -32,6 +36,7 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       await userCredential.user.reload();
@@ -40,10 +45,13 @@ const Login = () => {
       if (freshUser.email.endsWith('@keepmecompanyai.com') || freshUser.emailVerified) {
         router.push("/workspace");
       } else {
+        await auth.signOut();
         router.push("/verify-email");
       }
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -119,9 +127,14 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+              disabled={isLoading}
+              className="w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 flex items-center justify-center"
             >
-              {t('auth.login.loginButton')}
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : (
+                t('auth.login.loginButton')
+              )}
             </button>
           </form>
 

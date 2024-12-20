@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import { useLanguage } from "../../../lib/contexts/LanguageContext";
+import LoadingSpinner from "../../_components/LoadingSpinner";
 
 const SignupForm = () => {
   const { t } = useLanguage();
@@ -15,10 +16,43 @@ const SignupForm = () => {
   const [surname, setSurname] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    length: false,
+    alphanumeric: false
+  });
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const checkPasswordRequirements = (pass) => {
+    setPasswordRequirements({
+      length: pass.length >= 8,
+      alphanumeric: /^(?=.*[a-zA-Z])(?=.*\d)/.test(pass)
+    });
+  };
+
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    checkPasswordRequirements(newPassword);
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+
+    if (password !== confirmPassword) {
+      setErrorMessage(t('auth.signup.errors.passwordMismatch'));
+      setIsLoading(false);
+      return;
+    }
+
+    if (!passwordRequirements.length || !passwordRequirements.alphanumeric) {
+      setErrorMessage(t('auth.signup.errors.passwordRequirements'));
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -26,18 +60,26 @@ const SignupForm = () => {
       // get user id token
       const idToken = await userCredential.user.getIdToken();
 
-      // send user info to server for database signup
+      // Create userInfo object and log it
       const userInfo = {
         email: email,
         name: name,
         surname: surname
       }
-
+      
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       if (!backendUrl) {
         throw new Error(t('auth.signup.errors.backendNotConfigured'));
       }
       
+      const requestBody = {
+        userInfo: {
+          email: email,
+          name: name,
+          surname: surname
+        }
+      };
+
       const response = await fetch(`${backendUrl}/customer_app_api/user_signup`, {
         method: 'POST',
         headers: {
@@ -45,7 +87,7 @@ const SignupForm = () => {
           'Authorization': `Bearer ${idToken}`,
         },
         credentials: 'include',
-        body: JSON.stringify({ userInfo })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -60,6 +102,10 @@ const SignupForm = () => {
       if (responseData.registration_message === "success") {
         // Send email verification
         await sendEmailVerification(userCredential.user);
+        
+        // Sign out the user
+        await auth.signOut();
+        
         router.push("/verify-email");
       } else {
         // delete user from firebase if signup fails
@@ -68,6 +114,8 @@ const SignupForm = () => {
       }
     } catch (err) {
       setErrorMessage(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -146,7 +194,9 @@ const SignupForm = () => {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                  }}
                   required
                   className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 />
@@ -186,7 +236,35 @@ const SignupForm = () => {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
+                required
+                className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              />
+              
+              <div className="mt-2 space-y-1 text-sm">
+                <div className="flex items-center space-x-2">
+                  <span className={passwordRequirements.length ? "text-green-500" : "text-red-500"}>
+                    {passwordRequirements.length ? "✓" : "×"}
+                  </span>
+                  <span className="text-text-secondary">Minimum 8 characters</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={passwordRequirements.alphanumeric ? "text-green-500" : "text-red-500"}>
+                    {passwordRequirements.alphanumeric ? "✓" : "×"}
+                  </span>
+                  <span className="text-text-secondary">Contains both letters and numbers</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
+                {t('auth.signup.confirmPassword')}
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
               />
@@ -206,9 +284,14 @@ const SignupForm = () => {
 
             <button
               type="submit"
-              className="w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+              disabled={isLoading}
+              className="w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 flex items-center justify-center"
             >
-              {t('auth.signup.signupButton')}
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : (
+                t('auth.signup.signupButton')
+              )}
             </button>
           </form>
 
