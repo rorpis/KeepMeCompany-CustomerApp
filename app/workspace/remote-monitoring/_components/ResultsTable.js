@@ -1,9 +1,12 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "../../../../lib/firebase/authContext";
-
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const ResultsTable = ({ callId }) => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [callData, setCallData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('results');
@@ -26,7 +29,6 @@ const ResultsTable = ({ callId }) => {
         );
         
         const data = await response.json();
-        console.log('API Response:', data);
         setCallData(data);
       } catch (error) {
         console.error('Error fetching call data:', error);
@@ -53,7 +55,10 @@ const ResultsTable = ({ callId }) => {
             }`}
           >
             <div className="font-semibold text-sm text-gray-600 mb-1">
-              {message.role === 'assistant' ? 'Assistant' : 'Patient'}
+              {message.role === 'assistant' 
+                ? t('workspace.remoteMonitoring.results.table.assistant')
+                : t('workspace.remoteMonitoring.results.table.patient')
+              }
             </div>
             <div className="text-black">
               {message.content}
@@ -69,15 +74,20 @@ const ResultsTable = ({ callId }) => {
       <table className="w-full border-collapse rounded-lg overflow-hidden">
         <thead className="bg-gray-800">
           <tr>
-            <th className="p-4 text-left font-semibold w-1/3 text-white">Questions</th>
+            <th className="p-4 text-left font-semibold w-1/3 text-white">
+              {t('workspace.remoteMonitoring.results.table.questions')}
+            </th>
             <th className="p-4 text-center font-semibold text-white">
-              {new Date(callData.conversation_date).toLocaleDateString('en-GB', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
+              {new Date(callData.conversation_date).toLocaleDateString(
+                language === 'es' ? 'es-ES' : 'en-GB', 
+                {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }
+              )}
             </th>
           </tr>
         </thead>
@@ -87,9 +97,7 @@ const ResultsTable = ({ callId }) => {
               <td className="p-4 text-left font-medium text-black">
                 {item.question}
               </td>
-              <td 
-                className={`p-4 text-center text-black ${getCellColor(item.concern_level)}`}
-              >
+              <td className={`p-4 text-center text-black ${getCellColor(item.concern_level)}`}>
                 {item.response}
               </td>
             </tr>
@@ -99,10 +107,9 @@ const ResultsTable = ({ callId }) => {
     </div>
   );
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!callData) return <div>No data available</div>;
+  if (isLoading) return <div>{t('workspace.remoteMonitoring.results.loading')}</div>;
+  if (!callData) return <div>{t('workspace.remoteMonitoring.results.noData')}</div>;
 
-  // Determines cell background color based on concern level
   const getCellColor = (concern) => {
     switch (concern.toUpperCase()) {
       case 'HIGH':
@@ -118,7 +125,6 @@ const ResultsTable = ({ callId }) => {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-      {/* Tabs */}
       <div className="flex border-b mb-6">
         <button
           className={`px-4 py-2 ${
@@ -128,7 +134,7 @@ const ResultsTable = ({ callId }) => {
           }`}
           onClick={() => setActiveTab('results')}
         >
-          Results Summary
+          {t('workspace.remoteMonitoring.results.tabs.results')}
         </button>
         <button
           className={`px-4 py-2 ${
@@ -138,13 +144,13 @@ const ResultsTable = ({ callId }) => {
           }`}
           onClick={() => setActiveTab('conversation')}
         >
-          Conversation History
+          {t('workspace.remoteMonitoring.results.tabs.conversation')}
         </button>
       </div>
 
-      {/* Tab Content */}
       {activeTab === 'results' ? renderResultsTable() : renderConversationHistory()}
     </div>
   );
 };
+
 export default ResultsTable;

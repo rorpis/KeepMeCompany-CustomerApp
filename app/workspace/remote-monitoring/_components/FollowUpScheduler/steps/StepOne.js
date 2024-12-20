@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import { SecondaryButton } from '@/app/_components/global_components';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const callingCodes = [
   { country: 'UK', code: '44', iso2: 'GB' },
@@ -21,6 +22,7 @@ const StepOne = ({
   setSelectedPatients, 
   onNext 
 }) => {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCode, setSelectedCode] = useState('44');
 
@@ -85,7 +87,9 @@ const StepOne = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium text-text-primary mb-4">Select Patient(s)</h3>
+      <h3 className="text-lg font-medium text-text-primary mb-4">
+        {t('workspace.remoteMonitoring.stepOne.title')}
+      </h3>
       
       <div className="grid grid-cols-2 gap-8">
         {/* Left Column - Patient Selection */}
@@ -95,7 +99,7 @@ const StepOne = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search patients..."
+              placeholder={t('workspace.remoteMonitoring.stepOne.searchPlaceholder')}
               className="w-full bg-bg-secondary border border-border-main rounded-t p-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-blue"
             />
             {searchTerm && (
@@ -108,12 +112,10 @@ const StepOne = ({
             )}
           </div>
           
-          <div 
-            className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary h-[calc(100vh-400px)] min-h-[300px] overflow-y-auto focus:outline-none focus:ring-2 focus:ring-primary-blue"
-          >
+          <div className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary h-[calc(100vh-400px)] min-h-[300px] overflow-y-auto focus:outline-none focus:ring-2 focus:ring-primary-blue">
             {filteredPatients.length === 0 ? (
               <div className="text-text-secondary italic p-2">
-                No patients found
+                {t('workspace.remoteMonitoring.stepOne.noPatients')}
               </div>
             ) : (
               filteredPatients.map((patient, index) => {
@@ -144,10 +146,12 @@ const StepOne = ({
 
         {/* Right Column - Selected Patients */}
         <div className="space-y-4">
-          <h4 className="text-text-primary font-medium">Selected Patients:</h4>
+          <h4 className="text-text-primary font-medium">
+            {t('workspace.remoteMonitoring.stepOne.selectedPatientsTitle')}
+          </h4>
           {selectedPatients.size === 0 ? (
             <div className="text-text-secondary italic">
-              No patients selected yet
+              {t('workspace.remoteMonitoring.stepOne.noPatientsSelected')}
             </div>
           ) : (
             <div className="space-y-2 h-[calc(100vh-400px)] min-h-[300px] overflow-y-auto">
@@ -227,7 +231,7 @@ const StepOne = ({
                               });
                               setSelectedPatients(newSelectedPatients);
                             }}
-                            placeholder="Enter phone number"
+                            placeholder={t('workspace.remoteMonitoring.stepOne.phoneNumberPlaceholder')}
                             className={`w-full bg-bg-secondary border ${
                               data.phoneNumber && !data.isValid 
                                 ? 'border-red-500' 
@@ -236,7 +240,7 @@ const StepOne = ({
                           />
                           {data.phoneNumber && !data.isValid && (
                             <div className="text-red-500 text-sm mt-1">
-                              Invalid phone number for selected country
+                              {t('workspace.remoteMonitoring.stepOne.invalidPhoneNumber')}
                             </div>
                           )}
                         </div>
@@ -252,7 +256,7 @@ const StepOne = ({
               onClick={handleNext}
               disabled={!selectedPatients.size || Array.from(selectedPatients.values()).some(data => !data.phoneNumber.trim())}
             >
-              Next
+              {t('workspace.remoteMonitoring.stepOne.nextButton')}
             </SecondaryButton>
           </div>
         </div>

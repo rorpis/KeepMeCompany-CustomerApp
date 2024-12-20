@@ -6,9 +6,11 @@ import { TriageDashboard } from '../../../_components/triageDashboard';
 import ResultsTable from '../_components/ResultsTable';
 import { listenToConversationsFollowUps } from '../../../../lib/firebase/realTimeMethods';
 import { Dialog } from '@headlessui/react';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const RemoteMonitoringDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
+  const { t } = useLanguage();
   const [conversations, setConversations] = useState([]);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -62,21 +64,25 @@ const RemoteMonitoringDashboardPage = () => {
   };
 
   if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('workspace.remoteMonitoring.dashboard.loading')}</div>;
   }
 
   if (!organisationDetails?.registeredNumbers?.length) {
-    return <div className="p-6">No registered numbers found for this organisation.</div>;
+    return <div className="p-6">{t('workspace.remoteMonitoring.dashboard.noNumbers')}</div>;
   }
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold mb-4 text-text-primary">Call Backlog</h2>
+      <h2 className="text-xl font-semibold mb-4 text-text-primary">
+        {t('workspace.remoteMonitoring.dashboard.title')}
+      </h2>
       
       {/* Date Filter Section */}
       <div className="mb-6 flex gap-4 items-center">
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">From</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">
+            {t('workspace.remoteMonitoring.dashboard.dateFilter.from')}
+          </label>
           <input
             type="datetime-local"
             value={startDate}
@@ -85,7 +91,9 @@ const RemoteMonitoringDashboardPage = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">To</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">
+            {t('workspace.remoteMonitoring.dashboard.dateFilter.to')}
+          </label>
           <input
             type="datetime-local"
             value={endDate}
@@ -116,7 +124,7 @@ const RemoteMonitoringDashboardPage = () => {
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-4xl w-full rounded bg-bg-elevated p-6">
             <Dialog.Title className="text-xl font-semibold mb-4 text-text-primary">
-              Conversation Results
+              {t('workspace.remoteMonitoring.dashboard.results.title')}
             </Dialog.Title>
             {selectedConversation && (
               <ResultsTable 
@@ -125,8 +133,11 @@ const RemoteMonitoringDashboardPage = () => {
               />
             )}
             <div className="mt-4 flex justify-end">
-              <button onClick={() => setIsResultsOpen(false)} className="px-4 py-2 bg-bg-secondary text-text-primary rounded hover:bg-bg-secondary/80">
-                Close
+              <button 
+                onClick={() => setIsResultsOpen(false)} 
+                className="px-4 py-2 bg-bg-secondary text-text-primary rounded hover:bg-bg-secondary/80"
+              >
+                {t('workspace.remoteMonitoring.dashboard.results.close')}
               </button>
             </div>
           </Dialog.Panel>

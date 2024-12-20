@@ -1,8 +1,9 @@
- 'use client';
+'use client';
 
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
 import LoadingSpinner from "@/app/_components/LoadingSpinner";
 import TwoWeekCalendar from "@/app/_components/CalendarPicker";
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const StepThree = ({
   scheduledDates,
@@ -13,6 +14,8 @@ const StepThree = ({
   onSchedule,
   isScheduling
 }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-4 relative">
       {isScheduling && (
@@ -20,7 +23,9 @@ const StepThree = ({
           <LoadingSpinner />
         </div>
       )}
-      <h3 className="text-lg font-medium text-text-primary mb-4">Step 3: Schedule Calls</h3>
+      <h3 className="text-lg font-medium text-text-primary mb-4">
+        {t('workspace.remoteMonitoring.stepThree.title')}
+      </h3>
       
       <div className="grid grid-cols-2 gap-8">
         <div>
@@ -39,7 +44,9 @@ const StepThree = ({
           />
         </div>
         <div>
-          <h4 className="text-lg font-medium text-text-primary mb-4">Selected Follow-up Times:</h4>
+          <h4 className="text-lg font-medium text-text-primary mb-4">
+            {t('workspace.remoteMonitoring.stepThree.selectedTimes')}
+          </h4>
           <div className="space-y-2">
             {Array.from(scheduledDates).map((dateStr) => (
               <div 
@@ -47,7 +54,7 @@ const StepThree = ({
                 className="flex items-center justify-between bg-bg-secondary p-3 rounded border border-border-main"
               >
                 <span>
-                  {new Date(dateStr).toLocaleDateString('en-US', { 
+                  {new Date(dateStr).toLocaleDateString(t('language') === 'es' ? 'es-ES' : 'en-US', { 
                     weekday: 'short',
                     month: 'short',
                     day: 'numeric'
@@ -83,7 +90,7 @@ const StepThree = ({
             ))}
             {scheduledDates.size === 0 && (
               <div className="text-text-secondary italic">
-                No dates selected yet
+                {t('workspace.remoteMonitoring.stepThree.noDatesSelected')}
               </div>
             )}
           </div>
@@ -92,13 +99,16 @@ const StepThree = ({
 
       <div className="flex justify-between mt-6">
         <SecondaryButton onClick={onBack}>
-          Back
+          {t('workspace.remoteMonitoring.stepThree.navigation.back')}
         </SecondaryButton>
         <ActiveButton
           onClick={onSchedule}
           disabled={!scheduledDates.size || isScheduling}
         >
-          {isScheduling ? 'Scheduling...' : 'Schedule Follow-ups'}
+          {isScheduling 
+            ? t('workspace.remoteMonitoring.stepThree.navigation.scheduling')
+            : t('workspace.remoteMonitoring.stepThree.navigation.schedule')
+          }
         </ActiveButton>
       </div>
     </div>

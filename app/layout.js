@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "../lib/firebase/authContext";
 import { OrganisationProvider } from "../lib/contexts/OrganisationContext";
 import { UserProvider } from '../lib/contexts/UserContext';
+import { LanguageProvider } from '../lib/contexts/LanguageContext';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,9 +27,11 @@ export default function RootLayout({ children }) {
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
           <UserProvider>
-            <OrganisationProvider>
-              {children}
-            </OrganisationProvider>
+            <LanguageProvider>
+              <OrganisationProvider>
+                {children}
+              </OrganisationProvider>
+            </LanguageProvider>
           </UserProvider>
         </AuthProvider>
       </body>

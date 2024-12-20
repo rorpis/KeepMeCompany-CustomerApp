@@ -4,14 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../lib/firebase/authContext";
 import { useOrganisation } from "../../lib/contexts/OrganisationContext";
 import { useUser } from "../../lib/contexts/UserContext";
+import { useLanguage } from "../../lib/contexts/LanguageContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "../_components/LoadingSpinner";
+import LanguageSelector from "../_components/LanguageSelector";
 
 const WorkspaceLayout = ({ children }) => {
   const { user, logout, loading: authLoading } = useAuth();
   const { userDetails, loading: userLoading } = useUser();
   const { organisations, selectedOrgId, setSelectedOrgId, loading: orgLoading, organisationDetails } = useOrganisation();
+  const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const router = useRouter();
@@ -110,27 +113,30 @@ const WorkspaceLayout = ({ children }) => {
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                <span className="hidden sm:inline">Home</span>
+                <span className="hidden sm:inline">{t('workspace.layout.home')}</span>
               </button>
 
               {/* Organisation Selector */}
-              <select
-                value={selectedOrgId || ""}
-                onChange={handleOrganizationChange}
-                className="bg-bg-secondary text-text-primary rounded-md border-none px-4 py-2 focus:ring-1 focus:ring-primary-blue"
-              >
-                <option value="">Select Organization</option>
-                {organisations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
-                <option value="create-new">Create new organization</option>
-              </select>
+              <div className="flex items-center space-x-4">
+                <select
+                  value={selectedOrgId || ""}
+                  onChange={handleOrganizationChange}
+                  className="bg-bg-secondary text-text-primary rounded-md border-none px-4 py-2 focus:ring-1 focus:ring-primary-blue"
+                >
+                  <option value="">{t('workspace.layout.selectOrg')}</option>
+                  {organisations.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                  <option value="create-new">{t('workspace.layout.createNewOrg')}</option>
+                </select>
+              </div>
             </div>
 
             {/* Profile Button and Dropdown */}
-            <div className="relative flex items-center">
+            <div className="relative flex items-center space-x-6">
+              <LanguageSelector />
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="h-8 w-8 rounded-full bg-bg-secondary text-text-primary flex items-center justify-center"
@@ -152,7 +158,7 @@ const WorkspaceLayout = ({ children }) => {
                     onClick={handleSignOut}
                     className="w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-bg-secondary"
                   >
-                    Sign out
+                    {t('workspace.layout.signOut')}
                   </button>
                 </div>
               )}
@@ -187,28 +193,28 @@ const WorkspaceLayout = ({ children }) => {
               className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
             >
-              Overview
+              {t('workspace.layout.menu.overview')}
             </Link>
             <Link
               href="/workspace/intake"
               className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
             >
-              Patient Intake
+              {t('workspace.layout.menu.patientIntake')}
             </Link>
             <Link
               href="/workspace/remote-monitoring"
               className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
             >
-              Remote Monitoring
+              {t('workspace.layout.menu.remoteMonitoring')}
             </Link>
             <Link
               href="/workspace/organisation/dashboard"
               className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
             >
-              Organisation Dashboard
+              {t('workspace.layout.menu.organisationDashboard')}
             </Link>
           </nav>
         </div>

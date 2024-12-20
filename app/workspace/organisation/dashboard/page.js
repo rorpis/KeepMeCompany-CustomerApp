@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../lib/firebase/authContext";
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 import { useUser } from '../../../../lib/contexts/UserContext';
+import { useLanguage } from '../../../../lib/contexts/LanguageContext';
 import { TeamMembers } from '../_components/TeamMembers';
 import { PatientList } from '../_components/PatientList';
 import { Settings } from '../_components/Settings';
@@ -12,6 +13,7 @@ import { Settings } from '../_components/Settings';
 const OrganisationDashboard = () => {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { 
     selectedOrgId, 
     organisationDetails, 
@@ -126,8 +128,8 @@ const OrganisationDashboard = () => {
   };
 
   if (!selectedOrgId) return null;
-  if (loading) return <div>Loading...</div>;
-  if (!organisationDetails) return <div>Organisation not found</div>;
+  if (loading) return <div>{t('workspace.organisation.dashboard.loading')}</div>;
+  if (!organisationDetails) return <div>{t('workspace.organisation.dashboard.notFound')}</div>;
 
   return (
     <div className="min-h-screen bg-bg-main">
@@ -144,7 +146,9 @@ const OrganisationDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Address Card */}
           <div className="bg-bg-elevated rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-text-primary">Address</h2>
+            <h2 className="text-xl font-semibold mb-4 text-text-primary">
+              {t('workspace.organisation.dashboard.address.title')}
+            </h2>
             <div className="text-text-secondary">
               <p>{organisationDetails.address.addressLine1}</p>
               {organisationDetails.address.addressLine2 && (
@@ -156,7 +160,9 @@ const OrganisationDashboard = () => {
 
           {/* Registered Numbers Card */}
           <div className="bg-bg-elevated rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-text-primary">Registered Numbers</h2>
+            <h2 className="text-xl font-semibold mb-4 text-text-primary">
+              {t('workspace.organisation.dashboard.registeredNumbers.title')}
+            </h2>
             <div className="text-text-secondary">
               {organisationDetails.registeredNumbers.map((number, index) => (
                 <p key={index}>{number}</p>

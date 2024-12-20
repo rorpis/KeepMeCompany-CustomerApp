@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { SecondaryButton, ActiveButton } from '@/app/_components/global_components';
 import LoadingSpinner from "@/app/_components/LoadingSpinner";
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const StepTwo = ({ 
   objectives,
@@ -24,6 +25,8 @@ const StepTwo = ({
   isGeneratingObjectives,
   setIsGeneratingObjectives
 }) => {
+  const { t } = useLanguage();
+
   const handleGenerateObjectives = async () => {
     if (!instructions.trim()) return;
     
@@ -50,7 +53,9 @@ const StepTwo = ({
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-medium text-text-primary mb-6">Step 2: Set Follow-up Objectives</h3>
+      <h3 className="text-xl font-medium text-text-primary mb-6">
+        {t('workspace.remoteMonitoring.stepTwo.title')}
+      </h3>
       
       {/* Tabs */}
       <div className="flex space-x-4 border-b border-border-main mb-6">
@@ -62,7 +67,7 @@ const StepTwo = ({
               : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          Manual Input
+          {t('workspace.remoteMonitoring.stepTwo.tabs.manual')}
         </button>
         <button
           onClick={() => setActiveTab('preset')}
@@ -72,7 +77,7 @@ const StepTwo = ({
               : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          Use Preset
+          {t('workspace.remoteMonitoring.stepTwo.tabs.preset')}
         </button>
       </div>
 
@@ -80,11 +85,13 @@ const StepTwo = ({
         <div className="grid grid-cols-2 gap-8">
           {/* Left Column - Instructions */}
           <div>
-            <label className="block text-text-primary font-medium mb-2">Instructions:</label>
+            <label className="block text-text-primary font-medium mb-2">
+              {t('workspace.remoteMonitoring.stepTwo.manual.instructionsLabel')}
+            </label>
             <textarea
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              placeholder="John has bacterial pneumonia. I'm prescribing amoxicillin 500mg three times a day for 7 days, along with bed rest and increased fluid intake."
+              placeholder={t('workspace.remoteMonitoring.stepTwo.manual.instructionsPlaceholder')}
               className="w-full h-48 bg-bg-secondary border border-border-main rounded p-2 text-text-primary mb-2"
             />
             <div className="flex justify-end">
@@ -92,7 +99,7 @@ const StepTwo = ({
                 onClick={handleGenerateObjectives}
                 disabled={!instructions.trim() || isGeneratingObjectives}
               >
-                Generate Objectives
+                {t('workspace.remoteMonitoring.stepTwo.manual.generateButton')}
               </ActiveButton>
             </div>
           </div>
@@ -100,12 +107,14 @@ const StepTwo = ({
           {/* Right Column - Objectives List */}
           <div className="relative min-h-[16rem]">
             <div className="flex justify-between items-center mb-2">
-              <label className="text-text-primary font-medium">Objectives:</label>
+              <label className="text-text-primary font-medium">
+                {t('workspace.remoteMonitoring.stepTwo.manual.objectivesLabel')}
+              </label>
               <SecondaryButton
                 onClick={() => onShowPresetModal()}
                 disabled={objectives.length === 0}
               >
-                Save as Preset
+                {t('workspace.remoteMonitoring.stepTwo.manual.savePresetButton')}
               </SecondaryButton>
             </div>
             {isGeneratingObjectives && (
@@ -136,7 +145,7 @@ const StepTwo = ({
               ))}
               <input
                 type="text"
-                placeholder="Add new objective..."
+                placeholder={t('workspace.remoteMonitoring.stepTwo.manual.addObjectivePlaceholder')}
                 className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter' && e.target.value.trim()) {
@@ -152,7 +161,9 @@ const StepTwo = ({
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-8">
             <div>
-              <label className="block text-text-primary font-medium mb-2">Select Preset:</label>
+              <label className="block text-text-primary font-medium mb-2">
+                {t('workspace.remoteMonitoring.stepTwo.preset.selectPresetLabel')}
+              </label>
               <div className="flex items-center gap-2">
                 <select
                   value={selectedPresetIndex !== null ? selectedPresetIndex : ''}
@@ -171,7 +182,9 @@ const StepTwo = ({
                   }}
                   className="flex-grow bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
                 >
-                  <option value="">Select a preset</option>
+                  <option value="">
+                    {t('workspace.remoteMonitoring.stepTwo.preset.selectPresetPlaceholder')}
+                  </option>
                   {organisationDetails?.settings?.remoteMonitoring?.presets?.map((preset, index) => (
                     <option key={index} value={index}>
                       {preset.title}
@@ -208,7 +221,9 @@ const StepTwo = ({
             </div>
 
             <div className="relative min-h-[16rem]">
-              <label className="block text-text-primary font-medium mb-2">Selected Objectives:</label>
+              <label className="block text-text-primary font-medium mb-2">
+                {t('workspace.remoteMonitoring.stepTwo.preset.selectedObjectivesLabel')}
+              </label>
               <div className="space-y-2">
                 {objectives.map((objective, index) => (
                   <div key={index} className="flex items-center gap-2">
@@ -232,7 +247,7 @@ const StepTwo = ({
                 ))}
                 <input
                   type="text"
-                  placeholder="Add new objective..."
+                  placeholder={t('workspace.remoteMonitoring.stepTwo.preset.addObjectivePlaceholder')}
                   className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && e.target.value.trim()) {
@@ -249,13 +264,13 @@ const StepTwo = ({
 
       <div className="flex justify-between mt-8">
         <SecondaryButton onClick={onBack}>
-          Back
+          {t('workspace.remoteMonitoring.stepTwo.navigation.back')}
         </SecondaryButton>
         <SecondaryButton
           onClick={onNext}
           disabled={objectives.length === 0}
         >
-          Confirm Objectives
+          {t('workspace.remoteMonitoring.stepTwo.navigation.confirm')}
         </SecondaryButton>
       </div>
     </div>

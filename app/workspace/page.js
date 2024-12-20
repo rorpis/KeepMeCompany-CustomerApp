@@ -3,16 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useUser } from "../../lib/contexts/UserContext";
 import { useOrganisation } from "../../lib/contexts/OrganisationContext";
+import { useLanguage } from "../../lib/contexts/LanguageContext";
 import Link from "next/link";
 
 const WorkspaceDashboard = () => {
   const { userDetails, loading: userLoading } = useUser();
   const { selectedOrg, organisationDetails, loading: orgLoading } = useOrganisation();
+  const { t } = useLanguage();
   const router = useRouter();
 
   if (userLoading || orgLoading) {
     return <div>Loading...</div>;
   }
+
+  const welcomeMessage = t('workspace.welcome')
+    .replace('{name}', userDetails?.name || '')
+    .replace('{organisation}', organisationDetails?.name || '');
 
   return (
     <div className="min-h-screen bg-bg-main px-4 sm:px-6 lg:px-8 py-12">
@@ -20,7 +26,7 @@ const WorkspaceDashboard = () => {
       <div className="max-w-7xl mx-auto mb-12">
         <div className="bg-bg-elevated rounded-lg p-8">
           <h1 className="text-2xl font-bold text-text-primary mb-2">
-            Hi {userDetails?.name}, Welcome to {organisationDetails?.name}
+            {welcomeMessage}
           </h1>
           <p className="text-text-secondary">
             {organisationDetails?.address?.addressLine1}
@@ -35,13 +41,13 @@ const WorkspaceDashboard = () => {
           <Link href="/workspace/intake" className="block">
             <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
-                Patient Intake
+                {t('workspace.cards.patientIntake.title')}
               </h2>
               <p className="text-text-secondary mb-4">
-                View and Manage your Inbound Calls
+                {t('workspace.cards.patientIntake.description')}
               </p>
               <span className="text-primary-blue hover:text-primary-blue-hover inline-flex items-center">
-                Go to Patient Intake →
+                {t('workspace.cards.patientIntake.action')}
               </span>
             </div>
           </Link>
@@ -50,13 +56,13 @@ const WorkspaceDashboard = () => {
           <Link href="/workspace/remote-monitoring" className="block">
             <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
-                Patient Remote Monitoring
+                {t('workspace.cards.remoteMonitoring.title')}
               </h2>
               <p className="text-text-secondary mb-4">
-                View and Manage your Outbound Calls
+                {t('workspace.cards.remoteMonitoring.description')}
               </p>
               <span className="text-primary-blue hover:text-primary-blue-hover inline-flex items-center">
-                Go to Patient Remote Monitoring →
+                {t('workspace.cards.remoteMonitoring.action')}
               </span>
             </div>
           </Link>
@@ -65,13 +71,13 @@ const WorkspaceDashboard = () => {
           <Link href="/workspace/scribe" className="block">
             <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
-                In-Consultation Scribe
+                {t('workspace.cards.scribe.title')}
               </h2>
               <p className="text-text-secondary mb-4">
-                Transcribe your consultations in real-time
+                {t('workspace.cards.scribe.description')}
               </p>
               <span className="text-primary-blue hover:text-primary-blue-hover inline-flex items-center">
-                Go to In-Consultation Scribe →
+                {t('workspace.cards.scribe.action')}
               </span>
             </div>
           </Link>
@@ -80,13 +86,13 @@ const WorkspaceDashboard = () => {
           <Link href="/workspace/organisation/dashboard" className="block">
             <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
-                Organisation Dashboard
+                {t('workspace.cards.organisation.title')}
               </h2>
               <p className="text-text-secondary mb-4">
-                View analytics and manage organisation settings
+                {t('workspace.cards.organisation.description')}
               </p>
               <span className="text-primary-blue hover:text-primary-blue-hover inline-flex items-center">
-                Go to Organisation Dashboard →
+                {t('workspace.cards.organisation.action')}
               </span>
             </div>
           </Link>

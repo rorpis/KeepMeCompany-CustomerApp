@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLanguage } from '../../lib/contexts/LanguageContext';
 
 // Standardize the data structure with a formatter helper
 const formatCallData = (call) => {
@@ -53,6 +54,7 @@ export function TriageDashboard({
   onViewResults 
 }) {
   const [activeTab, setActiveTab] = useState('new');
+  const { t } = useLanguage();
   const formattedCalls = calls.map(formatCallData);
   
   const viewedCalls = formattedCalls.filter(call => call.viewed);
@@ -62,11 +64,23 @@ export function TriageDashboard({
     <table className="table-auto border-collapse border border-gray-300 w-full">
       <thead>
         <tr>
-          <th className="border border-gray-300 px-4 py-2">Patient Name</th>
-          <th className="border border-gray-300 px-4 py-2">Date of Birth</th>
-          <th className="border border-gray-300 px-4 py-2">Summary</th>
-          <th className="border border-gray-300 px-4 py-2">Call Timestamp</th>
-          {showMarkAsViewed && <th className="border border-gray-300 px-4 py-2">Actions</th>}
+          <th className="border border-gray-300 px-4 py-2">
+            {t('workspace.triageDashboard.table.patientName')}
+          </th>
+          <th className="border border-gray-300 px-4 py-2">
+            {t('workspace.triageDashboard.table.dateOfBirth')}
+          </th>
+          <th className="border border-gray-300 px-4 py-2">
+            {t('workspace.triageDashboard.table.summary')}
+          </th>
+          <th className="border border-gray-300 px-4 py-2">
+            {t('workspace.triageDashboard.table.callTimestamp')}
+          </th>
+          {showMarkAsViewed && 
+            <th className="border border-gray-300 px-4 py-2">
+              {t('workspace.triageDashboard.table.actions')}
+            </th>
+          }
         </tr>
       </thead>
       <tbody>
@@ -85,7 +99,7 @@ export function TriageDashboard({
                   onClick={() => onViewResults(call)}
                   className="text-primary-blue hover:text-primary-blue/80"
                 >
-                  View Results
+                  {t('workspace.triageDashboard.table.viewResults')}
                 </button>
               ) : (
                 <a
@@ -94,7 +108,7 @@ export function TriageDashboard({
                   rel="noopener noreferrer"
                   className="text-blue-500 underline"
                 >
-                  View Summary
+                  {t('workspace.triageDashboard.table.viewSummary')}
                 </a>
               )}
             </td>
@@ -107,7 +121,7 @@ export function TriageDashboard({
                   onClick={() => markAsViewed(index)}
                   className="bg-blue-500 text-white px-4 py-2 rounded"
                 >
-                  Mark as Viewed
+                  {t('workspace.triageDashboard.table.markAsViewed')}
                 </button>
               </td>
             )}
@@ -128,7 +142,7 @@ export function TriageDashboard({
           }`}
           onClick={() => setActiveTab('new')}
         >
-          New Calls ({nonViewedCalls.length})
+          {t('workspace.triageDashboard.tabs.newCalls')} ({nonViewedCalls.length})
         </button>
         <button
           className={`px-4 py-2 ${
@@ -138,7 +152,7 @@ export function TriageDashboard({
           }`}
           onClick={() => setActiveTab('viewed')}
         >
-          Viewed Calls ({viewedCalls.length})
+          {t('workspace.triageDashboard.tabs.viewedCalls')} ({viewedCalls.length})
         </button>
       </div>
 

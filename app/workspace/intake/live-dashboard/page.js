@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
+import { useLanguage } from '../../../../lib/contexts/LanguageContext';
 import { TriageDashboard } from '../../../_components/triageDashboard';
 import { listenToConversations } from '../../../../lib/firebase/realTimeMethods';
 
 const TriageDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
+  const { t } = useLanguage();
   const [conversations, setConversations] = useState([]);
   
   // Set startDate to 1 week ago
@@ -57,22 +59,26 @@ const TriageDashboardPage = () => {
   }, [organisationDetails?.registeredNumbers, startDate, endDate]);
 
   if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('workspace.intake.liveDashboard.loading')}</div>;
   }
 
   if (!organisationDetails?.registeredNumbers?.length) {
-    return <div className="p-6">No registered numbers found for this organisation.</div>;
+    return <div className="p-6">{t('workspace.intake.liveDashboard.noNumbers')}</div>;
   }
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold mb-4 text-text-primary">Call Backlog</h2>
+      <h2 className="text-xl font-semibold mb-4 text-text-primary">
+        {t('workspace.intake.liveDashboard.title')}
+      </h2>
       
       <div className="max-w-[65%] mx-auto">
         {/* Date Filter Section */}
         <div className="mb-6 flex gap-4 items-center">
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">From</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              {t('workspace.intake.liveDashboard.dateFilter.from')}
+            </label>
             <input
               type="datetime-local"
               value={startDate}
@@ -81,7 +87,9 @@ const TriageDashboardPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">To</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              {t('workspace.intake.liveDashboard.dateFilter.to')}
+            </label>
             <input
               type="datetime-local"
               value={endDate}
