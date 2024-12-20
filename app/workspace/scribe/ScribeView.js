@@ -77,7 +77,15 @@ Plan:
   const handleTranslationCopy = () => handleCopyContent(translationRef, 'translationCopyButton');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
+      <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-[1px] z-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-6xl font-semibold text-gray-700">
+            {t('workspace.scribe.comingSoon')}
+          </p>
+        </div>
+      </div>
+
       <div className="bg-black/80">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
           <div className="flex items-center space-x-4">
