@@ -11,8 +11,8 @@ export default function LanguageSelector() {
       onChange={(e) => setLanguage(e.target.value)}
       className="bg-bg-secondary text-text-primary rounded-md border-none px-4 py-2 focus:ring-1 focus:ring-primary-blue"
     >
-      <option value="en">English</option>
-      <option value="es">Español</option>
+      <option value="en">🇬🇧</option>
+      <option value="es">🇪🇸</option>
     </select>
   );
 } 
