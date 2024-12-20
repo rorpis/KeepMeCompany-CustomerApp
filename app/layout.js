@@ -19,6 +19,9 @@ const geistMono = localFont({
 export const metadata = {
   title: "KeepMeCompany",
   description: "AI Phone Services",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({ children }) {
