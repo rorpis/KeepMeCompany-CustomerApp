@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 import { listenToQueueCalls } from '../../../../lib/firebase/realTimeMethods';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const UpcomingCallsPage = () => {
   const { selectedOrgId } = useOrganisation();
+  const { t, language } = useLanguage();
   const [calls, setCalls] = useState([]);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'queue', 'processed'
+  const [activeTab, setActiveTab] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -72,15 +74,16 @@ const UpcomingCallsPage = () => {
   });
 
   if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('workspace.remoteMonitoring.upcomingCalls.loading')}</div>;
   }
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold mb-4 text-text-primary">Upcoming Follow-up Calls</h2>
+      <h2 className="text-xl font-semibold mb-4 text-text-primary">
+        {t('workspace.remoteMonitoring.upcomingCalls.title')}
+      </h2>
       
       <div className="max-w-[65%] mx-auto">
-        {/* Tabs */}
         <div className="flex space-x-4 border-b border-border-main mb-6">
           <button
             onClick={() => setActiveTab('all')}
@@ -90,7 +93,7 @@ const UpcomingCallsPage = () => {
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            All Calls
+            {t('workspace.remoteMonitoring.upcomingCalls.tabs.all')}
           </button>
           <button
             onClick={() => setActiveTab('queue')}
@@ -100,7 +103,7 @@ const UpcomingCallsPage = () => {
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            In Queue
+            {t('workspace.remoteMonitoring.upcomingCalls.tabs.queue')}
           </button>
           <button
             onClick={() => setActiveTab('processed')}
@@ -110,21 +113,32 @@ const UpcomingCallsPage = () => {
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            Processed
+            {t('workspace.remoteMonitoring.upcomingCalls.tabs.processed')}
           </button>
         </div>
 
-        {/* Calls Table */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-bg-secondary">
-                <th className="border border-border-main px-4 py-2 text-left text-text-primary">Patient Name</th>
-                <th className="border border-border-main px-4 py-2 text-left text-text-primary">Date of Birth</th>
-                <th className="border border-border-main px-4 py-2 text-left text-text-primary">Phone Number</th>
-                <th className="border border-border-main px-4 py-2 text-left text-text-primary">Enqueued At</th>
-                <th className="border border-border-main px-4 py-2 text-left text-text-primary">Status</th>
-                <th className="border border-border-main px-4 py-2 text-left text-text-primary">Call SID</th>
+                <th className="border border-border-main px-4 py-2 text-left text-text-primary">
+                  {t('workspace.remoteMonitoring.upcomingCalls.table.patientName')}
+                </th>
+                <th className="border border-border-main px-4 py-2 text-left text-text-primary">
+                  {t('workspace.remoteMonitoring.upcomingCalls.table.dateOfBirth')}
+                </th>
+                <th className="border border-border-main px-4 py-2 text-left text-text-primary">
+                  {t('workspace.remoteMonitoring.upcomingCalls.table.phoneNumber')}
+                </th>
+                <th className="border border-border-main px-4 py-2 text-left text-text-primary">
+                  {t('workspace.remoteMonitoring.upcomingCalls.table.enqueuedAt')}
+                </th>
+                <th className="border border-border-main px-4 py-2 text-left text-text-primary">
+                  {t('workspace.remoteMonitoring.upcomingCalls.table.status')}
+                </th>
+                <th className="border border-border-main px-4 py-2 text-left text-text-primary">
+                  {t('workspace.remoteMonitoring.upcomingCalls.table.callSid')}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -149,8 +163,8 @@ const UpcomingCallsPage = () => {
                   <td className="border border-border-main px-4 py-2 text-gray-900">
                     {call.enqueued_at ? (
                       typeof call.enqueued_at.toDate === 'function' 
-                        ? call.enqueued_at.toDate().toLocaleString()
-                        : new Date(call.enqueued_at).toLocaleString()
+                        ? call.enqueued_at.toDate().toLocaleString(language === 'es' ? 'es-ES' : 'en-GB')
+                        : new Date(call.enqueued_at).toLocaleString(language === 'es' ? 'es-ES' : 'en-GB')
                     ) : '-'}
                   </td>
                   <td className="border border-border-main px-4 py-2">
@@ -161,7 +175,10 @@ const UpcomingCallsPage = () => {
                           : 'bg-yellow-100 text-yellow-800'
                       }`}
                     >
-                      {call.status === 'processed' ? 'Processed' : 'In Queue'}
+                      {call.status === 'processed' 
+                        ? t('workspace.remoteMonitoring.upcomingCalls.table.statuses.processed')
+                        : t('workspace.remoteMonitoring.upcomingCalls.table.statuses.inQueue')
+                      }
                     </span>
                   </td>
                   <td className="border border-border-main px-4 py-2 text-gray-900">

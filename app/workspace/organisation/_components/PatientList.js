@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Upload, FileWarning, FileCheck, X, Download, UserPlus, Edit, Trash } from 'lucide-react';
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
+import { useLanguage } from '../../../../lib/contexts/LanguageContext';
 
 export const PatientList = ({ patientList, onUploadList }) => {
+  const { t } = useLanguage();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [csvFile, setCsvFile] = useState(null);
   const [csvPreview, setCsvPreview] = useState(null);
@@ -53,7 +55,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
 
   const validateFile = (file) => {
     if (file.type !== 'text/csv') {
-      setError('Please upload a CSV file');
+      setError(t('workspace.organisation.patientList.uploadModal.errors.csvOnly'));
       return false;
     }
     return true;
@@ -89,12 +91,12 @@ export const PatientList = ({ patientList, onUploadList }) => {
 
   const handleUploadConfirm = async () => {
     if (!columnMapping.nameColumn || !columnMapping.dobColumn) {
-      setError("Please select both name and date of birth columns");
+      setError(t('workspace.organisation.patientList.uploadModal.errors.requiredColumns'));
       return;
     }
 
     if (!parsedPatients || parsedPatients.length === 0) {
-      setError("No valid patient data to upload");
+      setError(t('workspace.organisation.patientList.uploadModal.errors.noData'));
       return;
     }
 
@@ -103,7 +105,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
       setIsUploadModalOpen(false);
       handleRemoveFile();
     } catch (error) {
-      setError("Failed to upload patient list");
+      setError(t('workspace.organisation.patientList.uploadModal.errors.uploadFailed'));
     }
   };
 
@@ -127,17 +129,16 @@ export const PatientList = ({ patientList, onUploadList }) => {
 
   const handleAddPatient = async (formData) => {
     if (!formData.customerName || !formData.dateOfBirth) {
-      alert('Name and Date of Birth are required');
+      alert(t('workspace.organisation.patientList.patientModal.errors.required'));
       return;
     }
 
     setIsAddingPatient(true);
-    const updatedList = [...patientList, formData];
     try {
-      await onUploadList(updatedList);
+      await onUploadList([...patientList, formData]);
       setShowAddPatientModal(false);
     } catch (error) {
-      alert('Failed to add patient');
+      alert(t('workspace.organisation.patientList.patientModal.errors.addFailed'));
     } finally {
       setIsAddingPatient(false);
     }
@@ -199,7 +200,9 @@ export const PatientList = ({ patientList, onUploadList }) => {
         <div className="bg-bg-elevated rounded-lg max-w-md w-full p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-text-primary">
-              {isEditing ? 'Edit Patient' : 'Add New Patient'}
+              {isEditing 
+                ? t('workspace.organisation.patientList.patientModal.editTitle')
+                : t('workspace.organisation.patientList.patientModal.addTitle')}
             </h3>
             <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
               <X size={20} />
@@ -209,7 +212,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">
-                Patient Name *
+                {t('workspace.organisation.patientList.patientModal.fields.name')} *
               </label>
               <input
                 type="text"
@@ -225,7 +228,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
 
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">
-                Date of Birth *
+                {t('workspace.organisation.patientList.patientModal.fields.dob')} *
               </label>
               <input
                 type="date"
@@ -241,7 +244,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
 
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">
-                Phone Number
+                {t('workspace.organisation.patientList.patientModal.fields.phone')}
               </label>
               <input
                 type="tel"
@@ -257,7 +260,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
 
           <div className="flex justify-end space-x-4 mt-6">
             <SecondaryButton onClick={onClose}>
-              Cancel
+              {t('workspace.organisation.patientList.patientModal.buttons.cancel')}
             </SecondaryButton>
             <ActiveButton
               onClick={() => {

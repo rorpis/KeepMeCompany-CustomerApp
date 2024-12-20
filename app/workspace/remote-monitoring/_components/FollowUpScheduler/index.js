@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrganisation } from '../../../../../lib/contexts/OrganisationContext';
 import { useAuth } from '../../../../../lib/firebase/authContext';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 import StepOne from './steps/StepOne';
 import StepTwo from './steps/StepTwo';
 import StepThree from './steps/StepThree';
@@ -24,6 +25,7 @@ export const FollowUpScheduler = () => {
   const router = useRouter();
   const { organisationDetails } = useOrganisation();
   const { user } = useAuth();
+  const { t } = useLanguage();
   
   // Core state
   const [currentStep, setCurrentStep] = useState(1);
@@ -62,7 +64,7 @@ export const FollowUpScheduler = () => {
         setPresetName('');
       }
     } catch (error) {
-      console.error('Error saving preset:', error);
+      console.error(t('workspace.remoteMonitoring.scheduler.errors.savingPresetError'), error);
     }
   };
 
@@ -93,12 +95,12 @@ export const FollowUpScheduler = () => {
         setSelectedPresetIndex(null);
       }
     } catch (error) {
-      console.error('Error updating preset:', error);
+      console.error(t('workspace.remoteMonitoring.scheduler.errors.updatingPresetError'), error);
     }
   };
 
   const handleDeletePreset = async (presetIndex) => {
-    if (!window.confirm('Are you sure you want to delete this preset?')) return;
+    if (!window.confirm(t('workspace.remoteMonitoring.scheduler.deletePresetConfirm'))) return;
 
     try {
       const updatedPresets = [...organisationDetails.settings.remoteMonitoring.presets];
@@ -121,7 +123,7 @@ export const FollowUpScheduler = () => {
         setObjectives([]);
       }
     } catch (error) {
-      console.error('Error deleting preset:', error);
+      console.error(t('workspace.remoteMonitoring.scheduler.errors.deletingPresetError'), error);
     }
   };
 
@@ -165,7 +167,7 @@ export const FollowUpScheduler = () => {
         router.push('/workspace/remote-monitoring');
       }
     } catch (error) {
-      console.error('Error scheduling calls:', error);
+      console.error(t('workspace.remoteMonitoring.scheduler.errors.schedulingError'), error);
     } finally {
       setIsScheduling(false);
     }
@@ -228,7 +230,7 @@ export const FollowUpScheduler = () => {
         router.push('/workspace/remote-monitoring');
       }
     } catch (error) {
-      console.error('Error scheduling calls:', error);
+      console.error(t('workspace.remoteMonitoring.scheduler.errors.schedulingError'), error);
     } finally {
       setIsScheduling(false);
     }
@@ -237,7 +239,9 @@ export const FollowUpScheduler = () => {
   return (
     <div className="max-w-6xl mx-auto bg-bg-elevated rounded-lg p-8">
       <div className="flex items-center justify-between mb-10">
-        <h2 className="text-2xl font-semibold text-text-primary">Schedule Follow-up Call</h2>
+        <h2 className="text-2xl font-semibold text-text-primary">
+          {t('workspace.remoteMonitoring.scheduler.title')}
+        </h2>
         <div className="flex items-center gap-3">
           <span className={`w-4 h-4 rounded-full ${currentStep >= 1 ? 'bg-primary-blue' : 'bg-border-main'}`} />
           <span className={`w-4 h-4 rounded-full ${currentStep >= 2 ? 'bg-primary-blue' : 'bg-border-main'}`} />

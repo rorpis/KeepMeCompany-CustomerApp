@@ -1,10 +1,13 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, ChevronDown, Mic, MicOff } from 'lucide-react';
 import { useOrganisation } from '../../../lib/contexts/OrganisationContext';
-
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const ScribeInterface = () => {
   const { organisationDetails } = useOrganisation();
+  const { t } = useLanguage();
   const [selectedTemplate, setSelectedTemplate] = useState('SOAP');
   const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
@@ -75,29 +78,28 @@ Plan:
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Controls - Updated with black background at 80% opacity */}
       <div className="bg-black/80">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
-          {/* Left side controls */}
           <div className="flex items-center space-x-4">
             <select
               value={selectedPatient}
               onChange={(e) => setSelectedPatient(e.target.value)}
               className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary mb-4"
             >
-              <option value="">Select a patient</option>
+              <option value="">{t('workspace.scribe.patientSelect.placeholder')}</option>
               {organisationDetails?.patientList?.map((patient, index) => (
                 <option key={index} value={patient.id}>
                   {patient.customerName} - {patient.dateOfBirth}
                 </option>
               ))}
             </select>
+
             <div className="relative">
               <button 
                 onClick={() => setShowTemplateDropdown(!showTemplateDropdown)}
                 className="flex items-center space-x-2 px-3 py-1 rounded-md hover:bg-gray-700 text-white font-bold"
               >
-                <span>Template: {selectedTemplate}</span>
+                <span>{t('workspace.scribe.template.label')}: {t(`workspace.scribe.template.types.${selectedTemplate.toLowerCase()}`)}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
@@ -112,7 +114,7 @@ Plan:
                         setShowTemplateDropdown(false);
                       }}
                     >
-                      {template}
+                      {t(`workspace.scribe.template.types.${template.toLowerCase()}`)}
                     </button>
                   ))}
                 </div>
@@ -120,7 +122,6 @@ Plan:
             </div>
           </div>
 
-          {/* Right side controls */}
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setIsRecording(!isRecording)}
@@ -131,12 +132,12 @@ Plan:
               {isRecording ? (
                 <>
                   <MicOff className="w-5 h-5" />
-                  <span>Stop Recording</span>
+                  <span>{t('workspace.scribe.recording.stop')}</span>
                 </>
               ) : (
                 <>
                   <Mic className="w-5 h-5" />
-                  <span>Start Recording</span>
+                  <span>{t('workspace.scribe.recording.start')}</span>
                 </>
               )}
             </button>
@@ -157,7 +158,9 @@ Plan:
                     : 'bg-gray-100 text-gray-600'
                 }`}
               >
-                {translationActive ? `Translating to ${selectedLanguage}` : 'Enable Translation'}
+                {translationActive 
+                  ? `${t('workspace.scribe.translation.active')} ${selectedLanguage}` 
+                  : t('workspace.scribe.translation.enable')}
               </button>
 
               {showLanguageDropdown && !translationActive && (
@@ -165,7 +168,7 @@ Plan:
                   <div className="p-2">
                     <input
                       type="text"
-                      placeholder="Search language..."
+                      placeholder={t('workspace.scribe.translation.searchPlaceholder')}
                       className="w-full px-2 py-1 border border-gray-200 rounded"
                     />
                   </div>
@@ -189,7 +192,6 @@ Plan:
         </div>
       </div>
 
-      {/* Rest of the component remains unchanged */}
       <div className="max-w-7xl mx-auto p-4 flex">
         <div className={`bg-white rounded-2xl shadow relative ${translationActive ? 'w-1/2' : 'w-full'}`}>
           <div className="p-4 h-[65vh]">
@@ -199,7 +201,7 @@ Plan:
               onClick={handleMainCopy}
             >
               <Copy className="w-5 h-5" />
-              <span>Copy All</span>
+              <span>{t('workspace.scribe.copyButton')}</span>
             </button>
             
             <div

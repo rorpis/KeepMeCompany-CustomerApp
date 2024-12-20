@@ -1,31 +1,35 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const RemoteMonitoringMainScreen = () => {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const navigationCards = [
     {
-      title: "Dashboard",
-      description: "View past follow ups data",
+      title: t('workspace.remoteMonitoring.mainScreen.cards.dashboard.title'),
+      description: t('workspace.remoteMonitoring.mainScreen.cards.dashboard.description'),
       path: "/workspace/remote-monitoring/live-dashboard",
     },
     {
-      title: "Create Follow Up",
-      description: "Set follow up call with patient",
+      title: t('workspace.remoteMonitoring.mainScreen.cards.createFollowUp.title'),
+      description: t('workspace.remoteMonitoring.mainScreen.cards.createFollowUp.description'),
       path: "/workspace/remote-monitoring/create-follow-up",
     },
     {
-      title: "Upcoming Follow Ups",
-      description: "View and Edit scheduled follow up calls",
+      title: t('workspace.remoteMonitoring.mainScreen.cards.upcomingFollowUps.title'),
+      description: t('workspace.remoteMonitoring.mainScreen.cards.upcomingFollowUps.description'),
       path: "/workspace/remote-monitoring/upcoming-calls",
     },
   ];
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Remote Monitoring</h1>
+      <h1 className="text-2xl font-bold mb-6 text-text-primary">
+        {t('workspace.remoteMonitoring.title')}
+      </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {navigationCards.map((card, index) => (
           <div

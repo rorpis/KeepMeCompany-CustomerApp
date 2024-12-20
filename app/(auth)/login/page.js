@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { auth, googleProvider } from "../../../lib/firebase/config";
 import Link from 'next/link';
 import { GoogleAuthProvider } from 'firebase/auth';
+import { useLanguage } from "../../../lib/contexts/LanguageContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const router = useRouter();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -70,10 +72,10 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-text-primary mb-2">
-            Welcome Back
+            {t('auth.login.title')}
           </h1>
           <p className="text-text-secondary mb-8">
-            Please login to your account
+            {t('auth.login.subtitle')}
           </p>
         </div>
 
@@ -81,7 +83,7 @@ const Login = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-2">
-                Email
+                {t('auth.login.email')}
               </label>
               <input
                 id="email"
@@ -96,7 +98,7 @@ const Login = () => {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-2">
-                Password
+                {t('auth.login.password')}
               </label>
               <input
                 id="password"
@@ -119,7 +121,7 @@ const Login = () => {
               type="submit"
               className="w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
             >
-              Login
+              {t('auth.login.loginButton')}
             </button>
           </form>
 
@@ -130,7 +132,7 @@ const Login = () => {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-bg-elevated text-text-secondary">
-                  Or continue with
+                  {t('auth.login.continueWith')}
                 </span>
               </div>
             </div>
@@ -159,7 +161,7 @@ const Login = () => {
                   />
                 </svg>
                 <span className="text-gray-900 font-medium">
-                  Continue with Google
+                  {t('auth.login.continueGoogle')}
                 </span>
               </button>
             </div>
@@ -167,9 +169,9 @@ const Login = () => {
 
           <div className="mt-6 text-center">
             <p className="text-text-secondary">
-              Don&apos;t have an account?{' '}
+              {t('auth.login.noAccount')}{' '}
               <Link href="/signup" className="text-primary-blue hover:text-primary-blue/80">
-                Sign up
+                {t('auth.login.signupLink')}
               </Link>
             </p>
           </div>

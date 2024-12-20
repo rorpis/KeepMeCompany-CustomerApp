@@ -3,11 +3,13 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../lib/firebase/authContext";
+import { useLanguage } from "../../../lib/contexts/LanguageContext";
 import Link from 'next/link';
 
 const VerifyEmail = () => {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const checkVerification = async () => {
@@ -27,10 +29,10 @@ const VerifyEmail = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-text-primary mb-2">
-            Verify Your Email
+            {t('auth.verifyEmail.title')}
           </h1>
           <p className="text-text-secondary mb-8">
-            We&apos;ve sent you a verification link
+            {t('auth.verifyEmail.subtitle')}
           </p>
         </div>
 
@@ -45,7 +47,7 @@ const VerifyEmail = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-blue-700">
-                    Please check your email inbox and click the verification link to continue.
+                    {t('auth.verifyEmail.instructions')}
                   </p>
                 </div>
               </div>
@@ -53,14 +55,14 @@ const VerifyEmail = () => {
 
             <div className="text-center space-y-4">
               <p className="text-text-secondary">
-                Once verified, you can proceed to login
+                {t('auth.verifyEmail.proceedLogin')}
               </p>
               
               <Link 
                 href="/login"
                 className="inline-block w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 text-center"
               >
-                Go to Login
+                {t('auth.verifyEmail.loginButton')}
               </Link>
             </div>
           </div>
@@ -68,12 +70,12 @@ const VerifyEmail = () => {
 
         <div className="text-center">
           <p className="text-text-secondary text-sm">
-            Didn&apos;t receive the email?{' '}
+            {t('auth.verifyEmail.noEmail')}{' '}
             <button 
               onClick={() => user?.sendEmailVerification()} 
               className="text-primary-blue hover:text-primary-blue/80 font-medium"
             >
-              Resend verification email
+              {t('auth.verifyEmail.resendButton')}
             </button>
           </p>
         </div>

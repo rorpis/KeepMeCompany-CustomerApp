@@ -5,8 +5,10 @@ import { auth, googleProvider } from "../../../lib/firebase/config";
 import { useState } from 'react';
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
+import { useLanguage } from "../../../lib/contexts/LanguageContext";
 
 const SignupForm = () => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -33,7 +35,7 @@ const SignupForm = () => {
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       if (!backendUrl) {
-        throw new Error('Backend URL is not configured');
+        throw new Error(t('auth.signup.errors.backendNotConfigured'));
       }
       
       const response = await fetch(`${backendUrl}/customer_app_api/user_signup`, {
@@ -62,7 +64,7 @@ const SignupForm = () => {
       } else {
         // delete user from firebase if signup fails
         await deleteUser(userCredential.user);
-        setErrorMessage('Registration failed');
+        setErrorMessage(t('auth.signup.errors.registrationFailed'));
       }
     } catch (err) {
       setErrorMessage(err.message);
@@ -91,7 +93,7 @@ const SignupForm = () => {
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       if (!backendUrl) {
-        throw new Error('Backend URL is not configured');
+        throw new Error(t('auth.signup.errors.backendNotConfigured'));
       }
 
       const response = await fetch(`${backendUrl}/customer_app_api/user_signup`, {
@@ -115,7 +117,7 @@ const SignupForm = () => {
         router.push("/workspace");
       } else {
         await deleteUser(user);
-        setErrorMessage('Registration failed');
+        setErrorMessage(t('auth.signup.errors.registrationFailed'));
       }
     } catch (err) {
       setErrorMessage(err.message);
@@ -127,10 +129,10 @@ const SignupForm = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-text-primary mb-2">
-            Create Your Account
+            {t('auth.signup.title')}
           </h1>
           <p className="text-text-secondary mb-8">
-            Join KeepMeCompany to get started
+            {t('auth.signup.subtitle')}
           </p>
         </div>
 
@@ -139,7 +141,7 @@ const SignupForm = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-text-primary">
-                  First Name
+                  {t('auth.signup.firstName')}
                 </label>
                 <input
                   type="text"
@@ -152,7 +154,7 @@ const SignupForm = () => {
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-text-primary">
-                  Last Name
+                  {t('auth.signup.lastName')}
                 </label>
                 <input
                   type="text"
@@ -166,7 +168,7 @@ const SignupForm = () => {
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text-primary">
-                Email Address
+                {t('auth.signup.email')}
               </label>
               <input
                 type="email"
@@ -179,7 +181,7 @@ const SignupForm = () => {
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text-primary">
-                Password
+                {t('auth.signup.password')}
               </label>
               <input
                 type="password"
@@ -206,7 +208,7 @@ const SignupForm = () => {
               type="submit"
               className="w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
             >
-              Sign Up
+              {t('auth.signup.signupButton')}
             </button>
           </form>
 
@@ -217,7 +219,7 @@ const SignupForm = () => {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-bg-elevated text-text-secondary">
-                  Or continue with
+                  {t('auth.signup.continueWith')}
                 </span>
               </div>
             </div>
@@ -246,7 +248,7 @@ const SignupForm = () => {
                   />
                 </svg>
                 <span className="text-gray-900 font-medium">
-                  Continue with Google
+                  {t('auth.signup.continueGoogle')}
                 </span>
               </button>
             </div>
@@ -254,9 +256,9 @@ const SignupForm = () => {
 
           <div className="mt-6 text-center">
             <p className="text-text-secondary">
-              Already have an account?{' '}
+              {t('auth.signup.haveAccount')}{' '}
               <Link href="/login" className="text-primary-blue hover:text-primary-blue/80">
-                Login here
+                {t('auth.signup.loginLink')}
               </Link>
             </p>
           </div>

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { ActiveButton } from '@/app/_components/global_components';
+import { useLanguage } from '../../../../lib/contexts/LanguageContext';
 
 export const TeamMembers = ({ organisationDetails, onInviteMember }) => {
   const [inviteEmail, setInviteEmail] = useState("");
+  const { t } = useLanguage();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -16,7 +18,9 @@ export const TeamMembers = ({ organisationDetails, onInviteMember }) => {
 
   return (
     <section className="bg-bg-elevated rounded-lg p-6">
-      <h2 className="text-lg font-medium text-text-primary mb-4">Team Members</h2>
+      <h2 className="text-lg font-medium text-text-primary mb-4">
+        {t('workspace.organisation.teamMembers.title')}
+      </h2>
       <div className="space-y-4">
         {organisationDetails.members.map((member) => (
           <div key={member.id} className="flex items-center space-x-4 p-4 bg-bg-secondary rounded-lg">
@@ -40,11 +44,11 @@ export const TeamMembers = ({ organisationDetails, onInviteMember }) => {
             type="email"
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
-            placeholder="Enter email to invite"
+            placeholder={t('workspace.organisation.teamMembers.invite.placeholder')}
             className="flex-1 rounded-md bg-bg-secondary border-border-main text-text-primary placeholder:text-text-secondary focus:border-primary-blue focus:ring-primary-blue"
           />
           <ActiveButton type="submit">
-            Send Invite
+            {t('workspace.organisation.teamMembers.invite.button')}
           </ActiveButton>
         </form>
       </div>

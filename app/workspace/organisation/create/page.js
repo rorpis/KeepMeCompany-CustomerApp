@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../lib/firebase/authContext";
+import { useLanguage } from "../../../../lib/contexts/LanguageContext";
 
 const countries = [
   { code: "GB", name: "United Kingdom" },
@@ -13,6 +14,7 @@ const countries = [
 const CreateOrganisation = () => {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: "",
     addressLine1: "",
@@ -82,13 +84,13 @@ const CreateOrganisation = () => {
       <div className="max-w-2xl mx-auto">
         <div className="bg-bg-elevated rounded-lg p-8 shadow-sm border border-border-main">
           <h1 className="text-2xl font-bold text-text-primary mb-8">
-            Create New Organization
+            {t('workspace.organisation.create.title')}
           </h1>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text-primary">
-                Organization Name
+                {t('workspace.organisation.create.form.name')}
               </label>
               <input
                 type="text"
@@ -101,7 +103,7 @@ const CreateOrganisation = () => {
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text-primary">
-                Address Line 1
+                {t('workspace.organisation.create.form.addressLine1')}
               </label>
               <input
                 type="text"
@@ -114,7 +116,7 @@ const CreateOrganisation = () => {
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text-primary">
-                Address Line 2
+                {t('workspace.organisation.create.form.addressLine2')}
               </label>
               <input
                 type="text"
@@ -127,7 +129,7 @@ const CreateOrganisation = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-text-primary">
-                  Postcode
+                  {t('workspace.organisation.create.form.postcode')}
                 </label>
                 <input
                   type="text"
@@ -140,7 +142,7 @@ const CreateOrganisation = () => {
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-text-primary">
-                  City
+                  {t('workspace.organisation.create.form.city')}
                 </label>
                 <input
                   type="text"
@@ -154,7 +156,7 @@ const CreateOrganisation = () => {
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text-primary">
-                Country
+                {t('workspace.organisation.create.form.country')}
               </label>
               <select
                 value={formData.country}
@@ -173,7 +175,7 @@ const CreateOrganisation = () => {
 
             <div className="space-y-4">
               <label className="block text-sm font-medium text-text-primary">
-                Registered Phone Numbers
+                {t('workspace.organisation.create.form.phoneNumbers.title')}
               </label>
               
               {formData.registeredNumbers.map((number, index) => (
@@ -184,7 +186,7 @@ const CreateOrganisation = () => {
                         type="tel"
                         value={number}
                         onChange={(e) => handleNumberChange(index, e.target.value)}
-                        placeholder="Enter phone number"
+                        placeholder={t('workspace.organisation.create.form.phoneNumbers.placeholder')}
                         className="flex-1 px-4 py-2 rounded-r-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
                       />
                     </div>
@@ -195,7 +197,7 @@ const CreateOrganisation = () => {
                       onClick={() => handleRemoveNumber(index)}
                       className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200"
                     >
-                      Remove
+                      {t('workspace.organisation.create.form.phoneNumbers.removeButton')}
                     </button>
                   )}
                 </div>
@@ -206,7 +208,7 @@ const CreateOrganisation = () => {
                 onClick={handleAddNumber}
                 className="mt-2 px-4 py-2 bg-bg-secondary text-text-primary border border-border-main rounded-md hover:bg-bg-secondary/80 transition-colors duration-200"
               >
-                + Add Another Number
+                {t('workspace.organisation.create.form.phoneNumbers.addButton')}
               </button>
             </div>
 
@@ -220,7 +222,7 @@ const CreateOrganisation = () => {
               type="submit"
               className="w-full bg-primary-blue hover:bg-primary-blue/80 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
             >
-              Create Organization
+              {t('workspace.organisation.create.buttons.create')}
             </button>
           </form>
         </div>

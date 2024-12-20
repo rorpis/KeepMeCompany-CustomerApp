@@ -1,14 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useLanguage } from "../../../lib/contexts/LanguageContext";
 
 const IntakeMainScreen = () => {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const navigationCards = [
     {
-      title: "Live Dashboard",
-      description: "View real-time intake data",
+      title: t('workspace.intake.cards.liveDashboard.title'),
+      description: t('workspace.intake.cards.liveDashboard.description'),
       path: "/workspace/intake/live-dashboard",
     },
     // More options can be added here later
@@ -16,7 +18,7 @@ const IntakeMainScreen = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Patient Intake</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('workspace.intake.title')}</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {navigationCards.map((card, index) => (
           <div
