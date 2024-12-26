@@ -67,10 +67,6 @@ const RemoteMonitoringDashboardPage = () => {
     return <div className="p-6">{t('workspace.remoteMonitoring.dashboard.loading')}</div>;
   }
 
-  if (!organisationDetails?.registeredNumbers?.length) {
-    return <div className="p-6">{t('workspace.remoteMonitoring.dashboard.noNumbers')}</div>;
-  }
-
   return (
     <div className="p-6">
       <h2 className="text-xl font-semibold mb-4 text-text-primary">

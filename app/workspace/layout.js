@@ -70,8 +70,18 @@ const WorkspaceLayout = ({ children }) => {
     } else if (!authLoading && user && !userDetails && !userLoading) {
       // Only redirect if we've tried and failed to load user details
       router.push('/login');
+    } else if (!authLoading && user && organisations.length === 0) {
+      router.push('/workspace/organisation/setup');
     }
   }, [user, authLoading, userDetails, userLoading, router]);
+
+  const handleNavigation = (path) => {
+    if (organisations.length === 0) {
+      router.push('/workspace/organisation/setup');
+      return;
+    }
+    router.push(path);
+  };
 
   // Show loading spinner while any context is loading
   if (isLoading) {
@@ -117,21 +127,27 @@ const WorkspaceLayout = ({ children }) => {
               </button>
 
               {/* Organisation Selector */}
-              <div className="flex items-center space-x-4">
-                <select
-                  value={selectedOrgId || ""}
-                  onChange={handleOrganizationChange}
-                  className="bg-bg-secondary text-text-primary rounded-md border-none px-4 py-2 focus:ring-1 focus:ring-primary-blue"
-                >
-                  <option value="">{t('workspace.layout.selectOrg')}</option>
-                  {organisations.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
+              {organisations.length > 0 && (
+                <div className="flex items-center space-x-4">
+                  <select
+                    value={selectedOrgId || ""}
+                    onChange={handleOrganizationChange}
+                    className="bg-bg-secondary text-text-primary rounded-md border-none px-4 py-2 focus:ring-1 focus:ring-primary-blue"
+                  >
+                    {organisations.map((org) => (
+                      <option key={org.id} value={org.id}>
+                        {org.name}
+                      </option>
+                    ))}
+                    <option disabled className="border-t border-border-main">
+                      ─────────────
                     </option>
-                  ))}
-                  <option value="create-new">{t('workspace.layout.createNewOrg')}</option>
-                </select>
-              </div>
+                    <option value="create-new">
+                      {t('workspace.layout.createNewOrg')}
+                    </option>
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Profile Button and Dropdown */}
@@ -195,27 +211,24 @@ const WorkspaceLayout = ({ children }) => {
             >
               {t('workspace.layout.menu.overview')}
             </Link>
-            <Link
-              href="/workspace/intake"
-              className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
-              onClick={() => setIsMenuOpen(false)}
+            <button
+              onClick={() => handleNavigation('/workspace/intake')}
+              className="p-2 text-text-primary hover:bg-bg-secondary rounded-md w-full text-left"
             >
               {t('workspace.layout.menu.patientIntake')}
-            </Link>
-            <Link
-              href="/workspace/remote-monitoring"
-              className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
-              onClick={() => setIsMenuOpen(false)}
+            </button>
+            <button
+              onClick={() => handleNavigation('/workspace/remote-monitoring')}
+              className="p-2 text-text-primary hover:bg-bg-secondary rounded-md w-full text-left"
             >
               {t('workspace.layout.menu.remoteMonitoring')}
-            </Link>
-            <Link
-              href="/workspace/organisation/dashboard"
-              className="block px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-md"
-              onClick={() => setIsMenuOpen(false)}
+            </button>
+            <button
+              onClick={() => handleNavigation('/workspace/organisation/dashboard')}
+              className="p-2 text-text-primary hover:bg-bg-secondary rounded-md w-full text-left"
             >
               {t('workspace.layout.menu.organisationDashboard')}
-            </Link>
+            </button>
           </nav>
         </div>
       </div>

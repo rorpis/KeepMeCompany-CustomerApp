@@ -5,15 +5,27 @@ import { useUser } from "../../lib/contexts/UserContext";
 import { useOrganisation } from "../../lib/contexts/OrganisationContext";
 import { useLanguage } from "../../lib/contexts/LanguageContext";
 import Link from "next/link";
+import { useEffect } from "react";
 
 const WorkspaceDashboard = () => {
   const { userDetails, loading: userLoading } = useUser();
-  const { selectedOrg, organisationDetails, loading: orgLoading } = useOrganisation();
+  const { organisations, organisationDetails, loading: orgLoading } = useOrganisation();
   const { t } = useLanguage();
   const router = useRouter();
 
+  useEffect(() => {
+    if (!userLoading && !orgLoading && organisations.length === 0) {
+      router.push('/workspace/organisation/setup');
+    }
+  }, [organisations, userLoading, orgLoading, router]);
+
   if (userLoading || orgLoading) {
     return <div>Loading...</div>;
+  }
+
+  // If no organizations, show nothing (will redirect)
+  if (organisations.length === 0) {
+    return null;
   }
 
   const welcomeMessage = t('workspace.welcome')
