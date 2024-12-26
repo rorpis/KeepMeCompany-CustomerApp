@@ -22,8 +22,8 @@ export const TeamMembers = ({ organisationDetails, onInviteMember }) => {
         {t('workspace.organisation.teamMembers.title')}
       </h2>
       <div className="space-y-4">
-        {organisationDetails.members.map((member) => (
-          <div key={member.id} className="flex items-center space-x-4 p-4 bg-bg-secondary rounded-lg">
+        {(organisationDetails.members || []).map((member) => (
+          <div key={member.email} className="flex items-center space-x-4 p-4 bg-bg-secondary rounded-lg">
             <div className="h-12 w-12 rounded-full bg-primary-blue flex items-center justify-center">
               <span className="text-text-primary font-medium text-sm">
                 {getInitials(member.name, member.surname)}

@@ -4,10 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../lib/firebase/authContext";
 import { useLanguage } from "../../../../lib/contexts/LanguageContext";
+import LoadingSpinner from "../../../_components/LoadingSpinner";
+import { useOrganisation } from "../../../../lib/contexts/OrganisationContext";
 
 const countries = [
   { code: "GB", name: "United Kingdom" },
-  { code: "US", name: "United States" },
+  { code: "ES", name: "Spain" },
+  { code: "FR", name: "France" },
   // Add more countries as needed
 ];
 
@@ -15,6 +18,8 @@ const CreateOrganisation = () => {
   const router = useRouter();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { refreshOrganisations } = useOrganisation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     addressLine1: "",
@@ -22,7 +27,7 @@ const CreateOrganisation = () => {
     postcode: "",
     city: "",
     country: "",
-    registeredNumbers: [""], // Initialize with one empty number
+    registeredNumbers: null,
   });
   const [error, setError] = useState("");
 
@@ -51,6 +56,9 @@ const CreateOrganisation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+    
     try {
       const idToken = await user.getIdToken();
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -70,14 +78,25 @@ const CreateOrganisation = () => {
 
       const data = await response.json();
       if (data.registration_message === "success") {
+        await refreshOrganisations();
         router.push("/workspace/organisation/success");
       } else {
         setError(data.message || "Failed to create organization");
       }
     } catch (error) {
       setError(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (isSubmitting) {
+    return (
+      <div className="min-h-screen bg-bg-main flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg-main px-4 sm:px-6 lg:px-8 py-12">
@@ -173,7 +192,7 @@ const CreateOrganisation = () => {
               </select>
             </div>
 
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <label className="block text-sm font-medium text-text-primary">
                 {t('workspace.organisation.create.form.phoneNumbers.title')}
               </label>
@@ -210,7 +229,7 @@ const CreateOrganisation = () => {
               >
                 {t('workspace.organisation.create.form.phoneNumbers.addButton')}
               </button>
-            </div>
+            </div> */}
 
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">

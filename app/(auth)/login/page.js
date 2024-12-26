@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged, signInWithPopup, OAuthProvider } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { auth, googleProvider } from "../../../lib/firebase/config";
+import { auth, googleProvider, microsoftProvider } from "../../../lib/firebase/config";
 import Link from 'next/link';
 import { GoogleAuthProvider } from 'firebase/auth';
 import { useLanguage } from "../../../lib/contexts/LanguageContext";
@@ -62,6 +62,25 @@ const Login = () => {
       const user = result.user;
       
       // The AuthProvider will handle the backend setup
+      if (user.email.endsWith('@keepmecompanyai.com') || user.emailVerified) {
+        router.push("/workspace");
+      } else {
+        router.push("/verify-email");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.message);
+    } finally {
+      setIsProcessingAuth(false);
+    }
+  };
+
+  const handleMicrosoftLogin = async () => {
+    try {
+      setIsProcessingAuth(true);
+      const result = await signInWithPopup(auth, microsoftProvider);
+      const user = result.user;
+      
       if (user.email.endsWith('@keepmecompanyai.com') || user.emailVerified) {
         router.push("/workspace");
       } else {
@@ -175,6 +194,39 @@ const Login = () => {
                 </svg>
                 <span className="text-gray-900 font-medium">
                   {t('auth.login.continueGoogle')}
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-2">
+              <button
+                onClick={handleMicrosoftLogin}
+                className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-border-main rounded-md shadow-sm bg-white hover:bg-gray-50 transition-colors duration-200"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 23 23">
+                  <path
+                    fill="#f3f3f3"
+                    d="M0 0h23v23H0z"
+                  />
+                  <path
+                    fill="#F35325"
+                    d="M1 1h10v10H1z"
+                  />
+                  <path
+                    fill="#81BC06"
+                    d="M12 1h10v10H12z"
+                  />
+                  <path
+                    fill="#05A6F0"
+                    d="M1 12h10v10H1z"
+                  />
+                  <path
+                    fill="#FFBA08"
+                    d="M12 12h10v10H12z"
+                  />
+                </svg>
+                <span className="text-gray-900 font-medium">
+                  {t('auth.login.continueMicrosoft')}
                 </span>
               </button>
             </div>

@@ -164,9 +164,22 @@ const OrganisationDashboard = () => {
               {t('workspace.organisation.dashboard.registeredNumbers.title')}
             </h2>
             <div className="text-text-secondary">
-              {organisationDetails.registeredNumbers.map((number, index) => (
-                <p key={index}>{number}</p>
-              ))}
+              {organisationDetails.registeredNumbers?.length > 0 ? (
+                organisationDetails.registeredNumbers.map((number, index) => (
+                  <p key={index}>{number}</p>
+                ))
+              ) : (
+                <div className="space-y-4">
+                  <p>{t('workspace.organisation.dashboard.registeredNumbers.none')}</p>
+                  <p className="text-sm">{t('workspace.organisation.dashboard.registeredNumbers.description')}</p>
+                  <button
+                    onClick={() => router.push('/workspace/phone-numbers/purchase')}
+                    className="px-4 py-2 text-sm bg-primary-blue hover:bg-primary-blue/80 text-white rounded-md transition-colors duration-200"
+                  >
+                    {t('workspace.intake.purchaseNumber')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
