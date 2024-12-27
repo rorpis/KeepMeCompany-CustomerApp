@@ -9,6 +9,7 @@ import { useLanguage } from '../../../../lib/contexts/LanguageContext';
 import { TeamMembers } from '../_components/TeamMembers';
 import { PatientList } from '../_components/PatientList';
 import { Settings } from '../_components/Settings';
+import { Credits } from '../_components/Credits';
 
 const OrganisationDashboard = () => {
   const router = useRouter();
@@ -181,6 +182,11 @@ const OrganisationDashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Credits Section */}
+          <div className="md:col-span-2">
+            <Credits credits={organisationDetails.credits || 0} />
           </div>
 
           {/* Team Members Section */}
