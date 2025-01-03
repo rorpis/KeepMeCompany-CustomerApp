@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 import { RemoteMonitoringDashboard } from '../../../_components/remoteMonitoringDashboard';
 import ResultsTable from '../_components/ResultsTable';
-import { listenToConversationsFollowUps } from '../../../../lib/firebase/realTimeMethods';
+import { listenToConversationsFollowUps, listenToQueueCalls } from '../../../../lib/firebase/realTimeMethods';
 import { Dialog } from '@headlessui/react';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 
@@ -12,6 +12,7 @@ const RemoteMonitoringDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
   const { t } = useLanguage();
   const [conversations, setConversations] = useState([]);
+  const [queuedCalls, setQueuedCalls] = useState([]);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 7);
@@ -23,6 +24,7 @@ const RemoteMonitoringDashboardPage = () => {
     date.setHours(23, 59, 59, 999);
     return date.toISOString().slice(0, 16);
   });
+  const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -33,23 +35,91 @@ const RemoteMonitoringDashboardPage = () => {
       return;
     }
 
-    const unsubscribe = listenToConversationsFollowUps(
+    // Listen to completed conversations
+    const unsubscribeConversations = listenToConversationsFollowUps(
       selectedOrgId,
       new Date(startDate),
       new Date(endDate),
       (snapshot) => {
-        const customerConversations = snapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
+        const customerConversations = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          status: 'processed',
+          type: 'completed'
+        }));
         setConversations(customerConversations);
-        setIsLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    // Listen to queued calls
+    const unsubscribeQueue = listenToQueueCalls(
+      selectedOrgId,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setQueuedCalls([]);
+          setIsLoading(false);
+          return;
+        }
+        const data = snapshot.data();
+        const queuedCalls = Object.entries(data.queue || {}).map(([id, call]) => ({
+          id,
+          ...call,
+          type: 'queued'
+        }));
+        setQueuedCalls(queuedCalls);
+      }
+    );
+
+    setIsLoading(false);
+
+    return () => {
+      unsubscribeConversations();
+      unsubscribeQueue();
+    };
   }, [selectedOrgId, startDate, endDate]);
+
+  // Merge and match conversations with queued calls
+  const mergedCalls = useMemo(() => {
+    const allCalls = [...conversations];
+    
+    // Add queued calls that don't have a matching conversation yet
+    queuedCalls.forEach(queuedCall => {
+      allCalls.push({
+        id: queuedCall.id,
+        call_sid: queuedCall.call_sid,
+        patientName: queuedCall.experience_custom_args?.patient_name,
+        patientDateOfBirth: queuedCall.experience_custom_args?.patient_dob,
+        userNumber: queuedCall.phone_number,
+        objectives: queuedCall.experience_custom_args?.objectives,
+        scheduled_for: {
+          date: queuedCall.scheduled_for?.[0]?.date,
+          time: queuedCall.scheduled_for?.[0]?.time
+        },
+        status: 'queued',
+        type: 'queued'
+      });
+    });
+
+    // Sort by timestamp (createdAt for completed calls, scheduled_for for queued calls)
+    return allCalls.sort((a, b) => {
+      const dateA = a.type === 'queued' 
+        ? new Date(`${a.scheduled_for?.date} ${a.scheduled_for?.time}`)
+        : a.createdAt?.toDate();
+      const dateB = b.type === 'queued' 
+        ? new Date(`${b.scheduled_for?.date} ${b.scheduled_for?.time}`)
+        : b.createdAt?.toDate();
+      
+      return dateB - dateA; // Descending order
+    });
+  }, [conversations, queuedCalls]);
+
+  // Filter calls based on status
+  const filteredCalls = useMemo(() => {
+    return mergedCalls.filter(call => {
+      if (statusFilter === 'all') return true;
+      return call.status === statusFilter;
+    });
+  }, [mergedCalls, statusFilter]);
 
   const handleViewResults = (conversation) => {
     setSelectedConversation(conversation);
@@ -66,8 +136,8 @@ const RemoteMonitoringDashboardPage = () => {
         {t('workspace.remoteMonitoring.dashboard.title')}
       </h2>
       
-      {/* Date Filter Section */}
-      <div className="mb-6 flex gap-4 items-center">
+      {/* Filters Section */}
+      <div className="mb-6 flex gap-4 items-end">
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">
             {t('workspace.remoteMonitoring.dashboard.dateFilter.from')}
@@ -91,17 +161,34 @@ const RemoteMonitoringDashboardPage = () => {
             className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">
+            {t('workspace.remoteMonitoring.dashboard.statusFilter.label')}
+          </label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
+          >
+            <option value="all">{t('workspace.remoteMonitoring.dashboard.statusFilter.all')}</option>
+            <option value="queued">{t('workspace.remoteMonitoring.dashboard.statusFilter.queued')}</option>
+            <option value="processed">{t('workspace.remoteMonitoring.dashboard.statusFilter.processed')}</option>
+          </select>
+        </div>
       </div>
 
       <RemoteMonitoringDashboard 
-        calls={conversations}
+        calls={filteredCalls}
         onViewResults={handleViewResults}
         markAsViewed={(index) => {
-          console.log('Marking call as viewed:', conversations[index].id);
+          const callToMark = filteredCalls[index];
+          console.log('Marking call as viewed:', callToMark.id);
           setConversations(prevConversations => {
-            const updatedConversations = [...prevConversations];
-            updatedConversations[index].viewed = true;
-            return updatedConversations;
+            return prevConversations.map(conv => 
+              conv.id === callToMark.id 
+                ? { ...conv, viewed: true }
+                : conv
+            );
           });
         }} 
       />
