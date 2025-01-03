@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 export const Credits = ({ credits = 0 }) => {
   const { t } = useLanguage();
   const router = useRouter();
-  const callsPerCredit = 10;
+  const callsPerCredit = 1;
   const totalCallsAvailable = credits * callsPerCredit;
 
   return (
