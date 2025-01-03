@@ -22,12 +22,7 @@ const RemoteMonitoringMainScreen = () => {
       title: t('workspace.remoteMonitoring.mainScreen.cards.createFollowUp.title'),
       description: t('workspace.remoteMonitoring.mainScreen.cards.createFollowUp.description'),
       path: "/workspace/remote-monitoring/create-follow-up",
-    },
-    {
-      title: t('workspace.remoteMonitoring.mainScreen.cards.upcomingFollowUps.title'),
-      description: t('workspace.remoteMonitoring.mainScreen.cards.upcomingFollowUps.description'),
-      path: "/workspace/remote-monitoring/upcoming-calls",
-    },
+    }
   ];
 
   if (loading) {
@@ -47,7 +42,7 @@ const RemoteMonitoringMainScreen = () => {
               {t('workspace.remoteMonitoring.title')}
             </h1>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             {navigationCards.map((card, index) => (
               <div
                 key={index}

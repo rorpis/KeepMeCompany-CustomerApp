@@ -50,7 +50,7 @@ const WorkspaceDashboard = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Patient Intake Card */}
-          <Link href="/workspace/intake" className="block">
+          <Link href="/workspace/intake/live-dashboard" className="block">
             <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
                 {t('workspace.cards.patientIntake.title')}

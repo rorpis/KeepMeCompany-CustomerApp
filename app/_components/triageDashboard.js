@@ -102,14 +102,18 @@ export function TriageDashboard({
                   {t('workspace.triageDashboard.table.viewResults')}
                 </button>
               ) : (
-                <a
-                  href={call.summaryURL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 underline"
-                >
-                  {t('workspace.triageDashboard.table.viewSummary')}
-                </a>
+                call.summaryURL && call.summaryURL !== '#' ? (
+                  <a
+                    href={call.summaryURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline"
+                  >
+                    {t('workspace.triageDashboard.table.viewSummary')}
+                  </a>
+                ) : (
+                  <span className="text-gray-500">N/A</span>
+                )
               )}
             </td>
             <td className="border border-gray-300 px-4 py-2 text-black">
