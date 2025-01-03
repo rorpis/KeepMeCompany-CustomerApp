@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
-import { TriageDashboard } from '../../../_components/triageDashboard';
+import { RemoteMonitoringDashboard } from '../../../_components/remoteMonitoringDashboard';
 import ResultsTable from '../_components/ResultsTable';
 import { listenToConversationsFollowUps } from '../../../../lib/firebase/realTimeMethods';
 import { Dialog } from '@headlessui/react';
@@ -28,13 +28,13 @@ const RemoteMonitoringDashboardPage = () => {
   const [selectedConversation, setSelectedConversation] = useState(null);
 
   useEffect(() => {
-    if (!organisationDetails?.registeredNumbers?.length) {
+    if (!selectedOrgId) {
       setIsLoading(false);
       return;
     }
 
     const unsubscribe = listenToConversationsFollowUps(
-      organisationDetails.registeredNumbers,
+      selectedOrgId,
       new Date(startDate),
       new Date(endDate),
       (snapshot) => {
@@ -43,20 +43,13 @@ const RemoteMonitoringDashboardPage = () => {
             id: doc.id,
             ...doc.data(),
           }))
-          /* .filter(conversation => {
-            // Find matching patient in patientList
-            return organisationDetails.patientList.some(patient => 
-              patient.customerName === conversation.patientName &&
-              patient.dateOfBirth === conversation.patientDateOfBirth
-            );
-          }); */
         setConversations(customerConversations);
         setIsLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [organisationDetails?.registeredNumbers, startDate, endDate]);
+  }, [selectedOrgId, startDate, endDate]);
 
   const handleViewResults = (conversation) => {
     setSelectedConversation(conversation);
@@ -100,9 +93,8 @@ const RemoteMonitoringDashboardPage = () => {
         </div>
       </div>
 
-      <TriageDashboard 
-        calls={conversations} 
-        isRemoteMonitoring={true}
+      <RemoteMonitoringDashboard 
+        calls={conversations}
         onViewResults={handleViewResults}
         markAsViewed={(index) => {
           console.log('Marking call as viewed:', conversations[index].id);

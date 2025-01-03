@@ -3,29 +3,22 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../lib/contexts/LanguageContext';
 
-// Standardize the data structure with a formatter helper
+// Reuse the formatter helper with additional fields
 const formatCallData = (call) => {
-  // Create a stable date string format that will be consistent between server and client
   const formatDate = (date) => {
     if (!date) return 'Unknown';
     
-    // Handle Firestore Timestamp
     let d;
     if (date && typeof date.toDate === 'function') {
-      // If it's a Firestore Timestamp
       d = date.toDate();
     } else if (date instanceof Date) {
-      // If it's already a Date object
       d = date;
     } else {
-      // If it's something else, try to create a date
       d = new Date(date);
     }
 
-    // Check if we have a valid date
     if (isNaN(d.getTime())) return 'Unknown';
 
-    // Format the date
     const options = { 
       year: "numeric", 
       month: "long", 
@@ -38,19 +31,21 @@ const formatCallData = (call) => {
 
   return {
     id: call.id,
-    patientName: call.patientName || call.patient?.name || 'Unknown',
-    patientDateOfBirth: call.patientDateOfBirth || call.patient?.dateOfBirth || 'Unknown',
+    patientName: call.patientName || call.patient?.name || call.experience_custom_args?.patient_name || 'Unknown',
+    patientDateOfBirth: call.patientDateOfBirth || call.patient?.dateOfBirth || call.experience_custom_args?.patient_dob || 'Unknown',
+    userNumber: call.userNumber || call.user_number || 'Unknown',
     summaryURL: call.summaryURL || call.transcriptionUrl || '#',
     timestamp: call.timestamp || call.createdAt || new Date(),
     formattedTimestamp: formatDate(call.timestamp || call.createdAt),
+    enqueuedAt: formatDate(call.enqueued_at || call.timestamp || call.createdAt),
+    status: call.status || 'processed',
     viewed: call.viewed || false,
   };
 };
 
-export function TriageDashboard({ 
+export function RemoteMonitoringDashboard({ 
   calls, 
   markAsViewed, 
-  isRemoteMonitoring = false,
   onViewResults 
 }) {
   const [activeTab, setActiveTab] = useState('new');
@@ -71,10 +66,19 @@ export function TriageDashboard({
             {t('workspace.triageDashboard.table.dateOfBirth')}
           </th>
           <th className="border border-gray-300 px-4 py-2">
-            {t('workspace.triageDashboard.table.summary')}
+            {t('workspace.remoteMonitoring.upcomingCalls.table.phoneNumber')}
+          </th>
+          <th className="border border-gray-300 px-4 py-2">
+            {t('workspace.remoteMonitoring.upcomingCalls.table.enqueuedAt')}
           </th>
           <th className="border border-gray-300 px-4 py-2">
             {t('workspace.triageDashboard.table.callTimestamp')}
+          </th>
+          <th className="border border-gray-300 px-4 py-2">
+            {t('workspace.remoteMonitoring.upcomingCalls.table.status')}
+          </th>
+          <th className="border border-gray-300 px-4 py-2">
+            {t('workspace.triageDashboard.table.viewResults.title')}
           </th>
           {showMarkAsViewed && 
             <th className="border border-gray-300 px-4 py-2">
@@ -94,30 +98,32 @@ export function TriageDashboard({
               {call.patientDateOfBirth}
             </td>
             <td className="border border-gray-300 px-4 py-2 text-black">
-              {isRemoteMonitoring ? (
-                <button
-                  onClick={() => onViewResults(call)}
-                  className="text-primary-blue hover:text-primary-blue/80"
-                >
-                  {t('workspace.triageDashboard.table.viewResults')}
-                </button>
-              ) : (
-                call.summaryURL && call.summaryURL !== '#' ? (
-                  <a
-                    href={call.summaryURL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 underline"
-                  >
-                    {t('workspace.triageDashboard.table.viewSummary')}
-                  </a>
-                ) : (
-                  <span className="text-gray-500">N/A</span>
-                )
-              )}
+              {call.userNumber}
+            </td>
+            <td className="border border-gray-300 px-4 py-2 text-black">
+              {call.enqueuedAt}
             </td>
             <td className="border border-gray-300 px-4 py-2 text-black">
               {call.formattedTimestamp}
+            </td>
+            <td className="border border-gray-300 px-4 py-2">
+              <span
+                className={`px-2 py-1 rounded-full text-sm ${
+                  call.status === 'processed'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}
+              >
+                {call.status}
+              </span>
+            </td>
+            <td className="border border-gray-300 px-4 py-2 text-black">
+              <button
+                onClick={() => onViewResults(call)}
+                className="bg-gray-100 hover:bg-gray-200 text-primary-blue hover:text-primary-blue/80 px-3 py-1 rounded transition-colors duration-200"
+              >
+                {t('workspace.triageDashboard.table.viewResults.cell')}
+              </button>
             </td>
             {showMarkAsViewed && !call.viewed && (
               <td className="border border-gray-300 px-4 py-2 text-black">
@@ -168,4 +174,4 @@ export function TriageDashboard({
       )}
     </div>
   );
-}
+} 
