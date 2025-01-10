@@ -155,7 +155,7 @@ const OrganisationDashboard = () => {
               {organisationDetails.address.addressLine2 && (
                 <p>{organisationDetails.address.addressLine2}</p>
               )}
-              <p>{organisationDetails.address.city}, {organisationDetails.address.postcode}</p>
+              <p>{organisationDetails.address.city}, {organisationDetails.address.country}</p>
             </div>
           </div>
 

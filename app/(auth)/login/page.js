@@ -198,7 +198,7 @@ const Login = () => {
               </button>
             </div>
 
-            <div className="mt-2">
+            {/* <div className="mt-2">
               <button
                 onClick={handleMicrosoftLogin}
                 className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-border-main rounded-md shadow-sm bg-white hover:bg-gray-50 transition-colors duration-200"
@@ -229,7 +229,7 @@ const Login = () => {
                   {t('auth.login.continueMicrosoft')}
                 </span>
               </button>
-            </div>
+            </div> */}
           </div>
 
           <div className="mt-6 text-center">

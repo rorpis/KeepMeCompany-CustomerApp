@@ -7,12 +7,14 @@ import ResultsTable from '../_components/ResultsTable';
 import { listenToConversationsFollowUps, listenToQueueCalls } from '../../../../lib/firebase/realTimeMethods';
 import { Dialog } from '@headlessui/react';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
+import { useAuth } from '../../../../lib/firebase/authContext';
 
 const RemoteMonitoringDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
   const { t } = useLanguage();
   const [conversations, setConversations] = useState([]);
   const [queuedCalls, setQueuedCalls] = useState([]);
+  const [processedCalls, setProcessedCalls] = useState([]);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 7);
@@ -28,6 +30,8 @@ const RemoteMonitoringDashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
+  const { user } = useAuth();
+  const [retryingCallId, setRetryingCallId] = useState(null);
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -70,17 +74,41 @@ const RemoteMonitoringDashboardPage = () => {
       }
     );
 
+    // Listen to processed calls
+    const unsubscribeProcessed = listenToQueueCalls(
+      selectedOrgId,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setProcessedCalls([]);
+          return;
+        }
+        const data = snapshot.data();
+        const processedCallsList = Object.entries(data.processed_calls || {}).map(([id, call]) => ({
+          id,
+          ...call,
+          viewed: call.viewed || false,
+          type: 'failed',
+          status: 'failed'
+        }));
+        setProcessedCalls(processedCallsList);
+      }
+    );
+
     setIsLoading(false);
 
     return () => {
       unsubscribeConversations();
       unsubscribeQueue();
+      unsubscribeProcessed();
     };
   }, [selectedOrgId, startDate, endDate]);
 
   // Merge and match conversations with queued calls
   const mergedCalls = useMemo(() => {
-    const allCalls = [...conversations];
+    // Filter out conversations without recordingURL
+    const validConversations = conversations.filter(conv => conv.recordingURL);
+    const allCalls = [...validConversations];
+    const conversationIds = new Set(validConversations.map(conv => conv.call_sid));
     
     // Add queued calls that don't have a matching conversation yet
     queuedCalls.forEach(queuedCall => {
@@ -96,22 +124,53 @@ const RemoteMonitoringDashboardPage = () => {
           time: queuedCall.scheduled_for?.[0]?.time
         },
         status: 'queued',
-        type: 'queued'
+        type: 'queued',
+        viewed: queuedCall.viewed || false,
+        formattedTimestamp: queuedCall.enqueued_at,
       });
     });
 
-    // Sort by timestamp (createdAt for completed calls, scheduled_for for queued calls)
-    return allCalls.sort((a, b) => {
-      const dateA = a.type === 'queued' 
-        ? new Date(`${a.scheduled_for?.date} ${a.scheduled_for?.time}`)
-        : a.createdAt?.toDate();
-      const dateB = b.type === 'queued' 
-        ? new Date(`${b.scheduled_for?.date} ${b.scheduled_for?.time}`)
-        : b.createdAt?.toDate();
-      
-      return dateB - dateA; // Descending order
+    // Add processed (failed) calls that don't have a matching conversation
+    processedCalls.forEach(processedCall => {
+      if (!conversationIds.has(processedCall.call_sid)) {
+        allCalls.push({
+          id: processedCall.id,
+          call_sid: processedCall.call_sid,
+          patientName: processedCall.experience_custom_args?.patient_name,
+          patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
+          userNumber: processedCall.phone_number,
+          objectives: processedCall.experience_custom_args?.objectives,
+          createdAt: processedCall.processed_at,
+          status: 'failed',
+          type: 'failed',
+          viewed: processedCall.viewed || false
+        });
+      }
     });
-  }, [conversations, queuedCalls]);
+
+    // Sort by timestamp
+    return allCalls.sort((a, b) => {
+      let dateA, dateB;
+
+      if (a.type === 'queued') {
+        dateA = new Date(`${a.scheduled_for?.date} ${a.scheduled_for?.time}`);
+      } else if (typeof a.createdAt?.toDate === 'function') {
+        dateA = a.createdAt.toDate();
+      } else {
+        dateA = new Date(a.createdAt);
+      }
+
+      if (b.type === 'queued') {
+        dateB = new Date(`${b.scheduled_for?.date} ${b.scheduled_for?.time}`);
+      } else if (typeof b.createdAt?.toDate === 'function') {
+        dateB = b.createdAt.toDate();
+      } else {
+        dateB = new Date(b.createdAt);
+      }
+      
+      return dateB - dateA;
+    });
+  }, [conversations, queuedCalls, processedCalls]);
 
   // Filter calls based on status
   const filteredCalls = useMemo(() => {
@@ -122,8 +181,111 @@ const RemoteMonitoringDashboardPage = () => {
   }, [mergedCalls, statusFilter]);
 
   const handleViewResults = (conversation) => {
-    setSelectedConversation(conversation);
+    // For failed or queued calls, we'll show objectives instead of results
+    if (conversation.status === 'failed' || conversation.status === 'queued') {
+      setSelectedConversation({
+        ...conversation,
+        showObjectives: true
+      });
+    } else {
+      setSelectedConversation(conversation);
+    }
     setIsResultsOpen(true);
+  };
+
+  const handleCallAgain = async (call) => {
+    setRetryingCallId(call.id);
+    try {
+      const currentDate = new Date();
+      const dateStr = currentDate.toLocaleDateString('en-US', { 
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      const timeStr = currentDate.toTimeString().slice(0, 5);
+
+      // Create the scheduled data
+      const scheduledFor = [{
+        date: dateStr,
+        time: timeStr
+      }];
+
+      // Format patient data
+      const patients = [{
+        patientId: `${call.patientName} - ${call.patientDateOfBirth}`,
+        patientName: call.patientName,
+        patientDateOfBirth: call.patientDateOfBirth,
+        phoneNumber: call.userNumber
+      }];
+
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            organisationId: selectedOrgId,
+            patients,
+            objectives: call.objectives,
+            scheduledFor
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to reschedule call');
+      }
+
+      // Optionally show a success toast/notification here
+    } catch (error) {
+      console.error('Error rescheduling call:', error);
+      // Optionally show an error toast/notification here
+    } finally {
+      setRetryingCallId(null);
+    }
+  };
+
+  const handleDeleteCall = async (call) => {
+    try {
+      // Parse the formatted timestamp (e.g., "10/01/2025 at 18:26") to ISO format
+      const [datePart, timePart] = call.formattedTimestamp.split(' at ');
+      const [day, month, year] = datePart.split('/');
+      const [hours, minutes] = timePart.split(':');
+      
+      // Create a Date object in local time
+      const localDate = new Date(year, month - 1, day, hours, minutes);
+      
+      // Convert to UTC ISO string and take just the relevant part
+      const isoTimestamp = localDate.toISOString().slice(0, 19).replace('Z', '');
+
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/delete_call`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            callInfo: call,
+            organisationId: selectedOrgId,
+            enqueuedAt: isoTimestamp
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete call');
+      }
+    } catch (error) {
+      console.error('Error deleting call:', error);
+    }
   };
 
   if (isLoading) {
@@ -173,6 +335,7 @@ const RemoteMonitoringDashboardPage = () => {
             <option value="all">{t('workspace.remoteMonitoring.dashboard.statusFilter.all')}</option>
             <option value="queued">{t('workspace.remoteMonitoring.dashboard.statusFilter.queued')}</option>
             <option value="processed">{t('workspace.remoteMonitoring.dashboard.statusFilter.processed')}</option>
+            <option value="failed">{t('workspace.remoteMonitoring.dashboard.statusFilter.failed')}</option>
           </select>
         </div>
       </div>
@@ -180,20 +343,95 @@ const RemoteMonitoringDashboardPage = () => {
       <RemoteMonitoringDashboard 
         calls={filteredCalls}
         onViewResults={handleViewResults}
-        markAsViewed={(index) => {
-          const callToMark = filteredCalls[index];
-          console.log('Marking call as viewed:', callToMark.id);
-          setConversations(prevConversations => {
-            return prevConversations.map(conv => 
-              conv.id === callToMark.id 
-                ? { ...conv, viewed: true }
-                : conv
+        markAsViewed={async (callId) => {
+          const callToMark = filteredCalls.find(call => call.id === callId);
+
+          // Optimistically update the UI state first
+          if (callToMark.status === 'processed') {
+            setConversations(prevConversations => {
+              return prevConversations.map(conv => 
+                conv.id === callToMark.id 
+                  ? { ...conv, viewed: true }
+                  : conv
+              );
+            });
+          } else if (callToMark.status === 'failed') {
+            setProcessedCalls(prevCalls => {
+              return prevCalls.map(call => 
+                call.id === callToMark.id 
+                  ? { ...call, viewed: true }
+                  : call
+              );
+            });
+          } else if (callToMark.status === 'queued') {
+            setQueuedCalls(prevCalls => {
+              return prevCalls.map(call => 
+                call.id === callToMark.id 
+                  ? { ...call, viewed: true }
+                  : call
+              );
+            });
+          }
+
+          // Then sync with the backend
+          try {
+            const idToken = await user.getIdToken();
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/mark_as_viewed`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({
+                  callId: callToMark.id,
+                  organisationId: selectedOrgId,
+                  callType: callToMark.status,
+                  callSid: callToMark.call_sid
+                }),
+              }
             );
-          });
+
+            if (!response.ok) {
+              throw new Error('Failed to mark call as viewed');
+            }
+          } catch (error) {
+            // Optionally revert the optimistic update if the backend call fails
+            if (callToMark.status === 'processed') {
+              setConversations(prevConversations => {
+                return prevConversations.map(conv => 
+                  conv.id === callToMark.id 
+                    ? { ...conv, viewed: false }
+                    : conv
+                );
+              });
+            } else if (callToMark.status === 'failed') {
+              setProcessedCalls(prevCalls => {
+                return prevCalls.map(call => 
+                  call.id === callToMark.id 
+                    ? { ...call, viewed: false }
+                    : call
+                );
+              });
+            } else if (callToMark.status === 'queued') {
+              setQueuedCalls(prevCalls => {
+                return prevCalls.map(call => 
+                  call.id === callToMark.id 
+                    ? { ...call, viewed: false }
+                    : call
+                );
+              });
+            }
+            // Optionally show an error toast/notification here
+          }
         }} 
+        handleCallAgain={handleCallAgain}
+        handleDeleteCall={handleDeleteCall}
+        retryingCallId={retryingCallId}
       />
 
-      {/* Results Table Dialog */}
+      {/* Results/Objectives Dialog */}
       <Dialog open={isResultsOpen} onClose={() => setIsResultsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -202,10 +440,29 @@ const RemoteMonitoringDashboardPage = () => {
               {t('workspace.remoteMonitoring.dashboard.results.title')}
             </Dialog.Title>
             {selectedConversation && (
-              <ResultsTable 
-                callId={selectedConversation.id} 
-                key={selectedConversation.id}
-              />
+              selectedConversation.showObjectives ? (
+                <div className="space-y-4">
+                  <h3 className="font-medium text-text-primary">
+                    {t('workspace.remoteMonitoring.dashboard.objectives.list')}:
+                  </h3>
+                  <ul className="list-disc pl-5 space-y-2">
+                    {selectedConversation.objectives?.map((objective, index) => (
+                      <li key={index} className="text-text-primary">
+                        {objective}
+                      </li>
+                    )) || (
+                      <li className="text-text-secondary italic">
+                        {t('workspace.remoteMonitoring.dashboard.objectives.none')}
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              ) : (
+                <ResultsTable 
+                  callId={selectedConversation.id} 
+                  key={selectedConversation.id}
+                />
+              )
             )}
             <div className="mt-4 flex justify-end">
               <button 
