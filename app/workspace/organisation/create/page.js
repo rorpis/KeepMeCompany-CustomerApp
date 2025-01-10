@@ -8,9 +8,10 @@ import LoadingSpinner from "../../../_components/LoadingSpinner";
 import { useOrganisation } from "../../../../lib/contexts/OrganisationContext";
 
 const countries = [
-  { code: "GB", name: "United Kingdom" },
-  { code: "ES", name: "Spain" },
+  { code: "UK", name: "United Kingdom" },
+  { code: "ES", name: "España" },
   { code: "FR", name: "France" },
+  { code: "CL", name: "Chile" },
   // Add more countries as needed
 ];
 
@@ -24,7 +25,6 @@ const CreateOrganisation = () => {
     name: "",
     addressLine1: "",
     addressLine2: "",
-    postcode: "",
     city: "",
     country: "",
     registeredNumbers: null,
@@ -148,19 +148,6 @@ const CreateOrganisation = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-text-primary">
-                  {t('workspace.organisation.create.form.postcode')}
-                </label>
-                <input
-                  type="text"
-                  value={formData.postcode}
-                  onChange={(e) => setFormData(prev => ({...prev, postcode: e.target.value}))}
-                  required
-                  className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-text-primary">
                   {t('workspace.organisation.create.form.city')}
                 </label>
                 <input
@@ -171,25 +158,25 @@ const CreateOrganisation = () => {
                   className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-text-primary">
-                {t('workspace.organisation.create.form.country')}
-              </label>
-              <select
-                value={formData.country}
-                onChange={(e) => setFormData(prev => ({...prev, country: e.target.value}))}
-                required
-                className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-blue"
-              >
-                <option value="">Select a country</option>
-                {countries.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {country.name}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-text-primary">
+                  {t('workspace.organisation.create.form.country')}
+                </label>
+                <select
+                  value={formData.country}
+                  onChange={(e) => setFormData(prev => ({...prev, country: e.target.value}))}
+                  required
+                  className="w-full px-4 py-2 rounded-md bg-bg-secondary border border-border-main text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                >
+                  <option value="">{t('workspace.organisation.create.form.country')}</option>
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* <div className="space-y-4">

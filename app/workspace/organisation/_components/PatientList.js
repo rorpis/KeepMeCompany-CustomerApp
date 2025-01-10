@@ -157,13 +157,13 @@ export const PatientList = ({ patientList, onUploadList }) => {
   };
 
   const handleDeletePatient = async (patientToDelete) => {
-    if (!window.confirm('Are you sure you want to delete this patient?')) return;
+    if (!window.confirm(t('workspace.patientList.deleteConfirm'))) return;
     
     const updatedList = patientList.filter(patient => patient !== patientToDelete);
     try {
       await onUploadList(updatedList);
     } catch (error) {
-      alert('Failed to delete patient');
+      alert(t('workspace.patientList.errors.deleteFailed'));
     }
   };
 
@@ -298,20 +298,22 @@ export const PatientList = ({ patientList, onUploadList }) => {
   return (
     <section className="bg-bg-elevated rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium text-text-primary">Patient List</h2>
+        <h2 className="text-lg font-medium text-text-primary">
+          {t('workspace.patientList.title')}
+        </h2>
         <div className="flex gap-2">
-          <SecondaryButton onClick={handleDownloadCsv}>
+          <ActiveButton onClick={handleDownloadCsv}>
             <Download size={16} className="mr-2" />
-            Download CSV
-          </SecondaryButton>
+            {t('workspace.patientList.buttons.downloadCsv')}
+          </ActiveButton>
           <SecondaryButton onClick={() => setShowAddPatientModal(true)}>
             <UserPlus size={16} className="mr-2" />
-            Add Patient
+            {t('workspace.patientList.buttons.addPatient')}
           </SecondaryButton>
-          <ActiveButton onClick={() => setIsUploadModalOpen(true)}>
+          <SecondaryButton onClick={() => setIsUploadModalOpen(true)}>
             <Upload size={16} className="mr-2" />
-            Update Patient List
-          </ActiveButton>
+            {t('workspace.patientList.buttons.updateList')}
+          </SecondaryButton>
         </div>
       </div>
 
@@ -322,13 +324,13 @@ export const PatientList = ({ patientList, onUploadList }) => {
             <thead className="bg-bg-secondary sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Patient Name
+                  {t('workspace.patientList.table.headers.name')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Date of Birth
+                  {t('workspace.patientList.table.headers.dob')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Phone Number
+                  {t('workspace.patientList.table.headers.phone')}
                 </th>
               </tr>
             </thead>
@@ -342,7 +344,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
                     {patient.dateOfBirth}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
-                    {patient.phoneNumber || 'Not provided'}
+                    {patient.phoneNumber || t('workspace.patientList.table.headers.notProvided')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2">
