@@ -22,6 +22,7 @@ const OrganisationDashboard = () => {
     refreshOrganisationDetails: refreshDetails
   } = useOrganisation();
   const { userDetails, loading: userLoading } = useUser();
+  const [activeTab, setActiveTab] = useState('general');
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -144,74 +145,117 @@ const OrganisationDashboard = () => {
           </p>
         </div>
 
+        {/* Tabs */}
+        <div className="flex space-x-4 border-b border-border-main mb-6">
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`pb-2 px-4 ${
+              activeTab === 'general'
+                ? 'border-b-2 border-primary-blue text-primary-blue'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            {t('workspace.organisation.dashboard.tabs.general')}
+          </button>
+          <button
+            onClick={() => setActiveTab('patients')}
+            className={`pb-2 px-4 ${
+              activeTab === 'patients'
+                ? 'border-b-2 border-primary-blue text-primary-blue'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            {t('workspace.organisation.dashboard.tabs.patients')}
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`pb-2 px-4 ${
+              activeTab === 'settings'
+                ? 'border-b-2 border-primary-blue text-primary-blue'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            {t('workspace.organisation.dashboard.tabs.settings')}
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Address Card */}
-          <div className="bg-bg-elevated rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-text-primary">
-              {t('workspace.organisation.dashboard.address.title')}
-            </h2>
-            <div className="text-text-secondary">
-              <p>{organisationDetails.address.addressLine1}</p>
-              {organisationDetails.address.addressLine2 && (
-                <p>{organisationDetails.address.addressLine2}</p>
-              )}
-              <p>{organisationDetails.address.city}, {organisationDetails.address.country}</p>
-            </div>
-          </div>
-
-          {/* Registered Numbers Card */}
-          <div className="bg-bg-elevated rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-text-primary">
-              {t('workspace.organisation.dashboard.registeredNumbers.title')}
-            </h2>
-            <div className="text-text-secondary">
-              {organisationDetails.registeredNumbers?.length > 0 ? (
-                organisationDetails.registeredNumbers.map((number, index) => (
-                  <p key={index}>{number}</p>
-                ))
-              ) : (
-                <div className="space-y-4">
-                  <p>{t('workspace.organisation.dashboard.registeredNumbers.none')}</p>
-                  <p className="text-sm">{t('workspace.organisation.dashboard.registeredNumbers.description')}</p>
-                  <button
-                    onClick={() => router.push('/workspace/phone-numbers/purchase')}
-                    className="px-4 py-2 text-sm bg-primary-blue hover:bg-primary-blue/80 text-white rounded-md transition-colors duration-200"
-                  >
-                    {t('workspace.intake.purchaseNumber')}
-                  </button>
+          {/* General Tab Content */}
+          {activeTab === 'general' && (
+            <>
+              {/* Address Card */}
+              <div className="bg-bg-elevated rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4 text-text-primary">
+                  {t('workspace.organisation.dashboard.address.title')}
+                </h2>
+                <div className="text-text-secondary">
+                  <p>{organisationDetails.address.addressLine1}</p>
+                  {organisationDetails.address.addressLine2 && (
+                    <p>{organisationDetails.address.addressLine2}</p>
+                  )}
+                  <p>{organisationDetails.address.city}, {organisationDetails.address.country}</p>
                 </div>
-              )}
+              </div>
+
+              {/* Registered Numbers Card */}
+              <div className="bg-bg-elevated rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4 text-text-primary">
+                  {t('workspace.organisation.dashboard.registeredNumbers.title')}
+                </h2>
+                <div className="text-text-secondary">
+                  {organisationDetails.registeredNumbers?.length > 0 ? (
+                    organisationDetails.registeredNumbers.map((number, index) => (
+                      <p key={index}>{number}</p>
+                    ))
+                  ) : (
+                    <div className="space-y-4">
+                      <p>{t('workspace.organisation.dashboard.registeredNumbers.none')}</p>
+                      <p className="text-sm">{t('workspace.organisation.dashboard.registeredNumbers.description')}</p>
+                      <button
+                        onClick={() => router.push('/workspace/phone-numbers/purchase')}
+                        className="px-4 py-2 text-sm bg-primary-blue hover:bg-primary-blue/80 text-white rounded-md transition-colors duration-200"
+                      >
+                        {t('workspace.intake.purchaseNumber')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Credits Section */}
+              <div className="md:col-span-2">
+                <Credits credits={organisationDetails.credits || 0} />
+              </div>
+
+              {/* Team Members Section */}
+              <div className="md:col-span-2">
+                <TeamMembers 
+                  organisationDetails={organisationDetails}
+                  onInviteMember={handleInviteMember}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Patients Tab Content */}
+          {activeTab === 'patients' && (
+            <div className="md:col-span-2">
+              <PatientList 
+                patientList={organisationDetails.patientList || []}
+                onUploadList={handleUploadPatientList}
+              />
             </div>
-          </div>
+          )}
 
-          {/* Credits Section */}
-          <div className="md:col-span-2">
-            <Credits credits={organisationDetails.credits || 0} />
-          </div>
-
-          {/* Team Members Section */}
-          <div className="md:col-span-2">
-            <TeamMembers 
-              organisationDetails={organisationDetails}
-              onInviteMember={handleInviteMember}
-            />
-          </div>
-
-          {/* Patient List Section */}
-          <div className="md:col-span-2">
-            <PatientList 
-              patientList={organisationDetails.patientList || []}
-              onUploadList={handleUploadPatientList}
-            />
-          </div>
-
-          {/* Settings Section */}
-          <div className="md:col-span-2 mt-6">
-            <Settings 
-              organisationDetails={organisationDetails}
-              onUpdateSettings={handleUpdateSettings}
-            />
-          </div>
+          {/* Settings Tab Content */}
+          {activeTab === 'settings' && (
+            <div className="md:col-span-2">
+              <Settings 
+                organisationDetails={organisationDetails}
+                onUpdateSettings={handleUpdateSettings}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

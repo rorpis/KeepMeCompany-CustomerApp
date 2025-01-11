@@ -22,6 +22,7 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
       lastMessage: '',
       firstObjectives: [],
       lastObjectives: [],
+      patientInformation: [],
     }
   });
   const [showDropdown, setShowDropdown] = useState({
@@ -171,6 +172,7 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
           lastMessage: organisationDetails.settings.remoteMonitoring?.lastMessage || '',
           firstObjectives: organisationDetails.settings.remoteMonitoring?.firstObjectives || [],
           lastObjectives: organisationDetails.settings.remoteMonitoring?.lastObjectives || [],
+          patientInformation: organisationDetails.settings.remoteMonitoring?.patientInformation || [],
         }
       });
       setUnsavedSections({
@@ -357,37 +359,6 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
             </div>
           </div>
 
-          {/* Last Message Section */}
-          <div className="bg-bg-secondary rounded-lg p-6">
-            <div className="space-y-4">
-              <label className="block font-medium text-text-primary">
-                {t('workspace.settings.messages.lastMessage')}
-              </label>
-              <div className="relative">
-                <textarea
-                  name={`${section}-lastMessage`}
-                  value={settings[section].lastMessage}
-                  onChange={(e) => handleInputChangeLastMessage(e, section)}
-                  className="w-full h-32 px-4 py-2 rounded-md bg-bg-main border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue text-sm"
-                />
-                <div className="px-3 text-gray-400 text-sm">@ Variables</div>
-                {showDropdown[section]?.lastMessage && (
-                  <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
-                    {filteredVariables.map((varItem) => (
-                      <div
-                        key={`${section}-last-${varItem.value}`}
-                        onClick={() => insertVariableLastMessage(varItem.value, section)}
-                        className="p-2 hover:bg-gray-200 cursor-pointer"
-                      >
-                        {varItem.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Last Objectives Section */}
           <div className="bg-bg-secondary rounded-lg p-6">
             <div className="space-y-4">
@@ -419,6 +390,72 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
               </button>
             </div>
           </div>
+
+          {/* Last Message Section */}
+          <div className="bg-bg-secondary rounded-lg p-6">
+            <div className="space-y-4">
+              <label className="block font-medium text-text-primary">
+                {t('workspace.settings.messages.lastMessage')}
+              </label>
+              <div className="relative">
+                <textarea
+                  name={`${section}-lastMessage`}
+                  value={settings[section].lastMessage}
+                  onChange={(e) => handleInputChangeLastMessage(e, section)}
+                  className="w-full h-32 px-4 py-2 rounded-md bg-bg-main border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue text-sm"
+                />
+                <div className="px-3 text-gray-400 text-sm">@ Variables</div>
+                {showDropdown[section]?.lastMessage && (
+                  <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
+                    {filteredVariables.map((varItem) => (
+                      <div
+                        key={`${section}-last-${varItem.value}`}
+                        onClick={() => insertVariableLastMessage(varItem.value, section)}
+                        className="p-2 hover:bg-gray-200 cursor-pointer"
+                      >
+                        {varItem.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Patient Information Section - Only show for remoteMonitoring */}
+          {section === 'remoteMonitoring' && (
+            <div className="bg-bg-secondary rounded-lg p-6 border-2 border-primary-blue/20">
+              <div className="space-y-4">
+                <label className="block font-medium text-text-primary">
+                  {t('workspace.settings.patientInformation.title')}
+                </label>
+                {settings.remoteMonitoring.patientInformation.map((info, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={info}
+                      onChange={(e) => handleObjectiveChange('remoteMonitoring', 'patientInformation', index, e.target.value)}
+                      placeholder={t('workspace.settings.patientInformation.placeholder')}
+                      className="flex-1 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm"
+                    />
+                    <button
+                      onClick={() => handleRemoveObjective('remoteMonitoring', 'patientInformation', index)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      {t('workspace.settings.objectives.removeObjective')}
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => handleAddObjective('remoteMonitoring', 'patientInformation')}
+                  className="text-primary-blue hover:text-primary-blue-hover text-sm"
+                >
+                  {t('workspace.settings.patientInformation.addInformation')}
+                </button>
+              </div>
+            </div>
+          )}
+          
         </div>
       </div>
     </div>
