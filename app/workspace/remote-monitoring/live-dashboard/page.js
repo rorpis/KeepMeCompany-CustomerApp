@@ -108,7 +108,7 @@ const RemoteMonitoringDashboardPage = () => {
     // Filter out conversations without recordingURL
     const validConversations = conversations.filter(conv => conv.recordingURL);
     const allCalls = [...validConversations];
-    const conversationIds = new Set(validConversations.map(conv => conv.call_sid));
+    const conversationIds = new Set(validConversations.map(conv => conv.callSid));
     
     // Add queued calls that don't have a matching conversation yet
     queuedCalls.forEach(queuedCall => {
