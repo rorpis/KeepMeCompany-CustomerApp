@@ -41,7 +41,7 @@ const OrganisationDashboard = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ orgId: selectedOrgId, email, role: "viewer" }),
+          body: JSON.stringify({ organisationId: selectedOrgId, invitedEmail: email, invitedRole: "viewer" }),
         }
       );
       
