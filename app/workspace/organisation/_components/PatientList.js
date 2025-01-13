@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Upload, FileWarning, FileCheck, X, Download, UserPlus, Edit, Trash } from 'lucide-react';
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
 import { useLanguage } from '../../../../lib/contexts/LanguageContext';
+import * as XLSX from 'xlsx';
 
 export const PatientList = ({ patientList, onUploadList }) => {
   const { t } = useLanguage();
@@ -19,30 +20,109 @@ export const PatientList = ({ patientList, onUploadList }) => {
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
   const [isAddingPatient, setIsAddingPatient] = useState(false);
+  const [availableSheets, setAvailableSheets] = useState([]);
+  const [selectedSheet, setSelectedSheet] = useState('');
+  const [fileReaderResult, setFileReaderResult] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileRead = (file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target.result;
-      const lines = text.split('\n').filter(line => line.trim());
+    console.log('File type:', file.type);
+    console.log('File name:', file.name);
+    
+    if (file.type === 'text/csv') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length > 0) {
+          const headers = lines[0].split(',').map(header => header.trim());
+          const rows = lines.slice(1, 6).map(line => 
+            line.split(',').map(cell => cell.trim())
+          );
+          setCsvFile(file);
+          setCsvPreview({ headers, rows, allRows: lines.slice(1) });
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      // Handle Excel files
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          console.log('FileReader loaded');
+          setFileReaderResult(e.target.result);
+          const data = new Uint8Array(e.target.result);
+          console.log('Data length:', data.length);
+          
+          const workbook = XLSX.read(data, { type: 'array' });
+          console.log('Sheets found:', workbook.SheetNames);
+          
+          // Store all available sheets
+          setAvailableSheets(workbook.SheetNames);
+          
+          if (workbook.SheetNames.length > 1) {
+            // If multiple sheets, set the first one as default AND process it
+            setSelectedSheet(workbook.SheetNames[0]);
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
+            if (jsonData.length > 0) {
+              const headers = jsonData[0].map(header => header?.toString().trim() || '');
+              const rows = jsonData.slice(1, 6).map(row => 
+                row.map(cell => cell?.toString().trim() || '')
+              );
+              setCsvFile(file);
+              setCsvPreview({ 
+                headers, 
+                rows, 
+                allRows: jsonData.slice(1).map(row => 
+                  row.map(cell => cell?.toString().trim() || '')
+                )
+              });
+            }
+          } else {
+            // If only one sheet, process it immediately
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
+            if (jsonData.length > 0) {
+              const headers = jsonData[0].map(header => header?.toString().trim() || '');
+              const rows = jsonData.slice(1, 6).map(row => 
+                row.map(cell => cell?.toString().trim() || '')
+              );
+              setCsvFile(file);
+              setCsvPreview({ 
+                headers, 
+                rows, 
+                allRows: jsonData.slice(1).map(row => 
+                  row.map(cell => cell?.toString().trim() || '')
+                )
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error processing Excel file:', error);
+          setError('Error processing Excel file: ' + error.message);
+        }
+      };
       
-      if (lines.length > 0) {
-        const headers = lines[0].split(',').map(header => header.trim());
-        const rows = lines.slice(1, 6).map(line => 
-          line.split(',').map(cell => cell.trim())
-        );
-        setCsvFile(file);
-        setCsvPreview({ headers, rows, allRows: lines.slice(1) });
-      }
-    };
-    reader.readAsText(file);
+      reader.onerror = (error) => {
+        console.error('FileReader error:', error);
+        setError('Error reading file: ' + error.message);
+      };
+      
+      reader.readAsArrayBuffer(file);
+    }
   };
 
   useEffect(() => {
     if (csvPreview && columnMapping.nameColumn && columnMapping.dobColumn) {
       const headers = csvPreview.headers;
       const patients = csvPreview.allRows.map(line => {
-        const values = line.split(',').map(value => value.trim());
+        // If line is an array (Excel format), use it directly
+        // If it's a string (CSV format), split it
+        const values = Array.isArray(line) ? line : line.split(',').map(value => value.trim());
         return {
           customerName: values[headers.indexOf(columnMapping.nameColumn)],
           dateOfBirth: values[headers.indexOf(columnMapping.dobColumn)],
@@ -54,8 +134,24 @@ export const PatientList = ({ patientList, onUploadList }) => {
   }, [csvPreview, columnMapping]);
 
   const validateFile = (file) => {
-    if (file.type !== 'text/csv') {
-      setError(t('workspace.organisation.patientList.uploadModal.errors.csvOnly'));
+    // Excel file extensions
+    const validExcelExtensions = ['.xlsx', '.xls'];
+    const validTypes = [
+      'text/csv',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      // Additional Excel MIME types that browsers might use
+      'application/excel',
+      'application/x-excel',
+      'application/x-msexcel'
+    ];
+    
+    // Check file extension for Excel files
+    const fileName = file.name.toLowerCase();
+    const isExcelFile = validExcelExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!validTypes.includes(file.type) && !isExcelFile) {
+      setError(t('workspace.organisation.patientList.uploadModal.errors.fileTypeError'));
       return false;
     }
     return true;
@@ -87,6 +183,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
     setError('');
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) fileInput.value = '';
+    setFileReaderResult(null);
   };
 
   const handleUploadConfirm = async () => {
@@ -100,12 +197,15 @@ export const PatientList = ({ patientList, onUploadList }) => {
       return;
     }
 
+    setIsUploading(true);
     try {
       await onUploadList(parsedPatients);
       setIsUploadModalOpen(false);
       handleRemoveFile();
     } catch (error) {
       setError(t('workspace.organisation.patientList.uploadModal.errors.uploadFailed'));
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -407,7 +507,7 @@ export const PatientList = ({ patientList, onUploadList }) => {
                     <input
                       type="file"
                       className="hidden"
-                      accept=".csv"
+                      accept=".csv,.xlsx,.xls"
                       onChange={handleFileInput}
                     />
                   </label>
@@ -528,15 +628,74 @@ export const PatientList = ({ patientList, onUploadList }) => {
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-4 mt-6">
-                  <SecondaryButton onClick={() => setIsUploadModalOpen(false)}>
+                {csvFile && csvFile.type !== 'text/csv' && availableSheets.length > 1 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-text-primary mb-1">
+                      {t('workspace.organisation.patientList.uploadModal.selectSheet')}
+                    </label>
+                    <select
+                      value={selectedSheet}
+                      onChange={(e) => {
+                        console.log('Changing to sheet:', e.target.value);
+                        setSelectedSheet(e.target.value);
+                        try {
+                          const workbook = XLSX.read(new Uint8Array(fileReaderResult), { type: 'array' });
+                          const sheet = workbook.Sheets[e.target.value];
+                          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                          
+                          if (jsonData.length > 0) {
+                            const headers = jsonData[0].map(header => header?.toString().trim() || '');
+                            const rows = jsonData.slice(1, 6).map(row => 
+                              row.map(cell => cell?.toString().trim() || '')
+                            );
+                            setCsvPreview({ 
+                              headers, 
+                              rows, 
+                              allRows: jsonData.slice(1).map(row => 
+                                row.map(cell => cell?.toString().trim() || '')
+                              )
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Error changing sheet:', error);
+                          setError('Error changing sheet: ' + error.message);
+                        }
+                      }}
+                      className="w-full rounded-md bg-bg-secondary border-border-main text-text-primary"
+                    >
+                      {availableSheets.map((sheetName) => (
+                        <option key={sheetName} value={sheetName}>
+                          {sheetName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Upload Button */}
+                <div className="mt-4 flex justify-end">
+                  <SecondaryButton
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="mr-2"
+                    disabled={isUploading}
+                  >
                     Cancel
                   </SecondaryButton>
                   <ActiveButton
                     onClick={handleUploadConfirm}
-                    disabled={!csvFile || !columnMapping.nameColumn || !columnMapping.dobColumn}
+                    disabled={!columnMapping.nameColumn || !columnMapping.dobColumn || isUploading}
                   >
-                    Upload
+                    {isUploading ? (
+                      <div className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                      </div>
+                    ) : (
+                      'Upload Patient List'
+                    )}
                   </ActiveButton>
                 </div>
               </div>
