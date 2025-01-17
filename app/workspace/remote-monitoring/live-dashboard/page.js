@@ -32,6 +32,7 @@ const RemoteMonitoringDashboardPage = () => {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const { user } = useAuth();
   const [retryingCallId, setRetryingCallId] = useState(null);
+  const [activeCalls, setActiveCalls] = useState([]);
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -61,16 +62,28 @@ const RemoteMonitoringDashboardPage = () => {
       (snapshot) => {
         if (!snapshot.exists()) {
           setQueuedCalls([]);
+          setActiveCalls([]);
           setIsLoading(false);
           return;
         }
         const data = snapshot.data();
+        
+        // Handle queued calls
         const queuedCalls = Object.entries(data.queue || {}).map(([id, call]) => ({
           id,
           ...call,
           type: 'queued'
         }));
         setQueuedCalls(queuedCalls);
+
+        // Handle active calls
+        const activeCallsList = Object.entries(data.active_calls || {}).map(([id, call]) => ({
+          id,
+          ...call,
+          type: 'in_progress',
+          status: 'in_progress'
+        }));
+        setActiveCalls(activeCallsList);
       }
     );
 
@@ -130,6 +143,22 @@ const RemoteMonitoringDashboardPage = () => {
       });
     });
 
+    // Add active calls
+    activeCalls.forEach(activeCall => {
+      allCalls.push({
+        id: activeCall.id,
+        call_sid: activeCall.call_sid,
+        patientName: activeCall.experience_custom_args?.patient_name,
+        patientDateOfBirth: activeCall.experience_custom_args?.patient_dob,
+        userNumber: activeCall.phone_number,
+        objectives: activeCall.experience_custom_args?.objectives,
+        createdAt: activeCall.started_at,
+        status: 'in_progress',
+        type: 'in_progress',
+        viewed: false
+      });
+    });
+
     // Add processed (failed) calls that don't have a matching conversation
     processedCalls.forEach(processedCall => {
       if (!conversationIds.has(processedCall.call_sid)) {
@@ -170,7 +199,7 @@ const RemoteMonitoringDashboardPage = () => {
       
       return dateB - dateA;
     });
-  }, [conversations, queuedCalls, processedCalls]);
+  }, [conversations, queuedCalls, processedCalls, activeCalls]);
 
   // Filter calls based on status
   const filteredCalls = useMemo(() => {
@@ -334,6 +363,7 @@ const RemoteMonitoringDashboardPage = () => {
           >
             <option value="all">{t('workspace.remoteMonitoring.dashboard.statusFilter.all')}</option>
             <option value="queued">{t('workspace.remoteMonitoring.dashboard.statusFilter.queued')}</option>
+            <option value="in_progress">{t('workspace.remoteMonitoring.dashboard.statusFilter.inProgress')}</option>
             <option value="processed">{t('workspace.remoteMonitoring.dashboard.statusFilter.processed')}</option>
             <option value="failed">{t('workspace.remoteMonitoring.dashboard.statusFilter.failed')}</option>
           </select>
