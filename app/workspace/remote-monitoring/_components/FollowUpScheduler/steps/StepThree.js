@@ -98,17 +98,24 @@ const StepThree = ({
       </div>
 
       <div className="flex justify-between mt-6">
-        <SecondaryButton onClick={onBack}>
+        <SecondaryButton 
+          onClick={onBack}
+          disabled={isScheduling}
+        >
           {t('workspace.remoteMonitoring.stepThree.navigation.back')}
         </SecondaryButton>
         <ActiveButton
           onClick={onSchedule}
           disabled={!scheduledDates.size || isScheduling}
         >
-          {isScheduling 
-            ? t('workspace.remoteMonitoring.stepThree.navigation.scheduling')
-            : t('workspace.remoteMonitoring.stepThree.navigation.schedule')
-          }
+          {isScheduling ? (
+            <div className="flex items-center gap-2">
+              <LoadingSpinner size="sm" />
+              {t('workspace.remoteMonitoring.stepThree.navigation.scheduling')}
+            </div>
+          ) : (
+            t('workspace.remoteMonitoring.stepThree.navigation.schedule')
+          )}
         </ActiveButton>
       </div>
     </div>

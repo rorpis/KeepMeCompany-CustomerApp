@@ -9,7 +9,6 @@ import StepOne from './steps/StepOne';
 import StepTwo from './steps/StepTwo';
 import StepThree from './steps/StepThree';
 import PresetModal from './PresetModal';
-import LoadingSpinner from "@/app/_components/LoadingSpinner";
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
 import CallTypeSelector from './steps/CallTypeSelector';
 
@@ -43,6 +42,9 @@ export const FollowUpScheduler = () => {
   const [presetName, setPresetName] = useState('');
   const [isEditingPreset, setIsEditingPreset] = useState(false);
   const [selectedPresetIndex, setSelectedPresetIndex] = useState(null);
+
+  // Add this to the existing state declarations (around line 31-40)
+  const [isCallingNow, setIsCallingNow] = useState(false);
 
   const handleSavePreset = async () => {
     try {
@@ -174,6 +176,9 @@ export const FollowUpScheduler = () => {
   };
 
   const handleCallNow = async () => {
+    if (isCallingNow) return; // Prevent multiple clicks
+    setIsCallingNow(true);
+    
     const currentDate = new Date();
     const dateStr = currentDate.toLocaleDateString('en-US', { 
       weekday: 'short',
@@ -233,6 +238,7 @@ export const FollowUpScheduler = () => {
       console.error(t('workspace.remoteMonitoring.scheduler.errors.schedulingError'), error);
     } finally {
       setIsScheduling(false);
+      setIsCallingNow(false);
     }
   };
 
@@ -287,6 +293,7 @@ export const FollowUpScheduler = () => {
         <CallTypeSelector
           onCallNow={handleCallNow}
           onSchedule={() => setCurrentStep(4)}
+          isCallingNow={isCallingNow}
         />
       )}
 
