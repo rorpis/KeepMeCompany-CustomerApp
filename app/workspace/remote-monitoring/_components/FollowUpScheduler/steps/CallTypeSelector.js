@@ -2,8 +2,9 @@
 
 import { ActiveButton } from '@/app/_components/global_components';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
+import LoadingSpinner from "@/app/_components/LoadingSpinner";
 
-const CallTypeSelector = ({ onCallNow, onSchedule }) => {
+const CallTypeSelector = ({ onCallNow, onSchedule, isCallingNow }) => {
   const { t } = useLanguage();
 
   return (
@@ -14,10 +15,13 @@ const CallTypeSelector = ({ onCallNow, onSchedule }) => {
       
       <div className="grid grid-cols-2 gap-8">
         <div 
-          onClick={onCallNow}
-          className="cursor-pointer bg-bg-secondary hover:bg-bg-main p-8 rounded-lg border-2 border-border-main transition-colors duration-200 flex flex-col items-center justify-center gap-4"
+          onClick={!isCallingNow ? onCallNow : undefined}
+          className={`cursor-pointer bg-bg-secondary hover:bg-bg-main p-8 rounded-lg border-2 border-border-main transition-colors duration-200 flex flex-col items-center justify-center gap-4 ${
+            isCallingNow ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
         >
-          <h4 className="text-xl font-semibold text-text-primary">
+          <h4 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+            {isCallingNow && <LoadingSpinner size="sm" />}
             {t('workspace.remoteMonitoring.callType.callNow.title')}
           </h4>
           <p className="text-text-secondary text-center">
@@ -26,8 +30,10 @@ const CallTypeSelector = ({ onCallNow, onSchedule }) => {
         </div>
 
         <div 
-          onClick={onSchedule}
-          className="cursor-pointer bg-bg-secondary hover:bg-bg-main p-8 rounded-lg border-2 border-border-main transition-colors duration-200 flex flex-col items-center justify-center gap-4"
+          onClick={!isCallingNow ? onSchedule : undefined}
+          className={`cursor-pointer bg-bg-secondary hover:bg-bg-main p-8 rounded-lg border-2 border-border-main transition-colors duration-200 flex flex-col items-center justify-center gap-4 ${
+            isCallingNow ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
         >
           <h4 className="text-xl font-semibold text-text-primary">
             {t('workspace.remoteMonitoring.callType.schedule.title')}
