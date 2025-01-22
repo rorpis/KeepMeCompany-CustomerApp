@@ -207,26 +207,27 @@ export function RemoteMonitoringDashboard({
             borderBottom: '2px solid rgb(156 163 175)'
           }}
         >
-          <table className="w-full border-collapse border-2 border-gray-300">
-            <thead className="sticky top-0 z-20 bg-black">
-              <tr className="[&>th]:bg-black">
-                <th className="border-2 border-gray-300 h-12 text-white">
+          <table className="w-full border-collapse border-2 border-gray-300 [border-spacing:0]" 
+                 style={{ marginTop: '-2px' }}>
+            <thead className="sticky top-0 z-20">
+              <tr className="bg-white">
+                <th className="h-12 bg-black text-white border-r-2 border-gray-300">
                   {t('workspace.triageDashboard.table.patientName')}
                 </th>
-                <th className="border-2 border-gray-300 h-12 text-white">
+                <th className="h-12 bg-black text-white border-r-2 border-gray-300">
                   {t('workspace.triageDashboard.table.phoneNumber')}
                 </th>
-                <th className="border-2 border-gray-300 h-12 text-white">
+                <th className="h-12 bg-black text-white border-r-2 border-gray-300">
                   {t('workspace.triageDashboard.table.time')}
                 </th>
-                <th className="border-2 border-gray-300 h-12 text-white">
+                <th className="h-12 bg-black text-white border-r-2 border-gray-300">
                   {t('workspace.remoteMonitoring.upcomingCalls.table.status')}
                 </th>
-                <th className="border-2 border-gray-300 h-12 text-white">
+                <th className="h-12 bg-black text-white border-r-2 border-gray-300">
                   {t('workspace.triageDashboard.table.viewResults.title')}
                 </th>
                 {showMarkAsViewed && 
-                  <th className="border-2 border-gray-300 h-12 text-white">
+                  <th className="h-12 bg-black text-white">
                     {t('workspace.triageDashboard.table.actions')}
                   </th>
                 }
