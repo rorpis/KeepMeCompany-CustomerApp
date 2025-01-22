@@ -199,10 +199,16 @@ export function RemoteMonitoringDashboard({
           </button>
         </div>
 
-        {/* Fixed header table */}
-        <div className="w-full">
+        {/* Single table with sticky headers */}
+        <div 
+          className="w-full max-h-[70vh] overflow-y-auto"
+          style={{ 
+            marginTop: '-2px',
+            borderBottom: '2px solid rgb(156 163 175)'
+          }}
+        >
           <table className="w-full border-collapse border-2 border-gray-300">
-            <thead className="bg-black">
+            <thead className="sticky top-0 z-20 bg-black">
               <tr className="[&>th]:bg-black">
                 <th className="border-2 border-gray-300 h-12 text-white">
                   {t('workspace.triageDashboard.table.patientName')}
@@ -226,18 +232,6 @@ export function RemoteMonitoringDashboard({
                 }
               </tr>
             </thead>
-          </table>
-        </div>
-
-        {/* Scrollable body */}
-        <div 
-          className="w-full max-h-[70vh] overflow-y-auto"
-          style={{ 
-            marginTop: '-2px',
-            borderBottom: '2px solid rgb(156 163 175)'
-          }}
-        >
-          <table className="w-full border-collapse border-2 border-gray-300">
             <tbody>
               {Object.entries(groupedCalls).map(([dateStr, dateCalls]) => (
                 <React.Fragment key={dateStr}>
@@ -245,12 +239,11 @@ export function RemoteMonitoringDashboard({
                   <tr>
                     <td 
                       colSpan={showMarkAsViewed ? 6 : 5} 
-                      className="bg-gray-100 font-semibold text-gray-700 text-center sticky top-0 z-10 h-10"
+                      className="bg-gray-100 font-semibold text-gray-700 text-center sticky top-12 z-10 h-10"
                       style={{ 
                         backgroundColor: 'rgb(243 244 246)',
                         boxShadow: 'inset 0 2px 0 rgb(156 163 175), inset 0 -2px 0 rgb(156 163 175), 0 2px 4px rgba(0, 0, 0, 0.1)',
                         position: 'sticky',
-                        top: 0,
                         zIndex: 10
                       }}
                     >
