@@ -8,6 +8,7 @@ import { listenToConversationsFollowUps, listenToQueueCalls } from '../../../../
 import { Dialog } from '@headlessui/react';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useAuth } from '../../../../lib/firebase/authContext';
+import DateRangePicker from '../../../_components/DateRangePicker';
 
 const RemoteMonitoringDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
@@ -18,13 +19,11 @@ const RemoteMonitoringDashboardPage = () => {
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 7);
-    date.setHours(0, 0, 0, 0);
-    return date.toISOString().slice(0, 16);
+    return date.toISOString().split('T')[0];
   });
   const [endDate, setEndDate] = useState(() => {
     const date = new Date();
-    date.setHours(23, 59, 59, 999);
-    return date.toISOString().slice(0, 16);
+    return date.toISOString().split('T')[0];
   });
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -162,18 +161,26 @@ const RemoteMonitoringDashboardPage = () => {
     // Add processed (failed) calls that don't have a matching conversation
     processedCalls.forEach(processedCall => {
       if (!conversationIds.has(processedCall.call_sid)) {
-        allCalls.push({
-          id: processedCall.id,
-          call_sid: processedCall.call_sid,
-          patientName: processedCall.experience_custom_args?.patient_name,
-          patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
-          userNumber: processedCall.phone_number,
-          objectives: processedCall.experience_custom_args?.objectives,
-          createdAt: processedCall.processed_at,
-          status: 'failed',
-          type: 'failed',
-          viewed: processedCall.viewed || false
-        });
+        const processedDate = processedCall.processed_at?.toDate?.() || new Date(processedCall.processed_at);
+        const startDateTime = new Date(startDate);
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999); // Set end date to end of day
+
+        // Only add if the processed date falls within the selected date range
+        if (processedDate >= startDateTime && processedDate <= endDateTime) {
+          allCalls.push({
+            id: processedCall.id,
+            call_sid: processedCall.call_sid,
+            patientName: processedCall.experience_custom_args?.patient_name,
+            patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
+            userNumber: processedCall.phone_number,
+            objectives: processedCall.experience_custom_args?.objectives,
+            createdAt: processedCall.processed_at,
+            status: 'failed',
+            type: 'failed',
+            viewed: processedCall.viewed || false
+          });
+        }
       }
     });
 
@@ -199,7 +206,7 @@ const RemoteMonitoringDashboardPage = () => {
       
       return dateB - dateA;
     });
-  }, [conversations, queuedCalls, processedCalls, activeCalls]);
+  }, [conversations, queuedCalls, processedCalls, activeCalls, startDate, endDate]);
 
   // Filter calls based on status
   const filteredCalls = useMemo(() => {
@@ -327,35 +334,27 @@ const RemoteMonitoringDashboardPage = () => {
         {t('workspace.remoteMonitoring.dashboard.title')}
       </h2>
       
-      {/* Filters Section */}
-      <div className="mb-6 flex gap-4 items-end">
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
-            {t('workspace.remoteMonitoring.dashboard.dateFilter.from')}
-          </label>
-          <input
-            type="datetime-local"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
+      {/* Filters Section filters side by side with small margin between them*/}
+      <div className="flex flex-row gap-5">  
+        <div className="mb-6">
+          <DateRangePicker
+            startDate={new Date(startDate)}
+            endDate={endDate ? new Date(endDate) : null}
+            onStartDateChange={(date) => {
+              if (date) {
+                setStartDate(date.toISOString().split('T')[0]);
+              }
+            }}
+            onEndDateChange={(date) => {
+              if (date) {
+                setEndDate(date.toISOString().split('T')[0]);
+              } else {
+                setEndDate(null);
+              }
+            }}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
-            {t('workspace.remoteMonitoring.dashboard.dateFilter.to')}
-          </label>
-          <input
-            type="datetime-local"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            min={startDate}
-            className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
-            {t('workspace.remoteMonitoring.dashboard.statusFilter.label')}
-          </label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}

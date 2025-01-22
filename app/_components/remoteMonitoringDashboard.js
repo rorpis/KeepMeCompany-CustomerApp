@@ -40,7 +40,6 @@ const formatCallData = (call) => {
       id: call.id,
       call_sid: call.call_sid,
       patientName: call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
-      patientDateOfBirth: call.patientDateOfBirth || call.experience_custom_args?.patient_dob || 'Unknown',
       userNumber: call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
       formattedTimestamp: scheduledDate ? formatDate(scheduledDate) : '',
@@ -55,7 +54,6 @@ const formatCallData = (call) => {
       id: call.id,
       call_sid: call.call_sid,
       patientName: call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
-      patientDateOfBirth: call.patientDateOfBirth || call.experience_custom_args?.patient_dob || 'Unknown',
       userNumber: call.userNumber || call.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
       formattedTimestamp: formatDate(call.createdAt),
@@ -74,7 +72,6 @@ const formatCallData = (call) => {
       id: call.id,
       call_sid: call.call_sid,
       patientName: call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
-      patientDateOfBirth: call.patientDateOfBirth || call.experience_custom_args?.patient_dob || 'Unknown',
       userNumber: call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
       formattedTimestamp: formatDate(call.createdAt),
@@ -90,7 +87,6 @@ const formatCallData = (call) => {
       id: call.id,
       call_sid: call.call_sid,
       patientName: call.patientName || call.patient?.name || call.experience_custom_args?.patient_name || 'Unknown',
-      patientDateOfBirth: call.patientDateOfBirth || call.patient?.dateOfBirth || call.experience_custom_args?.patient_dob || 'Unknown',
       userNumber: call.userNumber || call.user_number || 'Unknown',
       objectives: call.objectives || [],
       formattedTimestamp: formatDate(call.createdAt),
@@ -105,7 +101,6 @@ const formatCallData = (call) => {
     id: call.id,
     call_sid: call.call_sid,
     patientName: call.patientName || call.patient?.name || call.experience_custom_args?.patient_name || 'Unknown',
-    patientDateOfBirth: call.patientDateOfBirth || call.patient?.dateOfBirth || call.experience_custom_args?.patient_dob || 'Unknown',
     userNumber: call.userNumber || call.user_number || 'Unknown',
     objectives: call.objectives || [],
     formattedTimestamp: formatDate(call.createdAt),
@@ -149,9 +144,6 @@ export function RemoteMonitoringDashboard({
             {t('workspace.triageDashboard.table.patientName')}
           </th>
           <th className="border border-gray-300 px-4 py-2">
-            {t('workspace.triageDashboard.table.dateOfBirth')}
-          </th>
-          <th className="border border-gray-300 px-4 py-2">
             {t('workspace.triageDashboard.table.phoneNumber')}
           </th>
           <th className="border border-gray-300 px-4 py-2">
@@ -183,9 +175,6 @@ export function RemoteMonitoringDashboard({
             }
           >
             <td className="border border-gray-300 px-4 py-2 text-black">{call.patientName}</td>
-            <td className="border border-gray-300 px-4 py-2 text-black">
-              {call.patientDateOfBirth}
-            </td>
             <td className="border border-gray-300 px-4 py-2 text-black">
               {call.userNumber}
             </td>
