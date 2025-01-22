@@ -12,14 +12,12 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
   const [settings, setSettings] = useState({
     patientIntake: {
       firstMessage: '',
-      lastMessage: '',
       firstObjectives: [],
       lastObjectives: [],
       patientVerificationEnabled: false,
     },
     remoteMonitoring: {
       firstMessage: '',
-      lastMessage: '',
       firstObjectives: [],
       lastObjectives: [],
       patientInformation: [],
@@ -27,12 +25,10 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
   });
   const [showDropdown, setShowDropdown] = useState({
     patientIntake: {
-      firstMessage: false,
-      lastMessage: false
+      firstMessage: false
     },
     remoteMonitoring: {
-      firstMessage: false,
-      lastMessage: false
+      firstMessage: false
     }
   });
   const [unsavedSections, setUnsavedSections] = useState({
@@ -63,26 +59,6 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
     setShowDropdown(prev => ({
       ...prev,
       [section]: { ...prev[section], firstMessage: false }
-    }));
-  };
-
-  const insertVariableLastMessage = (variable, section) => {
-    const input = document.querySelector(`textarea[name="${section}-lastMessage"]`);
-    const cursorPosition = input.selectionStart;
-    const textBeforeCursor = settings[section].lastMessage.substring(0, cursorPosition);
-    const textAfterCursor = settings[section].lastMessage.substring(cursorPosition);
-    
-    // Find the start of the @ symbol before cursor
-    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
-    const newMessage = textBeforeCursor.substring(0, lastAtSymbol) + variable + textAfterCursor;
-    
-    setSettings(prev => ({
-      ...prev,
-      [section]: { ...prev[section], lastMessage: newMessage }
-    }));
-    setShowDropdown(prev => ({
-      ...prev,
-      [section]: { ...prev[section], lastMessage: false }
     }));
   };
 
@@ -121,55 +97,18 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
     }
   };
 
-  const handleInputChangeLastMessage = (e, section) => {
-    const value = e.target.value;
-    const cursorPosition = e.target.selectionStart;
-    
-    setSettings(prev => ({
-      ...prev,
-      [section]: { ...prev[section], lastMessage: value }
-    }));
-    markSectionAsUnsaved(section);
-
-    // Get text before cursor
-    const textBeforeCursor = value.substring(0, cursorPosition);
-    
-    // Show dropdown if there's an @ symbol before the cursor
-    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
-    if (lastAtSymbol !== -1) {
-      setShowDropdown(prev => ({
-        ...prev,
-        [section]: { ...prev[section], lastMessage: true }
-      }));
-      
-      // Filter variables based on text after @
-      const searchTerm = textBeforeCursor.substring(lastAtSymbol + 1);
-      setFilteredVariables(variables.filter(v => 
-        v.label.toLowerCase().includes(searchTerm.toLowerCase())
-      ));
-    } else {
-      setShowDropdown(prev => ({
-        ...prev,
-        [section]: { ...prev[section], lastMessage: false }
-      }));
-      setFilteredVariables(variables);
-    }
-  };
-
   // Initialize settings from organisationDetails when component mounts
   useEffect(() => {
     if (organisationDetails?.settings) {
       setSettings({
         patientIntake: {
           firstMessage: organisationDetails.settings.patientIntake?.firstMessage || '',
-          lastMessage: organisationDetails.settings.patientIntake?.lastMessage || '',
           firstObjectives: organisationDetails.settings.patientIntake?.firstObjectives || [],
           lastObjectives: organisationDetails.settings.patientIntake?.lastObjectives || [],
           patientVerificationEnabled: organisationDetails.settings.patientIntake?.patientVerificationEnabled || false,
         },
         remoteMonitoring: {
           firstMessage: organisationDetails.settings.remoteMonitoring?.firstMessage || '',
-          lastMessage: organisationDetails.settings.remoteMonitoring?.lastMessage || '',
           firstObjectives: organisationDetails.settings.remoteMonitoring?.firstObjectives || [],
           lastObjectives: organisationDetails.settings.remoteMonitoring?.lastObjectives || [],
           patientInformation: organisationDetails.settings.remoteMonitoring?.patientInformation || [],
@@ -388,37 +327,6 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
               >
                 {t('workspace.settings.objectives.addObjective')}
               </button>
-            </div>
-          </div>
-
-          {/* Last Message Section */}
-          <div className="bg-bg-secondary rounded-lg p-6">
-            <div className="space-y-4">
-              <label className="block font-medium text-text-primary">
-                {t('workspace.settings.messages.lastMessage')}
-              </label>
-              <div className="relative">
-                <textarea
-                  name={`${section}-lastMessage`}
-                  value={settings[section].lastMessage}
-                  onChange={(e) => handleInputChangeLastMessage(e, section)}
-                  className="w-full h-32 px-4 py-2 rounded-md bg-bg-main border border-border-main text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue text-sm"
-                />
-                <div className="px-3 text-gray-400 text-sm">@ Variables</div>
-                {showDropdown[section]?.lastMessage && (
-                  <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
-                    {filteredVariables.map((varItem) => (
-                      <div
-                        key={`${section}-last-${varItem.value}`}
-                        onClick={() => insertVariableLastMessage(varItem.value, section)}
-                        className="p-2 hover:bg-gray-200 cursor-pointer"
-                      >
-                        {varItem.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
