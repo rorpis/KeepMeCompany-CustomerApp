@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import { SecondaryButton } from '@/app/_components/global_components';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
+import { format, parseISO } from 'date-fns';
 
 const callingCodes = [
   { country: 'UK', code: '44', iso2: 'GB' },
@@ -22,7 +23,7 @@ const StepOne = ({
   setSelectedPatients, 
   onNext 
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCode, setSelectedCode] = useState('44');
 
@@ -38,7 +39,7 @@ const StepOne = ({
     if (!patientId) return;
 
     const selectedPatientDetails = organisationDetails?.patientList?.find(
-      patient => `${patient.customerName} - ${patient.dateOfBirth}` === patientId
+      patient => patient.id === patientId
     );
 
     const newSelectedPatients = new Map(selectedPatients);
@@ -119,12 +120,11 @@ const StepOne = ({
               </div>
             ) : (
               filteredPatients.map((patient, index) => {
-                const patientId = `${patient.customerName} - ${patient.dateOfBirth}`;
-                const isSelected = selectedPatients.has(patientId);
+                const isSelected = selectedPatients.has(patient.id);
                 return (
                   <div
                     key={index}
-                    onClick={() => handlePatientSelect(patientId)}
+                    onClick={() => handlePatientSelect(patient.id)}
                     className={`py-2 px-2 cursor-pointer transition-colors duration-150 rounded ${
                       isSelected 
                         ? 'bg-blue-500 text-white'
@@ -134,7 +134,21 @@ const StepOne = ({
                     {patient.customerName} - {patient.dateOfBirth}
                     {patient.lastScheduled && (
                       <div className={`text-sm ${isSelected ? 'text-white/80' : 'text-text-secondary'}`}>
-                        Last Scheduled: {new Date(patient.lastScheduled.date).toLocaleDateString()} {patient.lastScheduled.time}
+                        Last Scheduled: {
+                          (() => {
+                            try {
+                              const date = typeof patient.lastScheduled === 'string' 
+                                ? parseISO(patient.lastScheduled)
+                                : patient.lastScheduled?.toDate?.() // Handle Firestore Timestamp
+                                || new Date(patient.lastScheduled); // Fallback
+                              
+                              return format(date, 'dd/MM/yyyy HH:mm');
+                            } catch (error) {
+                              console.error('Date parsing error:', error);
+                              return '';
+                            }
+                          })()
+                        }
                       </div>
                     )}
                   </div>
@@ -157,7 +171,7 @@ const StepOne = ({
             <div className="space-y-2 h-[calc(100vh-400px)] min-h-[300px] overflow-y-auto">
               {Array.from(selectedPatients.entries()).map(([patientId, data]) => {
                 const patient = filteredPatients.find(
-                  p => `${p.customerName} - ${p.dateOfBirth}` === patientId
+                  p => p.id === patientId
                 );
                 return (
                   <div key={patientId} className="flex flex-col gap-2 bg-bg-secondary p-3 rounded border border-border-main">

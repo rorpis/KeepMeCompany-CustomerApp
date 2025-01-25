@@ -6,7 +6,7 @@ import { Dialog } from '@headlessui/react';
 import ObjectivesTable from '../workspace/remote-monitoring/_components/ObjectivesTable';
 
 // Reuse the formatter helper with additional fields
-const formatCallData = (call) => {
+const formatCallData = (call, organisationDetails) => {
   const formatTime = (date) => {
     if (!date) return '';
     
@@ -44,18 +44,26 @@ const formatCallData = (call) => {
     return d;
   };
 
+  // Helper to get patient details from patientList
+  const getPatientDetails = (patientId) => {
+    if (!patientId || !organisationDetails?.patientList) return null;
+    return organisationDetails.patientList.find(patient => patient.id === patientId);
+  };
+
   if (call.type === 'queued') {
-    // Create a date from the scheduled_for data
     const scheduledDate = call.scheduled_for?.date && call.scheduled_for?.time ? 
       new Date(`${call.scheduled_for.date} ${call.scheduled_for.time}`) : 
       null;
 
+    const patientDetails = getPatientDetails(call.patientId);
+
     return {
       id: call.id,
       call_sid: call.call_sid,
-      patientName: call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
-      userNumber: call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
+      patientName: patientDetails?.customerName || call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
+      userNumber: patientDetails?.phoneNumber || call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
+      patientId: call.patientId || null,
       formattedTimestamp: scheduledDate ? formatTime(scheduledDate) : '',
       fullDate: scheduledDate ? getFullDate(scheduledDate) : null,
       status: 'queued',
@@ -65,12 +73,15 @@ const formatCallData = (call) => {
   }
 
   if (call.type === 'in_progress') {
+    const patientDetails = getPatientDetails(call.patientId);
+
     return {
       id: call.id,
       call_sid: call.call_sid,
-      patientName: call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
-      userNumber: call.userNumber || call.phone_number || 'Unknown',
+      patientName: patientDetails?.customerName || call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
+      userNumber: patientDetails?.phoneNumber || call.userNumber || call.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
+      patientId: call.patientId || null,
       formattedTimestamp: formatTime(call.createdAt),
       fullDate: getFullDate(call.createdAt),
       status: 'in_progress',
@@ -79,17 +90,15 @@ const formatCallData = (call) => {
   }
 
   else if (call.type === 'failed') {
-    // Create a date from the scheduled_for data
-    const scheduledDate = call.scheduled_for?.date && call.scheduled_for?.time ? 
-      new Date(`${call.scheduled_for.date} ${call.scheduled_for.time}`) : 
-      null;
+    const patientDetails = getPatientDetails(call.patientId);
 
     return {
       id: call.id,
       call_sid: call.call_sid,
-      patientName: call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
-      userNumber: call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
+      patientName: patientDetails?.customerName || call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
+      userNumber: patientDetails?.phoneNumber || call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
+      patientId: call.patientId || null,
       formattedTimestamp: formatTime(call.createdAt),
       fullDate: getFullDate(call.createdAt),
       status: 'failed',
@@ -98,39 +107,26 @@ const formatCallData = (call) => {
   }
 
   // For processed calls, check if there's a recording URL
-  if (!call.recordingURL) {
-    // If no recording URL, treat as failed
-    return {
-      id: call.id,
-      call_sid: call.call_sid,
-      patientName: call.patientName || call.patient?.name || call.experience_custom_args?.patient_name || 'Unknown',
-      userNumber: call.userNumber || call.user_number || 'Unknown',
-      objectives: call.objectives || [],
-      formattedTimestamp: formatTime(call.createdAt),
-      fullDate: getFullDate(call.createdAt),
-      status: 'failed',
-      viewed: call.viewed || false,
-      recordingURL: null
-    };
-  }
-
-  // If there is a recording URL, process as normal
+  const patientDetails = getPatientDetails(call.patientId);
+  
   return {
     id: call.id,
     call_sid: call.call_sid,
-    patientName: call.patientName || call.patient?.name || call.experience_custom_args?.patient_name || 'Unknown',
-    userNumber: call.userNumber || call.user_number || 'Unknown',
+    patientName: patientDetails?.customerName || call.patientName || call.patient?.name || call.experience_custom_args?.patient_name || 'Unknown',
+    userNumber: patientDetails?.phoneNumber || call.userNumber || call.user_number || 'Unknown',
     objectives: call.objectives || [],
+    patientId: call.patientId || null,
     formattedTimestamp: formatTime(call.createdAt),
     fullDate: getFullDate(call.createdAt),
-    status: 'processed',
+    status: call.recordingURL ? 'processed' : 'failed',
     viewed: call.viewed || false,
-    recordingURL: call.recordingURL
+    recordingURL: call.recordingURL || null
   };
 };
 
 export function RemoteMonitoringDashboard({ 
   calls, 
+  organisationDetails,
   markAsViewed, 
   onViewResults,
   handleCallAgain,
@@ -141,7 +137,7 @@ export function RemoteMonitoringDashboard({
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [selectedCall, setSelectedCall] = useState(null);
   const { t, language } = useLanguage();
-  const formattedCalls = calls.map(formatCallData);
+  const formattedCalls = calls.map(call => formatCallData(call, organisationDetails));
   
   const viewedCalls = formattedCalls.filter(call => call.viewed);
   const nonViewedCalls = formattedCalls.filter(call => !call.viewed);
@@ -209,6 +205,9 @@ export function RemoteMonitoringDashboard({
         >
           <table className="w-full border-collapse border-2 border-gray-300 [border-spacing:0]" 
                  style={{ marginTop: '-2px' }}>
+            <thead className="sticky top-0 z-20">
+              <tr className="bg-white"></tr>
+            </thead>
             <thead className="sticky top-0 z-20">
               <tr className="bg-white">
                 <th className="h-12 bg-black text-white border-r-2 border-gray-300">
