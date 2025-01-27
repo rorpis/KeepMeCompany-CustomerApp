@@ -133,14 +133,8 @@ export const FollowUpScheduler = () => {
     setIsScheduling(true);
     try {
       const patients = Array.from(selectedPatients.entries()).map(([patientId, data]) => {
-        const patientDetails = organisationDetails?.patientList?.find(
-          patient => `${patient.customerName} - ${patient.dateOfBirth}` === patientId
-        );
         return {
-          patientId,
-          patientName: patientDetails.customerName,
-          patientDateOfBirth: patientDetails.dateOfBirth,
-          phoneNumber: `+${data.countryCode}${data.phoneNumber}`
+          patientId: patientId
         };
       });
 
@@ -206,14 +200,8 @@ export const FollowUpScheduler = () => {
     try {
       setIsScheduling(true);
       const patients = Array.from(selectedPatients.entries()).map(([patientId, data]) => {
-        const patientDetails = organisationDetails?.patientList?.find(
-          patient => `${patient.customerName} - ${patient.dateOfBirth}` === patientId
-        );
         return {
-          patientId,
-          patientName: patientDetails.customerName,
-          patientDateOfBirth: patientDetails.dateOfBirth,
-          phoneNumber: `+${data.countryCode}${data.phoneNumber}`
+          patientId: patientId
         };
       });
 

@@ -129,6 +129,7 @@ const RemoteMonitoringDashboardPage = () => {
         call_sid: queuedCall.call_sid,
         patientName: queuedCall.experience_custom_args?.patient_name,
         patientDateOfBirth: queuedCall.experience_custom_args?.patient_dob,
+        patientId: queuedCall.patient_id,
         userNumber: queuedCall.phone_number,
         objectives: queuedCall.experience_custom_args?.objectives,
         scheduled_for: {
@@ -149,6 +150,7 @@ const RemoteMonitoringDashboardPage = () => {
         call_sid: activeCall.call_sid,
         patientName: activeCall.experience_custom_args?.patient_name,
         patientDateOfBirth: activeCall.experience_custom_args?.patient_dob,
+        patientId: activeCall.patient_id,
         userNumber: activeCall.phone_number,
         objectives: activeCall.experience_custom_args?.objectives,
         createdAt: activeCall.started_at,
@@ -173,6 +175,7 @@ const RemoteMonitoringDashboardPage = () => {
             call_sid: processedCall.call_sid,
             patientName: processedCall.experience_custom_args?.patient_name,
             patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
+            patientId: processedCall.patient_id,
             userNumber: processedCall.phone_number,
             objectives: processedCall.experience_custom_args?.objectives,
             createdAt: processedCall.processed_at,
@@ -230,6 +233,7 @@ const RemoteMonitoringDashboardPage = () => {
   };
 
   const handleCallAgain = async (call) => {
+    console.log("Retrying call:", call);
     setRetryingCallId(call.id);
     try {
       const currentDate = new Date();
@@ -249,10 +253,7 @@ const RemoteMonitoringDashboardPage = () => {
 
       // Format patient data
       const patients = [{
-        patientId: `${call.patientName} - ${call.patientDateOfBirth}`,
-        patientName: call.patientName,
-        patientDateOfBirth: call.patientDateOfBirth,
-        phoneNumber: call.userNumber
+        patientId: call.patientId
       }];
 
       const idToken = await user.getIdToken();
@@ -288,17 +289,6 @@ const RemoteMonitoringDashboardPage = () => {
 
   const handleDeleteCall = async (call) => {
     try {
-      // Parse the formatted timestamp (e.g., "10/01/2025 at 18:26") to ISO format
-      const [datePart, timePart] = call.formattedTimestamp.split(' at ');
-      const [day, month, year] = datePart.split('/');
-      const [hours, minutes] = timePart.split(':');
-      
-      // Create a Date object in local time
-      const localDate = new Date(year, month - 1, day, hours, minutes);
-      
-      // Convert to UTC ISO string and take just the relevant part
-      const isoTimestamp = localDate.toISOString().slice(0, 19).replace('Z', '');
-
       const idToken = await user.getIdToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/delete_call`,
@@ -309,9 +299,8 @@ const RemoteMonitoringDashboardPage = () => {
             Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
-            callInfo: call,
-            organisationId: selectedOrgId,
-            enqueuedAt: isoTimestamp
+            callId: call.id,
+            organisationId: selectedOrgId
           }),
         }
       );
@@ -371,6 +360,7 @@ const RemoteMonitoringDashboardPage = () => {
 
       <RemoteMonitoringDashboard 
         calls={filteredCalls}
+        organisationDetails={organisationDetails}
         onViewResults={handleViewResults}
         markAsViewed={async (callId) => {
           const callToMark = filteredCalls.find(call => call.id === callId);
