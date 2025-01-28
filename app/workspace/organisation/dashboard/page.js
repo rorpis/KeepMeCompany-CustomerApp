@@ -7,7 +7,7 @@ import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
 import { useUser } from '../../../../lib/contexts/UserContext';
 import { useLanguage } from '../../../../lib/contexts/LanguageContext';
 import { TeamMembers } from '../_components/TeamMembers';
-import { PatientList } from '../_components/PatientList';
+import { PatientList } from '../_components/patients/PatientList';
 import { Settings } from '../_components/Settings';
 import { Credits } from '../_components/Credits';
 
@@ -19,10 +19,11 @@ const OrganisationDashboard = () => {
     selectedOrgId, 
     organisationDetails, 
     loading, 
-    refreshOrganisationDetails: refreshDetails
+    refreshOrganisationDetails
   } = useOrganisation();
   const { userDetails, loading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState('general');
+  const [isPatientListLoading, setIsPatientListLoading] = useState(false);
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -58,6 +59,7 @@ const OrganisationDashboard = () => {
 
   const handleUploadPatientList = async (patients) => {
     try {
+      setIsPatientListLoading(true);
       const idToken = await user.getIdToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/upload_patient_list`,
@@ -76,19 +78,25 @@ const OrganisationDashboard = () => {
 
       const data = await response.json();
       if (data.upload_message === "success") {
-        if (typeof refreshDetails === 'function') {
-          await refreshDetails();
-        } else {
-          console.warn('Refresh function not available');
-          // Optionally reload the page as fallback
-          window.location.reload();
-        }
-        return true;
+        const result = {
+          stats: data.stats,
+          success: true
+        };
+        
+        await refreshOrganisationDetails();
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        return result;
       }
       throw new Error(data.message || "Failed to update patient list");
     } catch (error) {
       console.error("Failed to upload patient list:", error);
-      throw error;
+      return {
+        success: false,
+        error: error.message
+      };
+    } finally {
+      setIsPatientListLoading(false);
     }
   };
 
@@ -112,11 +120,10 @@ const OrganisationDashboard = () => {
 
       const data = await response.json();
       if (data.update_message === "success") {
-        if (typeof refreshDetails === 'function') {
-          await refreshDetails();
+        if (typeof refreshOrganisationDetails === 'function') {
+          await refreshOrganisationDetails();
         } else {
           console.warn('Refresh function not available');
-          // Optionally reload the page as fallback
           window.location.reload();
         }
         alert("Settings updated successfully!");
@@ -126,6 +133,108 @@ const OrganisationDashboard = () => {
     } catch (error) {
       console.error("Failed to update settings:", error);
       alert("Failed to update settings");
+    }
+  };
+
+  const handleAddPatient = async (patientData) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/add_single_patient`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ 
+            orgId: selectedOrgId,
+            patient: patientData
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok && data.message === "success") {
+        return { 
+          success: true,
+          patientId: data.patientId 
+        };
+      }
+      
+      throw new Error(data.error || data.message || "Failed to add patient");
+    } catch (error) {
+      console.error("Failed to add patient:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  };
+
+  const handleEditSinglePatient = async (patientId, patientData) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/edit_single_patient`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ 
+            orgId: selectedOrgId,
+            patient: patientData,
+            patientId: patientId
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok && data.message === "success") {
+        return { success: true };
+      }
+      
+      throw new Error(data.error || data.message || "Failed to update patient");
+    } catch (error) {
+      console.error("Failed to update patient:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  };
+
+  const handleDeletePatients = async (patientIds) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/delete_patients`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            orgId: selectedOrgId,
+            patientIds: Array.isArray(patientIds) ? patientIds : [patientIds]
+          })
+        }
+      );
+
+      const data = await response.json();
+      if (data.message === "success") {
+        return { success: true };
+      }
+      throw new Error(data.message || "Failed to delete patient(s)");
+    } catch (error) {
+      console.error("Failed to delete patient(s):", error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   };
 
@@ -243,6 +352,10 @@ const OrganisationDashboard = () => {
               <PatientList 
                 patientList={organisationDetails.patientList || []}
                 onUploadList={handleUploadPatientList}
+                onAddPatient={handleAddPatient}
+                onEditPatient={handleEditSinglePatient}
+                onDeletePatient={handleDeletePatients}
+                isLoading={isPatientListLoading}
               />
             </div>
           )}
