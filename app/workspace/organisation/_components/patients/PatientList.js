@@ -10,8 +10,17 @@ import PatientListPreview from './PatientListPreview';
 import { FileUploadModal } from './FileUploadModal';
 import { PatientModal } from './PatientModal';
 import { PatientListTable } from './PatientListTable';
+import { ConfirmDialog } from './ConfirmDialog';
+import { Toast } from '@/components/Toast';
 
-export const PatientList = ({ patientList, onUploadList, isLoading }) => {
+export const PatientList = ({ 
+  patientList, 
+  onUploadList, 
+  onAddPatient,
+  onEditPatient,
+  onDeletePatient,
+  isLoading 
+}) => {
   const { t } = useLanguage();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [csvFile, setCsvFile] = useState(null);
@@ -36,6 +45,12 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
   const [mappedData, setMappedData] = useState(null);
   const [uploadStats, setUploadStats] = useState(null);
   const [isFullScreenLoading, setIsFullScreenLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [localPatientList, setLocalPatientList] = useState(patientList);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleFileRead = (file) => {
     console.log('File type:', file.type);
@@ -137,6 +152,10 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
       setParsedPatients(patients);
     }
   }, [csvPreview, columnMapping]);
+
+  useEffect(() => {
+    setLocalPatientList(patientList);
+  }, [patientList]);
 
   const validateFile = (file) => {
     // Excel file extensions
@@ -263,42 +282,124 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
   };
 
   const handleAddPatient = async (formData) => {
-    if (!formData.customerName || !formData.dateOfBirth) {
-      alert(t('workspace.organisation.patientList.patientModal.errors.required'));
-      return;
-    }
-
     setIsAddingPatient(true);
     try {
-      await onUploadList([...patientList, formData]);
-      setShowAddPatientModal(false);
+      // Optimistically add the patient to the local list
+      const tempPatient = { ...formData };
+      setLocalPatientList(prevList => [...prevList, tempPatient]);
+
+      const result = await onAddPatient(formData);
+      if (result.success) {
+        // Update the temporary patient with the real ID
+        setLocalPatientList(prevList => 
+          prevList.map(patient => 
+            patient === tempPatient ? { ...patient, id: result.patientId } : patient
+          )
+        );
+        setShowAddPatientModal(false);
+        setToast({
+          show: true,
+          message: t('workspace.organisation.patientList.messages.addSuccess'),
+          type: 'success'
+        });
+      } else {
+        // Revert the optimistic update
+        setLocalPatientList(patientList);
+        setToast({
+          show: true,
+          message: result.error || t('workspace.organisation.patientList.messages.addFailed'),
+          type: 'error'
+        });
+      }
     } catch (error) {
-      alert(t('workspace.organisation.patientList.patientModal.errors.addFailed'));
+      // Revert the optimistic update
+      setLocalPatientList(patientList);
+      setToast({
+        show: true,
+        message: error.message || t('workspace.organisation.patientList.messages.addFailed'),
+        type: 'error'
+      });
     } finally {
       setIsAddingPatient(false);
     }
   };
 
   const handleEditPatient = async (updatedPatient) => {
-    const updatedList = patientList.map(patient => 
-      patient === editingPatient ? updatedPatient : patient
-    );
+    setIsEditing(true);
     try {
-      await onUploadList(updatedList);
-      setEditingPatient(null);
+      // Optimistically update the UI
+      setLocalPatientList(prevList => 
+        prevList.map(patient => 
+          patient.id === updatedPatient.id ? updatedPatient : patient
+        )
+      );
+
+      const result = await onEditPatient(updatedPatient.id, updatedPatient);
+      if (result.success) {
+        setEditingPatient(null);
+        setToast({
+          show: true,
+          message: t('workspace.organisation.patientList.messages.editSuccess'),
+          type: 'success'
+        });
+      } else {
+        // Revert the optimistic update on error
+        setLocalPatientList(patientList);
+        setToast({
+          show: true,
+          message: result.error || t('workspace.organisation.patientList.messages.editFailed'),
+          type: 'error'
+        });
+      }
     } catch (error) {
-      alert('Failed to update patient');
+      // Revert the optimistic update on error
+      setLocalPatientList(patientList);
+      setToast({
+        show: true,
+        message: error.message || t('workspace.organisation.patientList.messages.editFailed'),
+        type: 'error'
+      });
+    } finally {
+      setIsEditing(false);
     }
   };
 
-  const handleDeletePatient = async (patientToDelete) => {
-    if (!window.confirm(t('workspace.patientList.deleteConfirm'))) return;
-    
-    const updatedList = patientList.filter(patient => patient !== patientToDelete);
+  const handleDeletePatient = async (patient) => {
+    setPatientToDelete(patient);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsDeleting(true);
     try {
-      await onUploadList(updatedList);
+      const result = await onDeletePatient([patientToDelete.id]);
+      if (result.success) {
+        // Optimistically update the UI
+        setLocalPatientList(prevList => 
+          prevList.filter(patient => patient.id !== patientToDelete.id)
+        );
+        setToast({
+          show: true,
+          message: t('workspace.organisation.patientList.messages.deleteSuccess'),
+          type: 'success'
+        });
+      } else {
+        setToast({
+          show: true,
+          message: t('workspace.organisation.patientList.messages.deleteFailed'),
+          type: 'error'
+        });
+      }
     } catch (error) {
-      alert(t('workspace.patientList.errors.deleteFailed'));
+      setToast({
+        show: true,
+        message: t('workspace.organisation.patientList.messages.deleteFailed'),
+        type: 'error'
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+      setPatientToDelete(null);
     }
   };
 
@@ -362,7 +463,7 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
             <div className="max-h-[60vh] overflow-y-auto">
               {patientList && patientList.length > 0 ? (
                 <PatientListTable 
-                  patients={patientList}
+                  patients={localPatientList}
                   onEdit={(patient) => setEditingPatient(patient)}
                   onDelete={(patient) => handleDeletePatient(patient)}
                 />
@@ -400,6 +501,7 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
                 dateOfBirth: '',
                 phoneNumber: ''
               }}
+              existingFields={getExistingCustomFields()}
             />
           )}
 
@@ -409,7 +511,22 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
               onSave={handleEditPatient}
               onClose={() => setEditingPatient(null)}
               isEditing={true}
-              isLoading={isAddingPatient}
+              isLoading={isEditing}
+              existingFields={getExistingCustomFields()}
+            />
+          )}
+
+          {showDeleteConfirm && (
+            <ConfirmDialog
+              isOpen={showDeleteConfirm}
+              onClose={() => {
+                setShowDeleteConfirm(false);
+                setPatientToDelete(null);
+              }}
+              onConfirm={confirmDelete}
+              title={t('workspace.organisation.patientList.deleteConfirmTitle')}
+              message={t('workspace.organisation.patientList.deleteConfirmMessage')}
+              isLoading={isDeleting}
             />
           )}
 
@@ -431,6 +548,14 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
             <UploadStats 
               stats={uploadStats} 
               onClose={() => setUploadStats(null)} 
+            />
+          )}
+
+          {toast.show && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast({ ...toast, show: false })}
             />
           )}
         </>

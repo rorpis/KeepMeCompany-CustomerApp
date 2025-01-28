@@ -136,6 +136,108 @@ const OrganisationDashboard = () => {
     }
   };
 
+  const handleAddPatient = async (patientData) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/add_single_patient`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ 
+            orgId: selectedOrgId,
+            patient: patientData
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok && data.message === "success") {
+        return { 
+          success: true,
+          patientId: data.patientId 
+        };
+      }
+      
+      throw new Error(data.error || data.message || "Failed to add patient");
+    } catch (error) {
+      console.error("Failed to add patient:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  };
+
+  const handleEditSinglePatient = async (patientId, patientData) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/edit_single_patient`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ 
+            orgId: selectedOrgId,
+            patient: patientData,
+            patientId: patientId
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok && data.message === "success") {
+        return { success: true };
+      }
+      
+      throw new Error(data.error || data.message || "Failed to update patient");
+    } catch (error) {
+      console.error("Failed to update patient:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  };
+
+  const handleDeletePatients = async (patientIds) => {
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/delete_patients`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            orgId: selectedOrgId,
+            patientIds: Array.isArray(patientIds) ? patientIds : [patientIds]
+          })
+        }
+      );
+
+      const data = await response.json();
+      if (data.message === "success") {
+        return { success: true };
+      }
+      throw new Error(data.message || "Failed to delete patient(s)");
+    } catch (error) {
+      console.error("Failed to delete patient(s):", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  };
+
   if (!selectedOrgId) return null;
   if (loading) return <div>{t('workspace.organisation.dashboard.loading')}</div>;
   if (!organisationDetails) return <div>{t('workspace.organisation.dashboard.notFound')}</div>;
@@ -250,6 +352,9 @@ const OrganisationDashboard = () => {
               <PatientList 
                 patientList={organisationDetails.patientList || []}
                 onUploadList={handleUploadPatientList}
+                onAddPatient={handleAddPatient}
+                onEditPatient={handleEditSinglePatient}
+                onDeletePatient={handleDeletePatients}
                 isLoading={isPatientListLoading}
               />
             </div>
