@@ -7,6 +7,9 @@ import ColumnMappingPreview from './ColumnMappingPreview';
 import DataPreview from './DataPreview';
 import UploadStats from './UploadStats';
 import PatientListPreview from './PatientListPreview';
+import { FileUploadModal } from './FileUploadModal';
+import { PatientModal } from './PatientModal';
+import { PatientListTable } from './PatientListTable';
 
 export const PatientList = ({ patientList, onUploadList, isLoading }) => {
   const { t } = useLanguage();
@@ -318,134 +321,6 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
     return Array.from(customFields);
   };
 
-  const PatientModal = ({ patient, onSave, onClose, isEditing, isLoading }) => {
-    // Format incoming date to YYYY-MM-DD for input element
-    const formatDateForInput = (dateString) => {
-      if (!dateString) return '';
-      // Handle mm/dd/yyyy format
-      const parts = dateString.split('/');
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-      }
-      return dateString;
-    };
-
-    // Format date to mm/dd/yyyy for saving
-    const formatDateForSave = (dateString) => {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
-      const year = date.getFullYear();
-      return `${month}/${day}/${year}`;
-    };
-
-    const [formData, setFormData] = useState({
-      customerName: patient?.customerName || '',
-      dateOfBirth: formatDateForInput(patient?.dateOfBirth) || '',
-      phoneNumber: patient?.phoneNumber || ''
-    });
-
-    return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-bg-elevated rounded-lg max-w-md w-full p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-text-primary">
-              {isEditing 
-                ? t('workspace.organisation.patientList.patientModal.editTitle')
-                : t('workspace.organisation.patientList.patientModal.addTitle')}
-            </h3>
-            <button onClick={onClose} className="text-text-secondary hover:text-text-primary">
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
-                {t('workspace.organisation.patientList.patientModal.fields.name')} *
-              </label>
-              <input
-                type="text"
-                value={formData.customerName}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  customerName: e.target.value
-                }))}
-                className="w-full rounded-md bg-bg-secondary border-border-main text-text-primary"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
-                {t('workspace.organisation.patientList.patientModal.fields.dob')} *
-              </label>
-              <input
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  dateOfBirth: e.target.value
-                }))}
-                className="w-full rounded-md bg-bg-secondary border-border-main text-text-primary"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
-                {t('workspace.organisation.patientList.patientModal.fields.phone')}
-              </label>
-              <input
-                type="tel"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  phoneNumber: e.target.value
-                }))}
-                className="w-full rounded-md bg-bg-secondary border-border-main text-text-primary"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-4 mt-6">
-            <SecondaryButton onClick={onClose}>
-              {t('workspace.organisation.patientList.patientModal.buttons.cancel')}
-            </SecondaryButton>
-            <ActiveButton
-              onClick={() => {
-                if (!formData.customerName || !formData.dateOfBirth) {
-                  alert('Name and Date of Birth are required');
-                  return;
-                }
-                // Format the date before saving
-                const formattedData = {
-                  ...formData,
-                  dateOfBirth: formatDateForSave(formData.dateOfBirth)
-                };
-                onSave(formattedData);
-              }}
-              disabled={!formData.customerName || !formData.dateOfBirth || isLoading}
-            >
-              {isLoading ? (
-                <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Adding...
-                </div>
-              ) : (
-                isEditing ? 'Save Changes' : 'Add Patient'
-              )}
-            </ActiveButton>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <section className="bg-bg-elevated rounded-lg p-6">
       {isLoading ? (
@@ -486,7 +361,7 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
           <div className="overflow-x-auto">
             <div className="max-h-[60vh] overflow-y-auto">
               {patientList && patientList.length > 0 ? (
-                <PatientListPreview 
+                <PatientListTable 
                   patients={patientList}
                   onEdit={(patient) => setEditingPatient(patient)}
                   onDelete={(patient) => handleDeletePatient(patient)}
@@ -501,102 +376,17 @@ export const PatientList = ({ patientList, onUploadList, isLoading }) => {
 
           {/* Upload Modal */}
           {isUploadModalOpen && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-bg-elevated rounded-lg max-w-3xl w-full p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-text-primary">Update Patient List</h3>
-                  <button 
-                    onClick={() => {
-                      setIsUploadModalOpen(false);
-                      handleRemoveFile();
-                      setShowMappingPreview(false);
-                      setShowDataPreview(false);
-                    }} 
-                    className="text-text-secondary hover:text-text-primary"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                {!csvFile && (
-                  <div
-                    className={`
-                      relative border-2 border-dashed rounded-lg p-8
-                      flex flex-col items-center justify-center gap-4
-                      ${isDragging ? 'border-primary-blue bg-primary-blue/10' : 'border-border-main'}
-                      ${error ? 'border-red-500' : ''}
-                    `}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
-                  >
-                    <Upload size={40} className="text-text-secondary" />
-                    <div className="text-center">
-                      <p className="text-lg mb-2 text-text-primary">Drag and drop your file here</p>
-                      <p className="text-sm text-text-secondary">or</p>
-                      <label className="mt-2 cursor-pointer text-primary-blue hover:text-primary-blue-hover">
-                        Browse files
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept=".csv,.xlsx,.xls"
-                          onChange={handleFileInput}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                )}
-
-                {/* Error Message */}
-                {error && (
-                  <div className="flex items-center gap-2 text-red-500 mt-4">
-                    <FileWarning size={20} />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                {/* Column Mapping */}
-                {csvFile && csvPreview && !showDataPreview && (
-                  <div className="border border-border-main rounded-lg p-4 mt-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2 text-green-500">
-                        <FileCheck size={20} />
-                        <span className="text-text-primary">{csvFile.name}</span>
-                      </div>
-                      <button
-                        onClick={handleRemoveFile}
-                        className="text-text-secondary hover:text-text-primary"
-                      >
-                        <X size={20} />
-                      </button>
-                    </div>
-
-                    <ColumnMappingPreview 
-                      csvColumns={csvPreview.headers}
-                      onCancel={handleRemoveFile}
-                      onContinue={handleMappingContinue}
-                      existingFields={getExistingCustomFields()}
-                    />
-                  </div>
-                )}
-
-                {/* Data Preview */}
-                {showDataPreview && mappedData && (
-                  <DataPreview 
-                    mappedData={mappedData}
-                    onBack={() => {
-                      setShowDataPreview(false);
-                      setMappedData(null);
-                    }}
-                    onConfirm={handleUploadConfirm}
-                    isUploading={isUploading}
-                  />
-                )}
-              </div>
-            </div>
+            <FileUploadModal
+              isOpen={isUploadModalOpen}
+              onClose={() => {
+                setIsUploadModalOpen(false);
+                handleRemoveFile();
+                setShowMappingPreview(false);
+                setShowDataPreview(false);
+              }}
+              onUpload={onUploadList}
+              existingFields={getExistingCustomFields()}
+            />
           )}
 
           {showAddPatientModal && (
