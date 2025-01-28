@@ -37,7 +37,7 @@ export default function PatientListPreview({ patients, onEdit, onDelete }) {
   );
 
   return (
-    <div className="overflow-x-auto relative h-[calc(100vh-22rem)] rounded-lg border border-gray-200">
+    <div className="overflow-x-auto relative h-[calc(100vh-22rem)] rounded-lg">
       <table className="w-full min-w-[600px] border-collapse bg-white">
         <thead className="sticky top-0 z-10 after:absolute after:left-0 after:bottom-0 after:w-full after:border-b after:border-gray-300">
           <tr>
