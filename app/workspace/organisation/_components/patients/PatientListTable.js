@@ -31,6 +31,7 @@ export const PatientListTable = ({
           onDelete={onDelete}
           visibleColumns={allFields}
           showActions={true}
+          showSearch={true}
         />
       </div>
     </div>
