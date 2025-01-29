@@ -35,6 +35,10 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
     patientIntake: false,
     remoteMonitoring: false
   });
+  const [expandedSections, setExpandedSections] = useState({
+    patientIntake: false,
+    remoteMonitoring: false
+  });
   
   const variables = [
     { label: 'Patient Name', value: '@PatientName' },
@@ -177,195 +181,233 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
   };
 
   const renderSection = (title, section) => (
-    <div className="bg-bg-elevated rounded-lg p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="bg-bg-elevated rounded-lg p-6">
+      <div 
+        className="flex items-center justify-between cursor-pointer"
+        onClick={() => setExpandedSections(prev => ({
+          ...prev,
+          [section]: !prev[section]
+        }))}
+      >
         <h3 className="text-xl font-semibold text-text-primary">
           {t(`workspace.settings.sections.${section}`)}
         </h3>
-        {section === 'patientIntake' && !organisationDetails?.registeredNumbers?.length && (
-          <span className="text-red-500 text-lg">
-            {t('workspace.intake.phoneNumberRequired')}
-          </span>
-        )}
-        {unsavedSections[section] && (
-          <span className="text-yellow-500 text-lg">
-            {t('workspace.settings.unsavedChanges')}
-          </span>
-        )}
-      </div>
-      
-      <div className="relative">
-        {section === 'patientIntake' && !organisationDetails?.registeredNumbers?.length && (
-          <div className="absolute inset-0 bg-bg-elevated/50 backdrop-blur-[0.8px] z-10 rounded" />
-        )}
-        
-        {section === 'patientIntake' && (
-          <div className="flex items-center justify-between py-4 border-b border-border-main mb-6">
-            <div>
-              <label className="text-sm font-medium text-text-primary">
-                {t('workspace.settings.patientVerification.title')}
-              </label>
-              <p className="text-xs text-text-secondary">
-                {t('workspace.settings.patientVerification.description')}
-              </p>
-            </div>
-            <button
-              onClick={() => setSettings(prev => ({
-                ...prev,
-                patientIntake: {
-                  ...prev.patientIntake,
-                  patientVerificationEnabled: !prev.patientIntake.patientVerificationEnabled
-                }
-              }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                settings.patientIntake.patientVerificationEnabled 
-                  ? 'bg-green-200 focus:ring-green-500' 
-                  : 'bg-red-200 focus:ring-red-500'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
-                  settings.patientIntake.patientVerificationEnabled 
-                    ? 'translate-x-6 bg-green-600' 
-                    : 'translate-x-1 bg-red-600'
-                }`}
-              />
-            </button>
-          </div>
-        )}
-
-        <div className="space-y-8">
-          {/* First Message Section */}
-          <div className="bg-bg-secondary rounded-lg p-6">
-            <div className="space-y-4">
-              <label className="block font-medium text-text-primary">
-                {t('workspace.settings.messages.firstMessage')}
-              </label>
-              <div className="relative">
-                <textarea
-                  name={`${section}-firstMessage`}
-                  value={settings[section].firstMessage}
-                  onChange={(e) => handleInputChangeFirstMessage(e, section)}
-                  className="w-full h-32 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
-                />
-                <div className="px-3 text-gray-400 text-sm">@ Variables</div>
-                {showDropdown[section]?.firstMessage && (
-                  <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
-                    {filteredVariables.map((varItem) => (
-                      <div
-                        key={`${section}-first-${varItem.value}`}
-                        onClick={() => insertVariableFirstMessage(varItem.value, section)}
-                        className="p-2 hover:bg-gray-200 cursor-pointer"
-                      >
-                        {varItem.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* First Objectives Section */}
-          <div className="bg-bg-secondary rounded-lg p-6">
-            <div className="space-y-4">
-              <label className="block font-medium text-text-primary">
-                {t('workspace.settings.objectives.first')}
-              </label>
-              {settings[section].firstObjectives.map((objective, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={objective}
-                    onChange={(e) => handleObjectiveChange(section, 'firstObjectives', index, e.target.value)}
-                    placeholder={t('workspace.settings.objectives.placeholder')}
-                    className="flex-1 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm"
-                  />
-                  <button
-                    onClick={() => handleRemoveObjective(section, 'firstObjectives', index)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    {t('workspace.settings.objectives.removeObjective')}
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => handleAddObjective(section, 'firstObjectives')}
-                className="text-primary-blue hover:text-primary-blue-hover text-sm"
-              >
-                {t('workspace.settings.objectives.addObjective')}
-              </button>
-            </div>
-          </div>
-
-          {/* Last Objectives Section */}
-          <div className="bg-bg-secondary rounded-lg p-6">
-            <div className="space-y-4">
-              <label className="block font-medium text-text-primary">
-                {t('workspace.settings.objectives.last')}
-              </label>
-              {settings[section].lastObjectives.map((objective, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={objective}
-                    onChange={(e) => handleObjectiveChange(section, 'lastObjectives', index, e.target.value)}
-                    placeholder={t('workspace.settings.objectives.placeholder')}
-                    className="flex-1 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm"
-                  />
-                  <button
-                    onClick={() => handleRemoveObjective(section, 'lastObjectives', index)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    {t('workspace.settings.objectives.removeObjective')}
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => handleAddObjective(section, 'lastObjectives')}
-                className="text-primary-blue hover:text-primary-blue-hover text-sm"
-              >
-                {t('workspace.settings.objectives.addObjective')}
-              </button>
-            </div>
-          </div>
-
-          {/* Patient Information Section - Only show for remoteMonitoring */}
-          {section === 'remoteMonitoring' && (
-            <div className="bg-bg-secondary rounded-lg p-6 border-2 border-primary-blue/20">
-              <div className="space-y-4">
-                <label className="block font-medium text-text-primary">
-                  {t('workspace.settings.patientInformation.title')}
-                </label>
-                {settings.remoteMonitoring.patientInformation.map((info, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={info}
-                      onChange={(e) => handleObjectiveChange('remoteMonitoring', 'patientInformation', index, e.target.value)}
-                      placeholder={t('workspace.settings.patientInformation.placeholder')}
-                      className="flex-1 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm"
-                    />
-                    <button
-                      onClick={() => handleRemoveObjective('remoteMonitoring', 'patientInformation', index)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      {t('workspace.settings.objectives.removeObjective')}
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => handleAddObjective('remoteMonitoring', 'patientInformation')}
-                  className="text-primary-blue hover:text-primary-blue-hover text-sm"
-                >
-                  {t('workspace.settings.patientInformation.addInformation')}
-                </button>
-              </div>
-            </div>
+        <div className="flex items-center gap-4">
+          {section === 'patientIntake' && !organisationDetails?.registeredNumbers?.length && (
+            <span className="text-red-500 text-lg">
+              {t('workspace.intake.phoneNumberRequired')}
+            </span>
           )}
-          
+          {unsavedSections[section] && (
+            <span className="text-yellow-500 text-lg">
+              {t('workspace.settings.unsavedChanges')}
+            </span>
+          )}
+          <span className="text-3xl font-bold text-text-primary">
+            {expandedSections[section] ? '−' : '+'}
+          </span>
         </div>
       </div>
+
+      {expandedSections[section] && (
+        <div className="mt-6">
+          <div className="relative">
+            {section === 'patientIntake' && !organisationDetails?.registeredNumbers?.length && (
+              <div className="absolute inset-0 bg-bg-elevated/50 backdrop-blur-[0.8px] z-10 rounded" />
+            )}
+            
+            {section === 'patientIntake' && (
+              <div className="flex items-center justify-between py-4 border-b border-border-main mb-6">
+                <div>
+                  <label className="text-sm font-medium text-text-primary">
+                    {t('workspace.settings.patientVerification.title')}
+                  </label>
+                  <p className="text-xs text-text-secondary">
+                    {t('workspace.settings.patientVerification.description')}
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSettings(prev => ({
+                      ...prev,
+                      patientIntake: {
+                        ...prev.patientIntake,
+                        patientVerificationEnabled: !prev.patientIntake.patientVerificationEnabled
+                      }
+                    }));
+                  }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    settings.patientIntake.patientVerificationEnabled 
+                      ? 'bg-green-200 focus:ring-green-500' 
+                      : 'bg-red-200 focus:ring-red-500'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
+                      settings.patientIntake.patientVerificationEnabled 
+                        ? 'translate-x-6 bg-green-600' 
+                        : 'translate-x-1 bg-red-600'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-8">
+              {/* First Message Section */}
+              <div className="bg-bg-secondary rounded-lg p-6">
+                <div className="space-y-4">
+                  <label className="block font-medium text-text-primary">
+                    {t('workspace.settings.messages.firstMessage')}
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      name={`${section}-firstMessage`}
+                      value={settings[section].firstMessage}
+                      onChange={(e) => handleInputChangeFirstMessage(e, section)}
+                      className="w-full h-32 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                    />
+                    <div className="px-3 text-gray-400 text-sm">@ Variables</div>
+                    {showDropdown[section]?.firstMessage && (
+                      <div className="absolute text-blue-500 font-bold bg-white border border-gray-300 rounded shadow-lg mt-1">
+                        {filteredVariables.map((varItem) => (
+                          <div
+                            key={`${section}-first-${varItem.value}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              insertVariableFirstMessage(varItem.value, section);
+                            }}
+                            className="p-2 hover:bg-gray-200 cursor-pointer"
+                          >
+                            {varItem.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* First Objectives Section */}
+              <div className="bg-bg-secondary rounded-lg p-6">
+                <div className="space-y-4">
+                  <label className="block font-medium text-text-primary">
+                    {t('workspace.settings.objectives.first')}
+                  </label>
+                  {settings[section].firstObjectives.map((objective, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={objective}
+                        onChange={(e) => handleObjectiveChange(section, 'firstObjectives', index, e.target.value)}
+                        placeholder={t('workspace.settings.objectives.placeholder')}
+                        className="flex-1 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm"
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveObjective(section, 'firstObjectives', index);
+                        }}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        {t('workspace.settings.objectives.removeObjective')}
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddObjective(section, 'firstObjectives');
+                    }}
+                    className="text-primary-blue hover:text-primary-blue-hover text-sm"
+                  >
+                    {t('workspace.settings.objectives.addObjective')}
+                  </button>
+                </div>
+              </div>
+
+              {/* Last Objectives Section */}
+              <div className="bg-bg-secondary rounded-lg p-6">
+                <div className="space-y-4">
+                  <label className="block font-medium text-text-primary">
+                    {t('workspace.settings.objectives.last')}
+                  </label>
+                  {settings[section].lastObjectives.map((objective, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={objective}
+                        onChange={(e) => handleObjectiveChange(section, 'lastObjectives', index, e.target.value)}
+                        placeholder={t('workspace.settings.objectives.placeholder')}
+                        className="flex-1 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm"
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveObjective(section, 'lastObjectives', index);
+                        }}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        {t('workspace.settings.objectives.removeObjective')}
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddObjective(section, 'lastObjectives');
+                    }}
+                    className="text-primary-blue hover:text-primary-blue-hover text-sm"
+                  >
+                    {t('workspace.settings.objectives.addObjective')}
+                  </button>
+                </div>
+              </div>
+
+              {/* Patient Information Section - Only show for remoteMonitoring */}
+              {section === 'remoteMonitoring' && (
+                <div className="bg-bg-secondary rounded-lg p-6 border-2 border-primary-blue/20">
+                  <div className="space-y-4">
+                    <label className="block font-medium text-text-primary">
+                      {t('workspace.settings.patientInformation.title')}
+                    </label>
+                    {settings.remoteMonitoring.patientInformation.map((info, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={info}
+                          onChange={(e) => handleObjectiveChange('remoteMonitoring', 'patientInformation', index, e.target.value)}
+                          placeholder={t('workspace.settings.patientInformation.placeholder')}
+                          className="flex-1 px-4 py-2 rounded-md bg-bg-main border border-border-main text-sm"
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveObjective('remoteMonitoring', 'patientInformation', index);
+                          }}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          {t('workspace.settings.objectives.removeObjective')}
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddObjective('remoteMonitoring', 'patientInformation');
+                      }}
+                      className="text-primary-blue hover:text-primary-blue-hover text-sm"
+                    >
+                      {t('workspace.settings.patientInformation.addInformation')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
