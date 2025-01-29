@@ -1,6 +1,6 @@
-import { Edit, Trash } from 'lucide-react';
 import { useLanguage } from '../../../../../lib/contexts/LanguageContext';
-import PatientListPreview from './PatientListPreview';
+import { PatientTable } from '@/_components/tables/PatientTable';
+
 export const PatientListTable = ({ 
   patients, 
   onEdit, 
@@ -16,13 +16,21 @@ export const PatientListTable = ({
     );
   }
 
+  // Get all unique fields from patients, excluding internal fields
+  const internalFields = ['id', 'lastScheduled'];
+  const allFields = [...new Set(patients.flatMap(patient => 
+    Object.keys(patient).filter(key => !internalFields.includes(key))
+  ))];
+
   return (
     <div className="overflow-x-auto">
       <div className="max-h-[60vh] overflow-y-auto">
-        <PatientListPreview 
+        <PatientTable 
           patients={patients}
           onEdit={onEdit}
           onDelete={onDelete}
+          visibleColumns={allFields}
+          showActions={true}
         />
       </div>
     </div>

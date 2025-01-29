@@ -6,7 +6,6 @@ import * as XLSX from 'xlsx';
 import ColumnMappingPreview from './ColumnMappingPreview';
 import DataPreview from './DataPreview';
 import UploadStats from './UploadStats';
-import PatientListPreview from './PatientListPreview';
 import { FileUploadModal } from './FileUploadModal';
 import { PatientModal } from './PatientModal';
 import { PatientListTable } from './PatientListTable';
