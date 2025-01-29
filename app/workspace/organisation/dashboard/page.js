@@ -80,11 +80,9 @@ const OrganisationDashboard = () => {
       if (data.upload_message === "success") {
         const result = {
           stats: data.stats,
-          success: true
+          success: true,
+          refreshOrganisationDetails
         };
-        
-        await refreshOrganisationDetails();
-        await new Promise(resolve => setTimeout(resolve, 500));
         
         return result;
       }

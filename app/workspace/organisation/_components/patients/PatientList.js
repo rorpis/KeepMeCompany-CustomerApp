@@ -11,7 +11,7 @@ import { FileUploadModal } from './FileUploadModal';
 import { PatientModal } from './PatientModal';
 import { PatientListTable } from './PatientListTable';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Toast } from '@/components/Toast';
+import { Toast } from '@/_components/Toast';
 
 export const PatientList = ({ 
   patientList, 
@@ -51,6 +51,8 @@ export const PatientList = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [localPatientList, setLocalPatientList] = useState(patientList);
   const [isEditing, setIsEditing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
 
   const handleFileRead = (file) => {
     console.log('File type:', file.type);
@@ -231,33 +233,35 @@ export const PatientList = ({
     setShowDataPreview(true);
   };
 
-  const handleUploadConfirm = async () => {
-    if (!mappedData || mappedData.length === 0) {
-      setError(t('workspace.organisation.patientList.uploadModal.errors.noData'));
-      return;
-    }
-
+  const handleUpload = async (data) => {
     setIsFullScreenLoading(true);
     try {
-      const result = await onUploadList(mappedData);
+      const result = await onUploadList(data);
       if (result.success) {
-        // Close modals first
-        setIsUploadModalOpen(false);
-        handleRemoveFile();
-        setShowDataPreview(false);
-        setMappedData(null);
-        
-        // Show stats and keep loading until parent confirms refresh is complete
         setUploadStats(result.stats);
-        
-        // Wait for the parent's refresh to complete
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
+        setUploadResult(result);
+        setToast({
+          show: true,
+          message: t('workspace.organisation.patientList.messages.uploadSuccess'),
+          type: 'success'
+        });
       } else {
-        setError(t('workspace.organisation.patientList.uploadModal.errors.uploadFailed'));
+        setToast({
+          show: true,
+          message: result.error || t('workspace.organisation.patientList.messages.uploadFailed'),
+          type: 'error'
+        });
       }
+      setShowDataPreview(false);
+      setShowMappingPreview(false);
+      setIsUploadModalOpen(false);
+      handleRemoveFile();
     } catch (error) {
-      setError(t('workspace.organisation.patientList.uploadModal.errors.uploadFailed'));
+      setToast({
+        show: true,
+        message: t('workspace.organisation.patientList.messages.uploadFailed'),
+        type: 'error'
+      });
     } finally {
       setIsFullScreenLoading(false);
     }
@@ -424,7 +428,7 @@ export const PatientList = ({
 
   return (
     <section className="bg-bg-elevated rounded-lg p-6">
-      {isLoading ? (
+      {isLoading || isRefreshing ? (
         <div className="flex justify-center items-center h-48">
           <div className="flex flex-col items-center gap-4">
             <svg className="animate-spin h-12 w-12 text-text-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -485,7 +489,7 @@ export const PatientList = ({
                 setShowMappingPreview(false);
                 setShowDataPreview(false);
               }}
-              onUpload={onUploadList}
+              onUpload={handleUpload}
               existingFields={getExistingCustomFields()}
             />
           )}
@@ -547,7 +551,16 @@ export const PatientList = ({
           {uploadStats && (
             <UploadStats 
               stats={uploadStats} 
-              onClose={() => setUploadStats(null)} 
+              onClose={() => {
+                setUploadStats(null);
+                if (uploadResult?.refreshOrganisationDetails) {
+                  setIsRefreshing(true);
+                  uploadResult.refreshOrganisationDetails().finally(() => {
+                    setIsRefreshing(false);
+                    setUploadResult(null);
+                  });
+                }
+              }}
             />
           )}
 
