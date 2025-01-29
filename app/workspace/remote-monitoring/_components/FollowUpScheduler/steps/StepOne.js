@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { format, parseISO } from 'date-fns';
 import { PatientTable } from '@/app/_components/tables/PatientTable';
 import { ChevronDown } from 'lucide-react';
+import { isDateColumn, parseDate } from '@/app/_utils/dateUtils';
 
 const callingCodes = [
   { country: 'UK', code: '44', iso2: 'GB' },
@@ -248,10 +249,31 @@ const StepOne = ({
         <PatientTable 
           allPatients={organisationDetails?.patientList || []}
           patients={organisationDetails?.patientList.filter(patient => {
-            return Object.entries(columnFilters).every(([field, values]) => {
-              if (!values || values.length === 0) return true;
-              const patientValue = patient[field]?.toString() || '';
-              return values.includes(patientValue);
+            return Object.entries(columnFilters).every(([field, filter]) => {
+              if (!filter) return true;
+
+              const value = patient[field];
+              
+              // Handle date filters
+              if (isDateColumn(field, [{ value }])) {
+                const date = parseDate(value);
+                if (!date) return false;
+                
+                const { type, start, end } = filter;
+                switch (type) {
+                  case 'range':
+                    return (!start || date >= start) && (!end || date <= end);
+                  case 'from':
+                    return date >= start;
+                  case 'until':
+                    return date <= end;
+                  default:
+                    return true;
+                }
+              }
+              
+              // Handle regular filters (arrays of values)
+              return filter.includes?.(value?.toString() || '');
             });
           }) || []}
           columnFilters={columnFilters}

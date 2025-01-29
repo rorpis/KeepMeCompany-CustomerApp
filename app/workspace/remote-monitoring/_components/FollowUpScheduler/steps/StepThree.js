@@ -2,7 +2,7 @@
 
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
 import LoadingSpinner from "@/app/_components/LoadingSpinner";
-import TwoWeekCalendar from "@/app/_components/CalendarPicker";
+import TwoWeekCalendar from "@/app/_components/TwoWeekCalendar";
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const StepThree = ({
