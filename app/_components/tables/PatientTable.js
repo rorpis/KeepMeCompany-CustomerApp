@@ -1,6 +1,7 @@
-import { Edit, Trash, Search } from 'lucide-react';
+import { Edit, Trash, Search, Filter } from 'lucide-react';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useState } from 'react';
+import { CheckboxDropdown } from '../CheckboxDropdown';
 
 export const PatientTable = ({ 
   patients,
@@ -18,6 +19,9 @@ export const PatientTable = ({
   onPatientSelect = null,
   onSelectAll = null,
   showRowNumbers = false,
+  columnFilters = {},
+  onColumnFilterChange = null,
+  allPatients = null,
 }) => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,12 +34,34 @@ export const PatientTable = ({
     lastScheduled: 'lastScheduled'
   };
 
-  // Filter patients based on search query
-  const filteredPatients = searchQuery
-    ? patients.filter(patient => 
-        patient.customerName?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : patients;
+  // Modify this function to use the original patients array instead of filtered patients
+  const getUniqueColumnValues = (field) => {
+    // Use allPatients (unfiltered) for dropdown options
+    const sourceData = allPatients || patients;
+    const values = new Set(sourceData.map(patient => patient[field]?.toString() || ''));
+    return Array.from(values)
+      .sort((a, b) => (a || '').localeCompare(b || ''))
+      .map(value => ({
+        value,
+        label: value || '(Empty)'
+      }));
+  };
+
+  // Filter patients based on column filters and search query
+  const filteredPatients = patients.filter(patient => {
+    // First apply column filters
+    const passesColumnFilters = Object.entries(columnFilters).every(([field, values]) => {
+      if (!values || values.length === 0) return true;
+      const patientValue = patient[field]?.toString() || '';
+      return values.includes(patientValue);
+    });
+
+    // Then apply search filter
+    const passesSearch = !searchQuery || 
+      patient.customerName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return passesColumnFilters && passesSearch;
+  });
 
   // Sort patients by name
   const sortedPatients = [...filteredPatients].sort((a, b) => 
@@ -90,10 +116,10 @@ export const PatientTable = ({
       )}
       
       <div className="overflow-x-auto relative h-[calc(100vh-26rem)] rounded-lg">
-        <table className="w-full min-w-[600px] border-collapse bg-white">
-          <thead className="sticky top-0 z-10 after:absolute after:left-0 after:bottom-0 after:w-full after:border-b after:border-gray-300">
+        <table className="w-full min-w-[600px] border-collapse bg-white relative">
+          <thead className="sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-16">
+              <th className="sticky left-0 z-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-16 border-r border-gray-200 after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-200">
                 {selectable && onSelectAll && (
                   <input
                     type="checkbox"
@@ -103,16 +129,38 @@ export const PatientTable = ({
                   />
                 )}
               </th>
-              {visibleColumns.map((field) => (
-                <th 
-                  key={field} 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50"
-                >
-                  {getColumnLabel(field)}
-                </th>
-              ))}
+              {visibleColumns.map((field) => {
+                const uniqueValues = getUniqueColumnValues(field);
+                return (
+                  <th key={field} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      {getColumnLabel(field)}
+                      <CheckboxDropdown
+                        title={<Filter size={14} />}
+                        items={uniqueValues}
+                        selectedItems={columnFilters[field] || []}
+                        onItemToggle={(value) => {
+                          const currentValues = columnFilters[field] || [];
+                          const newValues = currentValues.includes(value)
+                            ? currentValues.filter(v => v !== value)
+                            : [...currentValues, value];
+                          onColumnFilterChange(field, newValues);
+                        }}
+                        onSelectAll={() => {
+                          onColumnFilterChange(field, uniqueValues.map(v => v.value));
+                        }}
+                        onDeselectAll={() => {
+                          onColumnFilterChange(field, []);
+                        }}
+                        buttonClassName="p-1"
+                        dropdownClassName="right-0"
+                      />
+                    </div>
+                  </th>
+                );
+              })}
               {showActions && (
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-24">
+                <th className="sticky right-0 z-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-24 border-l border-gray-200 after:absolute after:top-0 after:left-0 after:bottom-0 after:w-[1px] after:bg-gray-200">
                   {t('workspace.organisation.patientList.fields.actions')}
                 </th>
               )}
@@ -131,7 +179,7 @@ export const PatientTable = ({
                     customRowClassName ? customRowClassName(patient) : ''
                   }`}
                 >
-                  <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                  <td className="sticky left-0 z-10 px-4 py-3 text-sm text-gray-500 whitespace-nowrap bg-white after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-200">
                     {showRowNumbers ? (
                       index + 1
                     ) : selectable ? (
@@ -150,7 +198,7 @@ export const PatientTable = ({
                     </td>
                   ))}
                   {showActions && (
-                    <td className="px-4 py-3">
+                    <td className="sticky right-0 z-10 px-4 py-3 bg-white after:absolute after:top-0 after:left-0 after:bottom-0 after:w-[1px] after:bg-gray-200">
                       {customRowActions ? (
                         customRowActions(patient)
                       ) : (

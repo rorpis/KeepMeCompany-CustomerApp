@@ -52,6 +52,7 @@ export const PatientList = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  const [columnFilters, setColumnFilters] = useState({});
 
   const handleFileRead = (file) => {
     console.log('File type:', file.type);
@@ -425,6 +426,13 @@ export const PatientList = ({
     return Array.from(customFields);
   };
 
+  const handleColumnFilterChange = (field, values) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [field]: values
+    }));
+  };
+
   return (
     <section className="bg-bg-elevated rounded-lg p-6">
       {isLoading || isRefreshing ? (
@@ -465,10 +473,15 @@ export const PatientList = ({
           <div className="overflow-x-auto">
             <div className="max-h-[60vh] overflow-y-auto">
               {patientList && patientList.length > 0 ? (
-                <PatientListTable 
+                <PatientListTable
                   patients={localPatientList}
-                  onEdit={(patient) => setEditingPatient(patient)}
-                  onDelete={(patient) => handleDeletePatient(patient)}
+                  allPatients={localPatientList}
+                  onEdit={handleEditPatient}
+                  onDelete={handleDeletePatient}
+                  showActions={true}
+                  showSearch={true}
+                  columnFilters={columnFilters}
+                  onColumnFilterChange={handleColumnFilterChange}
                 />
               ) : (
                 <div className="text-center text-text-secondary py-8">

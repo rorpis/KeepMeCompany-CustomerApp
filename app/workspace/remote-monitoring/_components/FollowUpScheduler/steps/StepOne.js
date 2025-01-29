@@ -101,6 +101,7 @@ const StepOne = ({
   const [searchQuery, setSearchQuery] = useState('');
   const standardFields = ['customerName', 'dateOfBirth', 'phoneNumber'];
   const [visibleColumns, setVisibleColumns] = useState([...standardFields, 'lastScheduled']);
+  const [columnFilters, setColumnFilters] = useState({});
 
   const getAllFields = () => {
     const internalFields = ['id'];
@@ -125,6 +126,13 @@ const StepOne = ({
         ? prev.filter(col => col !== column)
         : [...prev, column]
     );
+  };
+
+  const handleColumnFilterChange = (field, values) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [field]: values
+    }));
   };
 
   const handlePatientSelect = (patientId) => {
@@ -238,7 +246,16 @@ const StepOne = ({
       
       <div className="flex-1">
         <PatientTable 
-          patients={organisationDetails?.patientList || []}
+          allPatients={organisationDetails?.patientList || []}
+          patients={organisationDetails?.patientList.filter(patient => {
+            return Object.entries(columnFilters).every(([field, values]) => {
+              if (!values || values.length === 0) return true;
+              const patientValue = patient[field]?.toString() || '';
+              return values.includes(patientValue);
+            });
+          }) || []}
+          columnFilters={columnFilters}
+          onColumnFilterChange={handleColumnFilterChange}
           visibleColumns={visibleColumns}
           showSearch={true}
           selectable={true}

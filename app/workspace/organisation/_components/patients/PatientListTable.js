@@ -2,9 +2,14 @@ import { useLanguage } from '../../../../../lib/contexts/LanguageContext';
 import { PatientTable } from '@/_components/tables/PatientTable';
 
 export const PatientListTable = ({ 
-  patients, 
-  onEdit, 
-  onDelete 
+  patients,
+  allPatients,
+  onEdit,
+  onDelete,
+  showActions = false,
+  showSearch = false,
+  columnFilters = {},
+  onColumnFilterChange = null,
 }) => {
   const { t } = useLanguage();
 
@@ -25,13 +30,16 @@ export const PatientListTable = ({
   return (
     <div className="overflow-x-auto">
       <div className="max-h-[60vh] overflow-y-auto">
-        <PatientTable 
+        <PatientTable
           patients={patients}
+          allPatients={allPatients}
           onEdit={onEdit}
           onDelete={onDelete}
+          showActions={showActions}
+          showSearch={showSearch}
+          columnFilters={columnFilters}
+          onColumnFilterChange={onColumnFilterChange}
           visibleColumns={allFields}
-          showActions={true}
-          showSearch={true}
           showRowNumbers={true}
         />
       </div>
