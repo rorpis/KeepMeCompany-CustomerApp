@@ -313,19 +313,103 @@ const RemoteMonitoringDashboardPage = () => {
     }
   };
 
+  const markAsViewed = async (callId) => {
+    const callToMark = filteredCalls.find(call => call.id === callId);
+
+    // Optimistically update the UI state first
+    if (callToMark.status === 'processed') {
+      setConversations(prevConversations => {
+        return prevConversations.map(conv => 
+          conv.id === callToMark.id 
+            ? { ...conv, viewed: true }
+            : conv
+        );
+      });
+    } else if (callToMark.status === 'failed') {
+      setProcessedCalls(prevCalls => {
+        return prevCalls.map(call => 
+          call.id === callToMark.id 
+            ? { ...call, viewed: true }
+            : call
+        );
+      });
+    } else if (callToMark.status === 'queued') {
+      setQueuedCalls(prevCalls => {
+        return prevCalls.map(call => 
+          call.id === callToMark.id 
+            ? { ...call, viewed: true }
+            : call
+        );
+      });
+    }
+
+    // Then sync with the backend
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/mark_as_viewed`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            callId: callToMark.id,
+            organisationId: selectedOrgId,
+            callType: callToMark.status,
+            callSid: callToMark.call_sid
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to mark call as viewed');
+      }
+    } catch (error) {
+      // Optionally revert the optimistic update if the backend call fails
+      if (callToMark.status === 'processed') {
+        setConversations(prevConversations => {
+          return prevConversations.map(conv => 
+            conv.id === callToMark.id 
+              ? { ...conv, viewed: false }
+              : conv
+          );
+        });
+      } else if (callToMark.status === 'failed') {
+        setProcessedCalls(prevCalls => {
+          return prevCalls.map(call => 
+            call.id === callToMark.id 
+              ? { ...call, viewed: false }
+              : call
+          );
+        });
+      } else if (callToMark.status === 'queued') {
+        setQueuedCalls(prevCalls => {
+          return prevCalls.map(call => 
+            call.id === callToMark.id 
+              ? { ...call, viewed: false }
+              : call
+          );
+        });
+      }
+      // Optionally show an error toast/notification here
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">{t('workspace.remoteMonitoring.dashboard.loading')}</div>;
   }
 
   return (
-    <div className="p-6">
+    <div className="h-full flex flex-col p-6">
       <h2 className="text-xl font-semibold mb-4 text-text-primary">
         {t('workspace.remoteMonitoring.dashboard.title')}
       </h2>
       
-      {/* Filters Section filters side by side with small margin between them*/}
-      <div className="flex flex-row gap-5">  
-        <div className="mb-6">
+      {/* Filters Section */}
+      <div className="flex flex-row gap-5 mb-4">  
+        <div>
           <DateRangePicker
             startDate={new Date(startDate)}
             endDate={endDate ? new Date(endDate) : null}
@@ -358,97 +442,17 @@ const RemoteMonitoringDashboardPage = () => {
         </div>
       </div>
 
-      <RemoteMonitoringDashboard 
-        calls={filteredCalls}
-        organisationDetails={organisationDetails}
-        onViewResults={handleViewResults}
-        markAsViewed={async (callId) => {
-          const callToMark = filteredCalls.find(call => call.id === callId);
-
-          // Optimistically update the UI state first
-          if (callToMark.status === 'processed') {
-            setConversations(prevConversations => {
-              return prevConversations.map(conv => 
-                conv.id === callToMark.id 
-                  ? { ...conv, viewed: true }
-                  : conv
-              );
-            });
-          } else if (callToMark.status === 'failed') {
-            setProcessedCalls(prevCalls => {
-              return prevCalls.map(call => 
-                call.id === callToMark.id 
-                  ? { ...call, viewed: true }
-                  : call
-              );
-            });
-          } else if (callToMark.status === 'queued') {
-            setQueuedCalls(prevCalls => {
-              return prevCalls.map(call => 
-                call.id === callToMark.id 
-                  ? { ...call, viewed: true }
-                  : call
-              );
-            });
-          }
-
-          // Then sync with the backend
-          try {
-            const idToken = await user.getIdToken();
-            const response = await fetch(
-              `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/mark_as_viewed`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({
-                  callId: callToMark.id,
-                  organisationId: selectedOrgId,
-                  callType: callToMark.status,
-                  callSid: callToMark.call_sid
-                }),
-              }
-            );
-
-            if (!response.ok) {
-              throw new Error('Failed to mark call as viewed');
-            }
-          } catch (error) {
-            // Optionally revert the optimistic update if the backend call fails
-            if (callToMark.status === 'processed') {
-              setConversations(prevConversations => {
-                return prevConversations.map(conv => 
-                  conv.id === callToMark.id 
-                    ? { ...conv, viewed: false }
-                    : conv
-                );
-              });
-            } else if (callToMark.status === 'failed') {
-              setProcessedCalls(prevCalls => {
-                return prevCalls.map(call => 
-                  call.id === callToMark.id 
-                    ? { ...call, viewed: false }
-                    : call
-                );
-              });
-            } else if (callToMark.status === 'queued') {
-              setQueuedCalls(prevCalls => {
-                return prevCalls.map(call => 
-                  call.id === callToMark.id 
-                    ? { ...call, viewed: false }
-                    : call
-                );
-              });
-            }
-            // Optionally show an error toast/notification here
-          }
-        }} 
-        handleCallAgain={handleCallAgain}
-        handleDeleteCall={handleDeleteCall}
-        retryingCallId={retryingCallId}
-      />
+      <div className="flex-1 bg-bg-elevated rounded-lg overflow-hidden">
+        <RemoteMonitoringDashboard 
+          calls={filteredCalls}
+          organisationDetails={organisationDetails}
+          onViewResults={handleViewResults}
+          markAsViewed={markAsViewed}
+          handleCallAgain={handleCallAgain}
+          handleDeleteCall={handleDeleteCall}
+          retryingCallId={retryingCallId}
+        />
+      </div>
 
       {/* Results/Objectives Dialog */}
       <Dialog open={isResultsOpen} onClose={() => setIsResultsOpen(false)} className="relative z-50">

@@ -34,7 +34,7 @@ const RemoteMonitoringMainScreen = () => {
   }
 
   return (
-    <div className="min-h-screen bg-bg-main px-4 sm:px-6 lg:px-8 py-12">
+    <div className="bg-bg-main px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-7xl mx-auto">
         <div className="bg-bg-elevated rounded-lg p-8 shadow-sm border border-border-main">
           <div className="flex items-center justify-between mb-8">

@@ -232,18 +232,7 @@ export const FollowUpScheduler = () => {
 
   return (
     <div className="max-w-6xl mx-auto bg-bg-elevated rounded-lg p-8">
-      <div className="flex items-center justify-between mb-10">
-        <h2 className="text-2xl font-semibold text-text-primary">
-          {t('workspace.remoteMonitoring.scheduler.title')}
-        </h2>
-        <div className="flex items-center gap-3">
-          <span className={`w-4 h-4 rounded-full ${currentStep >= 1 ? 'bg-primary-blue' : 'bg-border-main'}`} />
-          <span className={`w-4 h-4 rounded-full ${currentStep >= 2 ? 'bg-primary-blue' : 'bg-border-main'}`} />
-          <span className={`w-4 h-4 rounded-full ${currentStep >= 3 ? 'bg-primary-blue' : 'bg-border-main'}`} />
-          <span className={`w-4 h-4 rounded-full ${currentStep >= 4 ? 'bg-primary-blue' : 'bg-border-main'}`} />
-        </div>
-      </div>
-
+      
       {currentStep === 1 && (
         <StepOne
           organisationDetails={organisationDetails}
