@@ -16,6 +16,7 @@ export const PatientTable = ({
   selectable = false,
   selectedPatients = new Map(),
   onPatientSelect = null,
+  onSelectAll = null,
   showRowNumbers = false,
 }) => {
   const { t } = useLanguage();
@@ -61,6 +62,13 @@ export const PatientTable = ({
     return patient[field] || '-';
   };
 
+  // Add this function to check if all filterable patients are selected
+  const areAllSelected = () => {
+    return sortedPatients.length > 0 && sortedPatients.every(patient => 
+      !patient.phoneNumber || selectedPatients.has(patient.id)
+    );
+  };
+
   return (
     <div className="space-y-4">
       {showSearch && (
@@ -86,7 +94,14 @@ export const PatientTable = ({
           <thead className="sticky top-0 z-10 after:absolute after:left-0 after:bottom-0 after:w-full after:border-b after:border-gray-300">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-16">
-                {null}
+                {selectable && onSelectAll && (
+                  <input
+                    type="checkbox"
+                    checked={areAllSelected()}
+                    onChange={() => onSelectAll(sortedPatients)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                )}
               </th>
               {visibleColumns.map((field) => (
                 <th 
