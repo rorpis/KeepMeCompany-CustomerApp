@@ -33,7 +33,7 @@ const WorkspaceDashboard = () => {
     .replace('{organisation}', organisationDetails?.name || '');
 
   return (
-    <div className="min-h-screen bg-bg-main px-4 sm:px-6 lg:px-8 py-12">
+    <div className="bg-bg-main px-4 sm:px-6 lg:px-8 py-12">
       {/* Welcome Section */}
       <div className="max-w-7xl mx-auto mb-12">
         <div className="bg-bg-elevated rounded-lg p-8">

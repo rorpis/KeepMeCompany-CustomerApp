@@ -32,6 +32,7 @@ export const PatientListTable = ({
           visibleColumns={allFields}
           showActions={true}
           showSearch={true}
+          showRowNumbers={true}
         />
       </div>
     </div>

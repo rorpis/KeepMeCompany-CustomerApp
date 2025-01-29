@@ -5,6 +5,7 @@ import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-j
 import { SecondaryButton } from '@/app/_components/global_components';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { format, parseISO } from 'date-fns';
+import { PatientTable } from '@/app/_components/tables/PatientTable';
 
 const callingCodes = [
   { country: 'UK', code: '44', iso2: 'GB' },
@@ -23,17 +24,8 @@ const StepOne = ({
   setSelectedPatients, 
   onNext 
 }) => {
-  const { t, language } = useLanguage();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { t } = useLanguage();
   const [selectedCode, setSelectedCode] = useState('44');
-
-  const filteredPatients = organisationDetails?.patientList?.filter(patient => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      patient.customerName.toLowerCase().includes(searchLower) ||
-      patient.dateOfBirth.toLowerCase().includes(searchLower)
-    );
-  }) || [];
 
   const handlePatientSelect = (patientId) => {
     if (!patientId) return;
@@ -87,193 +79,55 @@ const StepOne = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-4">
       <h3 className="text-lg font-medium text-text-primary mb-4">
         {t('workspace.remoteMonitoring.stepOne.title')}
       </h3>
       
-      <div className="grid grid-cols-2 gap-8">
-        {/* Left Column - Patient Selection */}
-        <div className="space-y-4">
-          <div className="relative">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={t('workspace.remoteMonitoring.stepOne.searchPlaceholder')}
-              className="w-full bg-bg-secondary border border-border-main rounded-t p-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-blue"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          
-          <div className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary h-[calc(100vh-400px)] min-h-[300px] overflow-y-auto focus:outline-none focus:ring-2 focus:ring-primary-blue">
-            {filteredPatients.length === 0 ? (
-              <div className="text-text-secondary italic p-2">
-                {t('workspace.remoteMonitoring.stepOne.noPatients')}
-              </div>
-            ) : (
-              filteredPatients.map((patient, index) => {
-                const isSelected = selectedPatients.has(patient.id);
-                return (
-                  <div
-                    key={index}
-                    onClick={() => handlePatientSelect(patient.id)}
-                    className={`py-2 px-2 cursor-pointer transition-colors duration-150 rounded ${
-                      isSelected 
-                        ? 'bg-blue-500 text-white'
-                        : 'hover:bg-bg-main'
-                    }`}
-                  >
-                    {patient.customerName} - {patient.dateOfBirth}
-                    {patient.lastScheduled && (
-                      <div className={`text-sm ${isSelected ? 'text-white/80' : 'text-text-secondary'}`}>
-                        Last Scheduled: {
-                          (() => {
-                            try {
-                              const date = typeof patient.lastScheduled === 'string' 
-                                ? parseISO(patient.lastScheduled)
-                                : patient.lastScheduled?.toDate?.() // Handle Firestore Timestamp
-                                || new Date(patient.lastScheduled); // Fallback
-                              
-                              return format(date, 'dd/MM/yyyy HH:mm');
-                            } catch (error) {
-                              console.error('Date parsing error:', error);
-                              return '';
-                            }
-                          })()
-                        }
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
+      <div className="flex-1">
+        <PatientTable 
+          patients={organisationDetails?.patientList || []}
+          visibleColumns={['customerName', 'dateOfBirth', 'phoneNumber', 'lastScheduled']}
+          showSearch={true}
+          selectable={true}
+          selectedPatients={selectedPatients}
+          onPatientSelect={(patientId) => {
+            const patient = organisationDetails?.patientList?.find(p => p.id === patientId);
+            if (patient?.phoneNumber) {
+              handlePatientSelect(patientId);
+            }
+          }}
+          renderCell={(patient, field) => {
+            if (field === 'lastScheduled' && patient.lastScheduled) {
+              try {
+                const date = typeof patient.lastScheduled === 'string' 
+                  ? parseISO(patient.lastScheduled)
+                  : patient.lastScheduled?.toDate?.()
+                  || new Date(patient.lastScheduled);
+                
+                return format(date, 'dd/MM/yyyy HH:mm');
+              } catch (error) {
+                return '';
+              }
+            }
+            return undefined;
+          }}
+          customRowClassName={(patient) => 
+            !patient.phoneNumber ? 'opacity-50 cursor-not-allowed' : ''
+          }
+        />
+      </div>
+
+      <div className="flex justify-between items-center pt-4 border-t border-border-main">
+        <div className="text-text-secondary">
+          {selectedPatients.size} {t('workspace.remoteMonitoring.stepOne.selectedCount')}
         </div>
-
-        {/* Right Column - Selected Patients */}
-        <div className="space-y-4">
-          <h4 className="text-text-primary font-medium">
-            {t('workspace.remoteMonitoring.stepOne.selectedPatientsTitle')}
-          </h4>
-          {selectedPatients.size === 0 ? (
-            <div className="text-text-secondary italic">
-              {t('workspace.remoteMonitoring.stepOne.noPatientsSelected')}
-            </div>
-          ) : (
-            <div className="space-y-2 h-[calc(100vh-400px)] min-h-[300px] overflow-y-auto">
-              {Array.from(selectedPatients.entries()).map(([patientId, data]) => {
-                const patient = filteredPatients.find(
-                  p => p.id === patientId
-                );
-                return (
-                  <div key={patientId} className="flex flex-col gap-2 bg-bg-secondary p-3 rounded border border-border-main">
-                    <div className="flex items-center justify-between">
-                      <div className="text-text-primary">
-                        {patient?.customerName} - {patient?.dateOfBirth}
-                      </div>
-                      <button
-                        onClick={() => {
-                          const newSelectedPatients = new Map(selectedPatients);
-                          newSelectedPatients.delete(patientId);
-                          setSelectedPatients(newSelectedPatients);
-                        }}
-                        className="text-text-secondary hover:text-text-primary"
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-4">
-                        <select
-                          value={data.countryCode}
-                          onChange={(e) => {
-                            const newSelectedPatients = new Map(selectedPatients);
-                            newSelectedPatients.set(patientId, {
-                              ...data,
-                              countryCode: e.target.value,
-                              isValid: false // Reset validation when country changes
-                            });
-                            setSelectedPatients(newSelectedPatients);
-                          }}
-                          className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary w-32"
-                        >
-                          {callingCodes.map((code) => (
-                            <option key={code.code} value={code.code}>
-                              {code.label}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="flex-1 relative">
-                          <input
-                            type="tel"
-                            value={data.phoneNumber}
-                            onChange={(e) => {
-                              let newNumber = e.target.value.replace(/[^\d]/g, '');
-                              
-                              // Remove leading zero if present
-                              if (newNumber.startsWith('0')) {
-                                newNumber = newNumber.substring(1);
-                              }
-
-                              const countryIso2 = callingCodes.find(
-                                c => c.code === data.countryCode
-                              )?.iso2;
-
-                              // Validate the phone number
-                              const fullNumber = `+${data.countryCode}${newNumber}`;
-                              let isValid = false;
-                              try {
-                                const phoneNumber = parsePhoneNumberFromString(fullNumber, countryIso2);
-                                isValid = phoneNumber?.isValid() ?? false;
-                              } catch (error) {
-                                isValid = false;
-                              }
-
-                              const newSelectedPatients = new Map(selectedPatients);
-                              newSelectedPatients.set(patientId, {
-                                ...data,
-                                phoneNumber: newNumber,
-                                isValid
-                              });
-                              setSelectedPatients(newSelectedPatients);
-                            }}
-                            placeholder={t('workspace.remoteMonitoring.stepOne.phoneNumberPlaceholder')}
-                            className={`w-full bg-bg-secondary border ${
-                              data.phoneNumber && !data.isValid 
-                                ? 'border-red-500' 
-                                : 'border-border-main'
-                            } rounded p-2 text-text-primary`}
-                          />
-                          {data.phoneNumber && !data.isValid && (
-                            <div className="text-red-500 text-sm mt-1">
-                              {t('workspace.remoteMonitoring.stepOne.invalidPhoneNumber')}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <div className="flex justify-end">
-            <SecondaryButton
-              onClick={handleNext}
-              disabled={!selectedPatients.size || Array.from(selectedPatients.values()).some(data => !data.phoneNumber.trim())}
-            >
-              {t('workspace.remoteMonitoring.stepOne.nextButton')}
-            </SecondaryButton>
-          </div>
-        </div>
+        <SecondaryButton
+          onClick={handleNext}
+          disabled={!selectedPatients.size || Array.from(selectedPatients.values()).some(data => !data.phoneNumber.trim())}
+        >
+          {t('workspace.remoteMonitoring.stepOne.nextButton')}
+        </SecondaryButton>
       </div>
     </div>
   );

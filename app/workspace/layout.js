@@ -101,7 +101,7 @@ const WorkspaceLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-bg-main">
       {/* Top Navigation Bar */}
-      <nav className="bg-bg-elevated border-b border-border-main">
+      <nav className="bg-bg-elevated border-b border-border-main h-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-4">

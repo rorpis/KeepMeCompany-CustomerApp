@@ -7,9 +7,9 @@ export default function RemoteMonitoringPage() {
   const { t } = useLanguage();
   
   return (
-    <div className="p-6">
+    <div className="p-4 h-full">
       <h1 className="text-2xl font-bold mb-6 text-text-primary">
-        {t('workspace.remoteMonitoring.title')}
+        {t('workspace.remoteMonitoring.scheduler.title')}
       </h1>
       <FollowUpScheduler />
     </div>

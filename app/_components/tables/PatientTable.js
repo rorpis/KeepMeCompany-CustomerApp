@@ -12,7 +12,11 @@ export const PatientTable = ({
   customColumnLabels = {},
   renderCell = null,
   customRowClassName = null,
-  customRowActions = null
+  customRowActions = null,
+  selectable = false,
+  selectedPatients = new Map(),
+  onPatientSelect = null,
+  showRowNumbers = false,
 }) => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,6 +86,7 @@ export const PatientTable = ({
           <thead className="sticky top-0 z-10 after:absolute after:left-0 after:bottom-0 after:w-full after:border-b after:border-gray-300">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-16">
+                {null}
               </th>
               {visibleColumns.map((field) => (
                 <th 
@@ -99,49 +104,71 @@ export const PatientTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {sortedPatients.map((patient, index) => (
-              <tr 
-                key={patient.id || index}
-                className={`hover:bg-gray-50 transition-colors duration-150 ease-in-out ${
-                  customRowClassName ? customRowClassName(patient) : ''
-                }`}
-              >
-                <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                  {index + 1}
-                </td>
-                {visibleColumns.map((field) => (
-                  <td key={field} className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                    {getCellContent(patient, field)}
+            {sortedPatients.map((patient, index) => {
+              const isSelected = selectedPatients.has(patient.id);
+              return (
+                <tr 
+                  key={patient.id || index}
+                  onClick={() => selectable && onPatientSelect?.(patient.id)}
+                  className={`hover:bg-gray-50 transition-colors duration-150 ease-in-out ${
+                    selectable ? 'cursor-pointer' : ''
+                  } ${isSelected ? 'bg-blue-50' : ''} ${
+                    customRowClassName ? customRowClassName(patient) : ''
+                  }`}
+                >
+                  <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                    {showRowNumbers ? (
+                      index + 1
+                    ) : selectable ? (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onPatientSelect?.(patient.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                    ) : null}
                   </td>
-                ))}
-                {showActions && (
-                  <td className="px-4 py-3">
-                    {customRowActions ? (
-                      customRowActions(patient)
-                    ) : (
-                      <div className="flex gap-2">
-                        {onEdit && (
-                          <button
-                            onClick={() => onEdit(patient)}
-                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-150"
-                          >
-                            <Edit size={16} />
-                          </button>
-                        )}
-                        {onDelete && (
-                          <button
-                            onClick={() => onDelete(patient)}
-                            className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-150"
-                          >
-                            <Trash size={16} />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))}
+                  {visibleColumns.map((field) => (
+                    <td key={field} className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {getCellContent(patient, field)}
+                    </td>
+                  ))}
+                  {showActions && (
+                    <td className="px-4 py-3">
+                      {customRowActions ? (
+                        customRowActions(patient)
+                      ) : (
+                        <div className="flex gap-2">
+                          {onEdit && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(patient);
+                              }}
+                              className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-150"
+                            >
+                              <Edit size={16} />
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(patient);
+                              }}
+                              className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-150"
+                            >
+                              <Trash size={16} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
