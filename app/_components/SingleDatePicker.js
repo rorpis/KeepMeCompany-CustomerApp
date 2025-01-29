@@ -4,6 +4,7 @@ import { useLanguage } from '@/lib/contexts/LanguageContext';
 const SingleDatePicker = ({ selectedDate, onDateChange, isLastColumn }) => {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [view, setView] = useState('date');
   const [currentMonth, setCurrentMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
@@ -79,6 +80,131 @@ const SingleDatePicker = ({ selectedDate, onDateChange, isLastColumn }) => {
     ? ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
     : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
+  const months = language === 'es'
+    ? ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const handleMonthSelect = (monthIndex) => {
+    const newDate = new Date(currentMonth.setMonth(monthIndex));
+    setCurrentMonth(newDate);
+    setView('date');
+  };
+
+  const handleYearSelect = (year) => {
+    const newDate = new Date(currentMonth.setFullYear(year));
+    setCurrentMonth(newDate);
+    setView('month');
+  };
+
+  const generateYearGrid = () => {
+    const currentYear = currentMonth.getFullYear();
+    const startYear = currentYear - 6;
+    const years = [];
+    for (let i = 0; i < 12; i++) {
+      years.push(startYear + i);
+    }
+    return years;
+  };
+
+  const renderHeader = () => (
+    <div className="flex items-center justify-between mb-2">
+      <button 
+        onClick={() => {
+          if (view === 'date') {
+            setCurrentMonth(prev => {
+              const newDate = new Date(prev);
+              newDate.setMonth(prev.getMonth() - 1);
+              return newDate;
+            });
+          } else if (view === 'year') {
+            setCurrentMonth(prev => {
+              const newDate = new Date(prev);
+              newDate.setFullYear(prev.getFullYear() - 12);
+              return newDate;
+            });
+          }
+        }}
+        className="p-1 hover:bg-gray-100 rounded-full text-gray-600"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      
+      <button
+        onClick={() => setView(view === 'date' ? 'month' : 'year')}
+        className="text-sm font-semibold text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+      >
+        {view === 'year' 
+          ? `${currentMonth.getFullYear() - 6} - ${currentMonth.getFullYear() + 5}`
+          : view === 'month'
+            ? currentMonth.getFullYear()
+            : currentMonth.toLocaleString(language === 'es' ? 'es-ES' : 'en-US', { 
+                month: 'long', 
+                year: 'numeric' 
+              })
+        }
+      </button>
+
+      <button 
+        onClick={() => {
+          if (view === 'date') {
+            setCurrentMonth(prev => {
+              const newDate = new Date(prev);
+              newDate.setMonth(prev.getMonth() + 1);
+              return newDate;
+            });
+          } else if (view === 'year') {
+            setCurrentMonth(prev => {
+              const newDate = new Date(prev);
+              newDate.setFullYear(prev.getFullYear() + 12);
+              return newDate;
+            });
+          }
+        }}
+        className="p-1 hover:bg-gray-100 rounded-full text-gray-600"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  );
+
+  const renderMonthView = () => (
+    <div className="grid grid-cols-3 gap-2">
+      {months.map((month, index) => (
+        <button
+          key={month}
+          onClick={() => handleMonthSelect(index)}
+          className={`
+            p-2 text-sm rounded
+            ${currentMonth.getMonth() === index ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}
+          `}
+        >
+          {month.slice(0, 3)}
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderYearView = () => (
+    <div className="grid grid-cols-3 gap-2">
+      {generateYearGrid().map((year) => (
+        <button
+          key={year}
+          onClick={() => handleYearSelect(year)}
+          className={`
+            p-2 text-sm rounded
+            ${currentMonth.getFullYear() === year ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}
+          `}
+        >
+          {year}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="relative">
       <button
@@ -93,67 +219,41 @@ const SingleDatePicker = ({ selectedDate, onDateChange, isLastColumn }) => {
           isLastColumn ? 'right-0' : 'left-0'
         }`}>
           <div className="p-2">
-            <div className="flex items-center justify-between mb-2">
-              <button 
-                onClick={() => setCurrentMonth(prev => {
-                  const newDate = new Date(prev);
-                  newDate.setMonth(prev.getMonth() - 1);
-                  return newDate;
-                })}
-                className="p-1 hover:bg-gray-100 rounded-full text-gray-600"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <div className="text-sm font-semibold text-gray-700">
-                {currentMonth.toLocaleString(language === 'es' ? 'es-ES' : 'en-US', { 
-                  month: 'long', 
-                  year: 'numeric' 
+            {renderHeader()}
+            
+            {view === 'date' && (
+              <div className="grid grid-cols-7 gap-0">
+                {weekDays.map(day => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-400 mb-1">
+                    {day}
+                  </div>
+                ))}
+                
+                {generateDates(currentMonth).map((date, index) => {
+                  const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
+                  const isCurrent = isToday(date);
+                  const dateSelected = isSelected(date);
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleDateClick(date)}
+                      className={`
+                        relative w-full h-7 flex items-center justify-center text-xs
+                        ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-700'}
+                        ${dateSelected ? 'bg-blue-500 text-white hover:bg-blue-600 rounded-full' : 'hover:bg-gray-100'}
+                        ${isCurrent ? 'font-bold' : ''}
+                      `}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
                 })}
               </div>
-              <button 
-                onClick={() => setCurrentMonth(prev => {
-                  const newDate = new Date(prev);
-                  newDate.setMonth(prev.getMonth() + 1);
-                  return newDate;
-                })}
-                className="p-1 hover:bg-gray-100 rounded-full text-gray-600"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-0">
-              {weekDays.map(day => (
-                <div key={day} className="text-center text-xs font-medium text-gray-400 mb-1">
-                  {day}
-                </div>
-              ))}
-              
-              {generateDates(currentMonth).map((date, index) => {
-                const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
-                const isCurrent = isToday(date);
-                const dateSelected = isSelected(date);
-
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleDateClick(date)}
-                    className={`
-                      relative w-full h-7 flex items-center justify-center text-xs
-                      ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-700'}
-                      ${dateSelected ? 'bg-blue-500 text-white hover:bg-blue-600 rounded-full' : 'hover:bg-gray-100'}
-                      ${isCurrent ? 'font-bold' : ''}
-                    `}
-                  >
-                    {date.getDate()}
-                  </button>
-                );
-              })}
-            </div>
+            )}
+            
+            {view === 'month' && renderMonthView()}
+            {view === 'year' && renderYearView()}
           </div>
         </div>
       )}
