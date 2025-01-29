@@ -5,6 +5,14 @@ import { ActiveButton } from '@/app/_components/global_components';
 export default function UploadStats({ stats, onClose }) {
   const { t } = useLanguage();
 
+  const handleClose = async () => {
+    onClose();
+    // Start refreshing the list after closing the stats
+    if (typeof refreshOrganisationDetails === 'function') {
+      await refreshOrganisationDetails();
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-bg-elevated rounded-lg max-w-md w-full p-6">
@@ -50,7 +58,7 @@ export default function UploadStats({ stats, onClose }) {
         </div>
 
         <div className="mt-8">
-          <ActiveButton onClick={onClose} className="w-full">
+          <ActiveButton onClick={handleClose} className="w-full">
             {t('workspace.organisation.patientList.uploadStats.close')}
           </ActiveButton>
         </div>
