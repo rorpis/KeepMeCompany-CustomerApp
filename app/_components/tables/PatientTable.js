@@ -244,7 +244,7 @@ export const PatientTable = ({
                     </td>
                   ))}
                   {showActions && (
-                    <td className="sticky right-0 z-10 px-4 py-3 bg-white after:absolute after:top-0 after:left-0 after:bottom-0 after:w-[1px] after:bg-gray-200">
+                    <td className="sticky right-0 z-[5] px-4 py-3 bg-white after:absolute after:top-0 after:left-0 after:bottom-0 after:w-[1px] after:bg-gray-200">
                       {customRowActions ? (
                         customRowActions(patient)
                       ) : (
