@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "../../../lib/contexts/LanguageContext";
 import { useOrganisation } from "../../../lib/contexts/OrganisationContext";
 import PhoneNumberWarning from "./_components/PhoneNumberWarning";
-import LoadingSpinner from "../../_components/LoadingSpinner";
+import LoadingSpinner from "../../_components/ui/LoadingSpinner";
 
 const IntakeMainScreen = () => {
   const router = useRouter();

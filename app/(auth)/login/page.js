@@ -7,7 +7,7 @@ import { auth, googleProvider, microsoftProvider } from "../../../lib/firebase/c
 import Link from 'next/link';
 import { GoogleAuthProvider } from 'firebase/auth';
 import { useLanguage } from "../../../lib/contexts/LanguageContext";
-import LoadingSpinner from '../../_components/LoadingSpinner';
+import LoadingSpinner from '../../_components/ui/LoadingSpinner';
 
 const Login = () => {
   const [email, setEmail] = useState("");

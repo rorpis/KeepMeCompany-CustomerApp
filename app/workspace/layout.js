@@ -7,7 +7,7 @@ import { useUser } from "../../lib/contexts/UserContext";
 import { useLanguage } from "../../lib/contexts/LanguageContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import LoadingSpinner from "../_components/LoadingSpinner";
+import LoadingSpinner from "../_components/ui/LoadingSpinner";
 import LanguageSelector from "../_components/LanguageSelector";
 
 const WorkspaceLayout = ({ children }) => {
