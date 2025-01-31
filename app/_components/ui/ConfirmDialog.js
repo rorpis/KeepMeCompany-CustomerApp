@@ -1,4 +1,4 @@
-import { useLanguage } from '../../../../../lib/contexts/LanguageContext';
+import { useLanguage } from '../../../lib/contexts/LanguageContext';
 
 export const ConfirmDialog = ({ isOpen, onClose, onConfirm, title, message, isLoading }) => {
   const { t } = useLanguage();

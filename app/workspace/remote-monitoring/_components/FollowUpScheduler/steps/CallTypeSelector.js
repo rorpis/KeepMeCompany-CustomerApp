@@ -2,7 +2,7 @@
 
 import { ActiveButton } from '@/app/_components/global_components';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import LoadingSpinner from "@/app/_components/LoadingSpinner";
+import LoadingSpinner from "@/app/_components/ui/LoadingSpinner";
 
 const CallTypeSelector = ({ onCallNow, onSchedule, isCallingNow }) => {
   const { t } = useLanguage();

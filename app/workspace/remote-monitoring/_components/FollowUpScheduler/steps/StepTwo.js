@@ -1,278 +1,441 @@
 'use client';
 
+import React from "react";
 import { useState } from 'react';
-import { SecondaryButton, ActiveButton } from '@/app/_components/global_components';
-import LoadingSpinner from "@/app/_components/LoadingSpinner";
+import { PlusCircle, Trash2, Edit2, Save, Loader2 } from "lucide-react";
+import { Button } from "@/_components/ui/StyledButton";
+import { SecondaryButton } from "@/app/_components/global_components";
 import { useLanguage } from '@/lib/contexts/LanguageContext';
+import { Card, CardContent } from "@/_components/ui/card";
+import { savePreset, editPreset, deletePreset } from '../api';
+import { Toast } from "@/_components/ui/Toast";
+import { ConfirmDialog } from '@/_components/ui/ConfirmDialog';
 
 const StepTwo = ({ 
   objectives,
   setObjectives,
   onBack,
   onNext,
-  onShowPresetModal,
   organisationDetails,
-  user,
+  setPresetName,
   selectedPresetIndex,
   setSelectedPresetIndex,
-  setPresetName,
-  setIsEditingPreset,
-  handleDeletePreset,
-  activeTab,
-  setActiveTab,
-  instructions,
-  setInstructions,
-  isGeneratingObjectives,
-  setIsGeneratingObjectives
+  user,
 }) => {
   const { t } = useLanguage();
+  const [newObjective, setNewObjective] = React.useState("");
+  const [templateTitle, setTemplateTitle] = React.useState("");
+  const [isEditingTemplate, setIsEditingTemplate] = React.useState(false);
+  const [editingObjectiveIndex, setEditingObjectiveIndex] = React.useState(null);
+  const [editingObjectiveText, setEditingObjectiveText] = React.useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [localPresets, setLocalPresets] = useState(organisationDetails?.presets || []);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleGenerateObjectives = async () => {
-    if (!instructions.trim()) return;
-    
-    setIsGeneratingObjectives(true);
+  // Update presets memo to use new structure
+  const presets = React.useMemo(() => {
+    return [...localPresets].sort((a, b) => a.title.localeCompare(b.title));
+  }, [localPresets]);
+
+  // Select first preset by default when component mounts
+  React.useEffect(() => {
+    if (presets.length > 0 && selectedPresetIndex === null) {
+      handlePresetSelect(0);
+    }
+  }, [presets.length]);
+
+  // Get settings from organisationDetails
+  const remoteMonitoringSettings = organisationDetails?.settings?.remoteMonitoring || {
+    firstMessage: '',
+    firstObjectives: [],
+    lastObjectives: []
+  };
+
+  const handlePresetSelect = (index) => {
+    if (index === "custom") {
+      setSelectedPresetIndex(null);
+      setPresetName("");
+      setObjectives([]);
+      setIsEditingTemplate(false);
+      setTemplateTitle("");
+      return;
+    }
+
+    const preset = presets[index];
+    setSelectedPresetIndex(index);
+    setPresetName(preset.title);
+    setObjectives([...preset.objectives]);
+    setTemplateTitle(preset.title);
+    setIsEditingTemplate(false);
+  };
+
+  const handleSaveChanges = async () => {
+    setIsLoading(true);
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/generate_objectives`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({ instructions }),
-      });
+      const apiCall = selectedPresetIndex !== null ? editPreset : savePreset;
+      const params = {
+        organisationId: organisationDetails.id,
+        title: templateTitle,
+        objectives: objectives,
+        user,
+      };
+
+      if (selectedPresetIndex !== null) {
+        params.presetId = presets[selectedPresetIndex].id;
+      }
+
+      const { success, presetId, error } = await apiCall(params);
       
-      const data = await response.json();
-      setObjectives(data.generated_objectives);
+      if (success) {
+        if (selectedPresetIndex !== null) {
+          const updatedPresets = [...localPresets];
+          updatedPresets[selectedPresetIndex] = {
+            ...updatedPresets[selectedPresetIndex],
+            title: templateTitle,
+            objectives: objectives,
+          };
+          setLocalPresets(updatedPresets);
+          setToast({
+            show: true,
+            message: t('workspace.remoteMonitoring.toast.presetUpdated'),
+            type: 'success'
+          });
+        } else {
+          setLocalPresets([...localPresets, {
+            id: presetId,
+            title: templateTitle,
+            objectives: objectives,
+          }]);
+          setToast({
+            show: true,
+            message: t('workspace.remoteMonitoring.toast.presetSaved'),
+            type: 'success'
+          });
+        }
+        setIsEditingTemplate(false);
+      } else {
+        throw error;
+      }
     } catch (error) {
-      console.error('Error generating objectives:', error);
+      setToast({
+        show: true,
+        message: t('workspace.remoteMonitoring.toast.error'),
+        type: 'error'
+      });
     } finally {
-      setIsGeneratingObjectives(false);
+      setIsLoading(false);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <h3 className="text-xl font-medium text-text-primary mb-6">
-        {t('workspace.remoteMonitoring.stepTwo.title')}
-      </h3>
+  const handleDeleteTemplate = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsLoading(true);
+    try {
+      const { success, error } = await deletePreset({
+        organisationId: organisationDetails.id,
+        presetId: presets[selectedPresetIndex].id,
+        user,
+      });
       
-      {/* Tabs */}
-      <div className="flex space-x-4 border-b border-border-main mb-6">
-        <button
-          onClick={() => setActiveTab('manual')}
-          className={`pb-2 px-4 ${
-            activeTab === 'manual'
-              ? 'border-b-2 border-primary-blue text-primary-blue'
-              : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          {t('workspace.remoteMonitoring.stepTwo.tabs.manual')}
-        </button>
-        <button
-          onClick={() => setActiveTab('preset')}
-          className={`pb-2 px-4 ${
-            activeTab === 'preset'
-              ? 'border-b-2 border-primary-blue text-primary-blue'
-              : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          {t('workspace.remoteMonitoring.stepTwo.tabs.preset')}
-        </button>
+      if (success) {
+        setLocalPresets(localPresets.filter(preset => preset.id !== presets[selectedPresetIndex].id));
+        setSelectedPresetIndex(null);
+        setObjectives([]);
+        setTemplateTitle("");
+        setToast({
+          show: true,
+          message: t('workspace.remoteMonitoring.toast.presetDeleted'),
+          type: 'success'
+        });
+      } else {
+        throw error;
+      }
+    } catch (error) {
+      setToast({
+        show: true,
+        message: t('workspace.remoteMonitoring.toast.error'),
+        type: 'error'
+      });
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleAddObjective = () => {
+    if (newObjective.trim()) {
+      setObjectives([...objectives, newObjective.trim()]);
+      setNewObjective("");
+    }
+  };
+
+  const handleDeleteObjective = (indexToDelete) => {
+    setObjectives(objectives.filter((_, index) => index !== indexToDelete));
+  };
+
+  const handleEditObjective = (index) => {
+    setEditingObjectiveIndex(index);
+    setEditingObjectiveText(objectives[index]);
+  };
+
+  const handleSaveObjectiveEdit = () => {
+    if (editingObjectiveText.trim()) {
+      const newObjectives = [...objectives];
+      newObjectives[editingObjectiveIndex] = editingObjectiveText.trim();
+      setObjectives(newObjectives);
+    }
+    setEditingObjectiveIndex(null);
+    setEditingObjectiveText("");
+  };
+
+  const renderHardcodedSection = (title, items) => (
+    <div className="mb-4 p-3 rounded-lg border border-gray-200 bg-gray-50">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="h-2 w-2 rounded-full bg-gray-400" />
+        <h4 className="text-sm font-medium text-gray-600">{title}</h4>
       </div>
-
-      {activeTab === 'manual' ? (
-        <div className="grid grid-cols-2 gap-8">
-          {/* Left Column - Instructions */}
-          <div>
-            <label className="block text-text-primary font-medium mb-2">
-              {t('workspace.remoteMonitoring.stepTwo.manual.instructionsLabel')}
-            </label>
-            <textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder={t('workspace.remoteMonitoring.stepTwo.manual.instructionsPlaceholder')}
-              className="w-full h-48 bg-bg-secondary border border-border-main rounded p-2 text-text-primary mb-2"
-            />
-            <div className="flex justify-end">
-              <ActiveButton
-                onClick={handleGenerateObjectives}
-                disabled={!instructions.trim() || isGeneratingObjectives}
-              >
-                {t('workspace.remoteMonitoring.stepTwo.manual.generateButton')}
-              </ActiveButton>
-            </div>
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <div key={index} className="p-2 rounded bg-white border border-gray-100 text-sm text-gray-700">
+            {item}
           </div>
+        ))}
+      </div>
+    </div>
+  );
 
-          {/* Right Column - Objectives List */}
-          <div className="relative min-h-[16rem]">
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-text-primary font-medium">
-                {t('workspace.remoteMonitoring.stepTwo.manual.objectivesLabel')}
-              </label>
-              <SecondaryButton
-                onClick={() => onShowPresetModal()}
-                disabled={objectives.length === 0}
-              >
-                {t('workspace.remoteMonitoring.stepTwo.manual.savePresetButton')}
-              </SecondaryButton>
-            </div>
-            {isGeneratingObjectives && (
-              <div className="absolute inset-0 flex items-center justify-center bg-bg-elevated/50 z-10 rounded">
-                <LoadingSpinner />
-              </div>
-            )}
-            <div className="space-y-2">
-              {objectives.map((objective, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={objective}
-                    onChange={(e) => {
-                      const newObjectives = [...objectives];
-                      newObjectives[index] = e.target.value;
-                      setObjectives(newObjectives);
-                    }}
-                    className="bg-bg-secondary border border-border-main p-2 rounded flex-grow"
-                  />
-                  <button
-                    onClick={() => setObjectives(objectives.filter((_, i) => i !== index))}
-                    className="text-text-secondary hover:text-text-primary"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              <input
-                type="text"
-                placeholder={t('workspace.remoteMonitoring.stepTwo.manual.addObjectivePlaceholder')}
-                className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && e.target.value.trim()) {
-                    setObjectives([...objectives, e.target.value.trim()]);
-                    e.target.value = '';
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <label className="block text-text-primary font-medium mb-2">
+  return (
+    <div className="flex flex-col h-full">
+      <Card className="flex-1 mb-4">
+        <CardContent>
+          <div className="flex gap-8 h-[calc(100vh-340px)]">
+            {/* Left: Template Selection */}
+            <div className="w-1/3 border-r pr-6">
+              <h3 className="text-lg font-medium mb-4 text-black">
                 {t('workspace.remoteMonitoring.stepTwo.preset.selectPresetLabel')}
-              </label>
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedPresetIndex !== null ? selectedPresetIndex : ''}
-                  onChange={(e) => {
-                    const index = e.target.value;
-                    if (index) {
-                      const preset = organisationDetails?.settings?.remoteMonitoring?.presets[index];
-                      setSelectedPresetIndex(index);
-                      setPresetName(preset.title);
-                      setObjectives([...preset.objectives]);
-                    } else {
-                      setSelectedPresetIndex(null);
-                      setPresetName('');
-                      setObjectives([]);
-                    }
-                  }}
-                  className="flex-grow bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
+              </h3>
+              <div className="space-y-3 overflow-y-auto h-[calc(100vh-400px)]">
+                {/* Sorted presets */}
+                {presets.map((preset, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handlePresetSelect(index)}
+                    className={`w-full p-3 rounded-lg border text-black ${
+                      selectedPresetIndex === index ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-500"
+                    }`}
+                  >
+                    <span className="font-medium">{preset.title}</span>
+                  </button>
+                ))}
+                {/* Custom Objectives button at the bottom */}
+                <button
+                  onClick={() => handlePresetSelect("custom")}
+                  className={`w-full p-3 rounded-lg border text-black ${
+                    selectedPresetIndex === null ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-500"
+                  }`}
                 >
-                  <option value="">
-                    {t('workspace.remoteMonitoring.stepTwo.preset.selectPresetPlaceholder')}
-                  </option>
-                  {organisationDetails?.settings?.remoteMonitoring?.presets?.map((preset, index) => (
-                    <option key={index} value={index}>
-                      {preset.title}
-                    </option>
-                  ))}
-                </select>
-                {selectedPresetIndex !== null && (
-                  <>
-                    <button
-                      onClick={() => {
-                        const preset = organisationDetails?.settings?.remoteMonitoring?.presets[selectedPresetIndex];
-                        if (preset) {
-                          setIsEditingPreset(true);
-                          onShowPresetModal();
-                        }
-                      }}
-                      className="p-2 text-text-secondary hover:text-primary-blue"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDeletePreset(selectedPresetIndex)}
-                      className="p-2 text-text-secondary hover:text-red-500"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </>
+                  <div className="flex items-center gap-2">
+                    <PlusCircle className="h-5 w-5" />
+                    <span className="font-medium">{t('workspace.remoteMonitoring.stepTwo.template.custom')}</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Right: Objectives */}
+            <div className="flex-1 flex flex-col">
+              {/* Title and buttons section */}
+              {(selectedPresetIndex === null || selectedPresetIndex !== null) && (
+                <div className="flex justify-between items-center mb-4">
+                  {isEditingTemplate || selectedPresetIndex === null ? (
+                    <>
+                      <input
+                        type="text"
+                        value={templateTitle}
+                        onChange={(e) => setTemplateTitle(e.target.value)}
+                        placeholder={t('workspace.remoteMonitoring.stepTwo.template.enterTitle')}
+                        className="text-lg p-2 rounded-lg border text-black"
+                      />
+                      <div className="flex gap-2">
+                        {selectedPresetIndex !== null && (
+                          <Button 
+                            variant="outline" 
+                            onClick={handleDeleteTemplate}
+                            className="text-red-600"
+                          >
+                            {t('workspace.remoteMonitoring.stepTwo.template.delete')}
+                          </Button>
+                        )}
+                        <Button 
+                          variant="outline"
+                          onClick={handleSaveChanges}
+                          disabled={!templateTitle.trim() || objectives.length === 0 || isLoading}
+                          className={`${
+                            !templateTitle.trim() || objectives.length === 0
+                              ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100"
+                              : "text-black hover:bg-gray-100"
+                          }`}
+                        >
+                          {isLoading ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              {t('workspace.remoteMonitoring.stepTwo.template.saving')}
+                            </div>
+                          ) : (
+                            selectedPresetIndex === null 
+                              ? t('workspace.remoteMonitoring.stepTwo.template.save') 
+                              : t('workspace.remoteMonitoring.stepTwo.template.saveChanges')
+                          )}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-medium text-black">
+                        {templateTitle}
+                      </h3>
+                      <Button 
+                        variant="outline"
+                        onClick={() => setIsEditingTemplate(true)}
+                        className="text-black"
+                      >
+                        {t('workspace.remoteMonitoring.stepTwo.template.edit')}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Objectives list with sections */}
+              <div className="flex-1 overflow-y-auto h-[calc(100vh-440px)]">
+                {remoteMonitoringSettings.firstMessage && renderHardcodedSection(
+                  t('workspace.remoteMonitoring.stepTwo.sections.initialGreeting'),
+                  [remoteMonitoringSettings.firstMessage]
+                )}
+
+                {remoteMonitoringSettings.firstObjectives.length > 0 && renderHardcodedSection(
+                  t('workspace.remoteMonitoring.stepTwo.sections.initialObjectives'),
+                  remoteMonitoringSettings.firstObjectives
+                )}
+
+                {/* Template Objectives */}
+                <div className="my-4 p-3 rounded-lg bg-blue-50">
+                  <div className="space-y-2">
+                    {objectives.map((objective, index) => (
+                      <div 
+                        key={index} 
+                        className="p-3 rounded-lg border border-gray-200 bg-gray-50 text-black flex justify-between items-center"
+                      >
+                        {editingObjectiveIndex === index ? (
+                          <input
+                            type="text"
+                            value={editingObjectiveText}
+                            onChange={(e) => setEditingObjectiveText(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveObjectiveEdit()}
+                            className="flex-1 p-2 rounded-lg border mr-2"
+                            autoFocus
+                          />
+                        ) : (
+                          <span>{objective}</span>
+                        )}
+                        {(selectedPresetIndex === null || isEditingTemplate) && (
+                          <div className="flex gap-2">
+                            {editingObjectiveIndex === index ? (
+                              <Button
+                                variant="ghost"
+                                onClick={handleSaveObjectiveEdit}
+                                className="h-8 px-2 hover:bg-gray-200"
+                              >
+                                <Save className="h-4 w-4 text-gray-600" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                onClick={() => handleEditObjective(index)}
+                                className="h-8 px-2 hover:bg-gray-200"
+                              >
+                                <Edit2 className="h-4 w-4 text-gray-600" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              onClick={() => handleDeleteObjective(index)}
+                              className="h-8 px-2 hover:bg-gray-200"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Add objective input */}
+                    {(selectedPresetIndex === null || isEditingTemplate) && (
+                      <div className="mt-4 flex gap-2">
+                        <input
+                          type="text"
+                          value={newObjective}
+                          onChange={(e) => setNewObjective(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleAddObjective()}
+                          placeholder={t('workspace.remoteMonitoring.stepTwo.preset.addObjectivePlaceholder')}
+                          className="flex-1 p-2 rounded-lg border text-black placeholder-gray-500 bg-white"
+                        />
+                        <Button variant="outline" onClick={handleAddObjective} className="text-black">
+                          <PlusCircle className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {remoteMonitoringSettings.lastObjectives.length > 0 && renderHardcodedSection(
+                  t('workspace.remoteMonitoring.stepTwo.sections.closingObjectives'),
+                  remoteMonitoringSettings.lastObjectives
                 )}
               </div>
             </div>
-
-            <div className="relative min-h-[16rem]">
-              <label className="block text-text-primary font-medium mb-2">
-                {t('workspace.remoteMonitoring.stepTwo.preset.selectedObjectivesLabel')}
-              </label>
-              <div className="space-y-2">
-                {objectives.map((objective, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={objective}
-                      onChange={(e) => {
-                        const newObjectives = [...objectives];
-                        newObjectives[index] = e.target.value;
-                        setObjectives(newObjectives);
-                      }}
-                      className="bg-bg-secondary border border-border-main p-2 rounded flex-grow"
-                    />
-                    <button
-                      onClick={() => setObjectives(objectives.filter((_, i) => i !== index))}
-                      className="text-text-secondary hover:text-text-primary"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <input
-                  type="text"
-                  placeholder={t('workspace.remoteMonitoring.stepTwo.preset.addObjectivePlaceholder')}
-                  className="w-full bg-bg-secondary border border-border-main rounded p-2 text-text-primary"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && e.target.value.trim()) {
-                      setObjectives([...objectives, e.target.value.trim()]);
-                      e.target.value = '';
-                    }
-                  }}
-                />
-              </div>
-            </div>
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      <div className="flex justify-between mt-8">
-        <SecondaryButton onClick={onBack}>
+      {/* Navigation */}
+      <div className="flex justify-between items-center pt-4 border-t border-border-main mt-auto">
+        <SecondaryButton onClick={onBack} className="text-black">
           {t('workspace.remoteMonitoring.stepTwo.navigation.back')}
         </SecondaryButton>
-        <SecondaryButton
+        <SecondaryButton 
           onClick={onNext}
           disabled={objectives.length === 0}
+          className={objectives.length === 0 
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+            : "bg-[#0F172A] hover:bg-[#1E293B] text-white"}
         >
           {t('workspace.remoteMonitoring.stepTwo.navigation.confirm')}
         </SecondaryButton>
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={confirmDelete}
+          title={t('workspace.remoteMonitoring.scheduler.deletePresetConfirm')}
+          message={t('workspace.remoteMonitoring.stepTwo.template.deleteConfirmMessage')}
+          isLoading={isLoading}
+        />
+      )}
+
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
     </div>
   );
 };

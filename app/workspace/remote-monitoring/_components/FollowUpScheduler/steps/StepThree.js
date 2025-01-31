@@ -1,7 +1,7 @@
 'use client';
 
 import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
-import LoadingSpinner from "@/app/_components/LoadingSpinner";
+import LoadingSpinner from "@/app/_components/ui/LoadingSpinner";
 import TwoWeekCalendar from "@/app/_components/TwoWeekCalendar";
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 

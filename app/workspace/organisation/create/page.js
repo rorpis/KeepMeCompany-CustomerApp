@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../lib/firebase/authContext";
 import { useLanguage } from "../../../../lib/contexts/LanguageContext";
-import LoadingSpinner from "../../../_components/LoadingSpinner";
+import LoadingSpinner from "../../../_components/ui/LoadingSpinner";
 import { useOrganisation } from "../../../../lib/contexts/OrganisationContext";
 
 const countries = [

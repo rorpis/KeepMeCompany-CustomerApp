@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../../lib/firebase/authContext';
 import { useLanguage } from '../../../../lib/contexts/LanguageContext';
-import LoadingSpinner from '../../../_components/LoadingSpinner';
+import LoadingSpinner from '../../../_components/ui/LoadingSpinner';
 
 export const Settings = ({ organisationDetails, onUpdateSettings }) => {
   const { user } = useAuth();

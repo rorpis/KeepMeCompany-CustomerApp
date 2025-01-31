@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import { useLanguage } from "../../../lib/contexts/LanguageContext";
-import LoadingSpinner from "../../_components/LoadingSpinner";
+import LoadingSpinner from "../../_components/ui/LoadingSpinner";
 
 const SignupForm = () => {
   const { t } = useLanguage();
