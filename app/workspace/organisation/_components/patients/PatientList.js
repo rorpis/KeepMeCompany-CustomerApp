@@ -9,7 +9,7 @@ import UploadStats from './UploadStats';
 import { FileUploadModal } from './FileUploadModal';
 import { PatientModal } from './PatientModal';
 import { PatientListTable } from './PatientListTable';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDialog } from '@/_components/ui/ConfirmDialog';
 import { Toast } from '@/_components/ui/Toast';
 
 export const PatientList = ({ 

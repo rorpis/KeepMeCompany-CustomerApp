@@ -8,9 +8,8 @@ import { useLanguage } from '@/lib/contexts/LanguageContext';
 import StepOne from './steps/StepOne';
 import StepTwo from './steps/StepTwo';
 import StepThree from './steps/StepThree';
-import PresetModal from './PresetModal';
-import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
 import CallTypeSelector from './steps/CallTypeSelector';
+import { scheduleCall } from './api';
 
 const callingCodes = [
   { code: "44", country: "UK (+44)" },
@@ -38,129 +37,36 @@ export const FollowUpScheduler = () => {
   const [isGeneratingObjectives, setIsGeneratingObjectives] = useState(false);
 
   // Preset related state
-  const [showPresetModal, setShowPresetModal] = useState(false);
   const [presetName, setPresetName] = useState('');
-  const [isEditingPreset, setIsEditingPreset] = useState(false);
   const [selectedPresetIndex, setSelectedPresetIndex] = useState(null);
 
   // Add this to the existing state declarations (around line 31-40)
   const [isCallingNow, setIsCallingNow] = useState(false);
 
-  const handleSavePreset = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/save_preset`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`
-        },
-        body: JSON.stringify({
-          organisationId: organisationDetails.id,
-          title: presetName,
-          objectives: objectives,
-        }),
-      });
-
-      if (response.ok) {
-        setShowPresetModal(false);
-        setPresetName('');
-      }
-    } catch (error) {
-      console.error(t('workspace.remoteMonitoring.scheduler.errors.savingPresetError'), error);
-    }
-  };
-
-  const handleEditPreset = async () => {
-    try {
-      const updatedPresets = [...organisationDetails.settings.remoteMonitoring.presets];
-      updatedPresets[selectedPresetIndex] = {
-        title: presetName,
-        objectives: objectives,
-      };
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/update_presets`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`
-        },
-        body: JSON.stringify({
-          organisationId: organisationDetails.id,
-          presets: updatedPresets,
-        }),
-      });
-
-      if (response.ok) {
-        setShowPresetModal(false);
-        setPresetName('');
-        setIsEditingPreset(false);
-        setSelectedPresetIndex(null);
-      }
-    } catch (error) {
-      console.error(t('workspace.remoteMonitoring.scheduler.errors.updatingPresetError'), error);
-    }
-  };
-
-  const handleDeletePreset = async (presetIndex) => {
-    if (!window.confirm(t('workspace.remoteMonitoring.scheduler.deletePresetConfirm'))) return;
-
-    try {
-      const updatedPresets = [...organisationDetails.settings.remoteMonitoring.presets];
-      updatedPresets.splice(presetIndex, 1);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/update_presets`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`
-        },
-        body: JSON.stringify({
-          organisationId: organisationDetails.id,
-          presets: updatedPresets,
-        }),
-      });
-
-      if (response.ok) {
-        setSelectedPresetIndex(null);
-        setObjectives([]);
-      }
-    } catch (error) {
-      console.error(t('workspace.remoteMonitoring.scheduler.errors.deletingPresetError'), error);
-    }
-  };
-
   const handleScheduleCall = async () => {
     setIsScheduling(true);
     try {
-      const patients = Array.from(selectedPatients.entries()).map(([patientId, data]) => {
-        return {
-          patientId: patientId
-        };
-      });
+      const patients = Array.from(selectedPatients.entries()).map(([patientId]) => ({
+        patientId: patientId
+      }));
 
       const scheduledFor = Array.from(scheduledDates).map(dateStr => ({
         date: dateStr,
         time: scheduledTimes[dateStr] || "10:00"
       }));
 
-      console.log(scheduledFor);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`
-        },
-        body: JSON.stringify({
-          organisationId: organisationDetails.id,
-          patients,
-          objectives,
-          scheduledFor
-        }),
+      const { success, error } = await scheduleCall({
+        organisationId: organisationDetails.id,
+        patients,
+        objectives,
+        scheduledFor,
+        user
       });
 
-      if (response.ok) {
+      if (success) {
         router.push('/workspace/remote-monitoring');
+      } else {
+        throw error;
       }
     } catch (error) {
       console.error(t('workspace.remoteMonitoring.scheduler.errors.schedulingError'), error);
@@ -170,7 +76,7 @@ export const FollowUpScheduler = () => {
   };
 
   const handleCallNow = async () => {
-    if (isCallingNow) return; // Prevent multiple clicks
+    if (isCallingNow) return;
     setIsCallingNow(true);
     
     const currentDate = new Date();
@@ -182,45 +88,35 @@ export const FollowUpScheduler = () => {
     });
     const timeStr = currentDate.toTimeString().slice(0, 5);
     
-    // Create the scheduled data
     const dates = new Set([dateStr]);
     const times = { [dateStr]: timeStr };
     
-    // Set the state
     setScheduledDates(dates);
     setScheduledTimes(times);
     
-    // Create the scheduledFor array directly instead of relying on state
-    const scheduledFor = Array.from(dates).map(date => ({
-      date: date,
-      time: times[date]
-    }));
-    
-    // Call handleScheduleCall with the data we just created
     try {
       setIsScheduling(true);
-      const patients = Array.from(selectedPatients.entries()).map(([patientId, data]) => {
-        return {
-          patientId: patientId
-        };
+      const patients = Array.from(selectedPatients.entries()).map(([patientId]) => ({
+        patientId: patientId
+      }));
+
+      const scheduledFor = [{
+        date: dateStr,
+        time: timeStr
+      }];
+
+      const { success, error } = await scheduleCall({
+        organisationId: organisationDetails.id,
+        patients,
+        objectives,
+        scheduledFor,
+        user
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`
-        },
-        body: JSON.stringify({
-          organisationId: organisationDetails.id,
-          patients,
-          objectives,
-          scheduledFor
-        }),
-      });
-
-      if (response.ok) {
+      if (success) {
         router.push('/workspace/remote-monitoring');
+      } else {
+        throw error;
       }
     } catch (error) {
       console.error(t('workspace.remoteMonitoring.scheduler.errors.schedulingError'), error);
@@ -249,14 +145,11 @@ export const FollowUpScheduler = () => {
           setObjectives={setObjectives}
           onBack={() => setCurrentStep(1)}
           onNext={() => setCurrentStep(3)}
-          onShowPresetModal={() => setShowPresetModal(true)}
           organisationDetails={organisationDetails}
           user={user}
           selectedPresetIndex={selectedPresetIndex}
           setSelectedPresetIndex={setSelectedPresetIndex}
           setPresetName={setPresetName}
-          setIsEditingPreset={setIsEditingPreset}
-          handleDeletePreset={handleDeletePreset}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           instructions={instructions}
@@ -283,22 +176,6 @@ export const FollowUpScheduler = () => {
           onBack={() => setCurrentStep(3)}
           onSchedule={handleScheduleCall}
           isScheduling={isScheduling}
-        />
-      )}
-
-      {showPresetModal && (
-        <PresetModal
-          presetName={presetName}
-          setPresetName={setPresetName}
-          isEditingPreset={isEditingPreset}
-          objectives={objectives}
-          onClose={() => {
-            setShowPresetModal(false);
-            setPresetName('');
-            setIsEditingPreset(false);
-          }}
-          onSave={handleSavePreset}
-          onUpdate={handleEditPreset}
         />
       )}
     </div>

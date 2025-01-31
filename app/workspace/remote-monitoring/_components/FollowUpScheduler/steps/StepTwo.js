@@ -2,11 +2,14 @@
 
 import React from "react";
 import { useState } from 'react';
-import { PlusCircle, Trash2, Edit2, Save } from "lucide-react";
+import { PlusCircle, Trash2, Edit2, Save, Loader2 } from "lucide-react";
 import { Button } from "@/_components/ui/StyledButton";
 import { SecondaryButton } from "@/app/_components/global_components";
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { Card, CardContent } from "@/_components/ui/card";
+import { savePreset, editPreset, deletePreset } from '../api';
+import { Toast } from "@/_components/ui/Toast";
+import { ConfirmDialog } from '@/_components/ui/ConfirmDialog';
 
 const StepTwo = ({ 
   objectives,
@@ -15,9 +18,9 @@ const StepTwo = ({
   onNext,
   organisationDetails,
   setPresetName,
-  setIsEditingPreset,
   selectedPresetIndex,
   setSelectedPresetIndex,
+  user,
 }) => {
   const { t } = useLanguage();
   const [newObjective, setNewObjective] = React.useState("");
@@ -25,12 +28,15 @@ const StepTwo = ({
   const [isEditingTemplate, setIsEditingTemplate] = React.useState(false);
   const [editingObjectiveIndex, setEditingObjectiveIndex] = React.useState(null);
   const [editingObjectiveText, setEditingObjectiveText] = React.useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [localPresets, setLocalPresets] = useState(organisationDetails?.presets || []);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Get and sort presets from organisationDetails
+  // Update presets memo to use new structure
   const presets = React.useMemo(() => {
-    const presetsArray = organisationDetails?.settings?.remoteMonitoring?.presets || [];
-    return [...presetsArray].sort((a, b) => a.title.localeCompare(b.title));
-  }, [organisationDetails?.settings?.remoteMonitoring?.presets]);
+    return [...localPresets].sort((a, b) => a.title.localeCompare(b.title));
+  }, [localPresets]);
 
   // Select first preset by default when component mounts
   React.useEffect(() => {
@@ -64,13 +70,100 @@ const StepTwo = ({
     setIsEditingTemplate(false);
   };
 
-  const handleSaveChanges = () => {
-    setIsEditingTemplate(false);
-    setIsEditingPreset(true);
+  const handleSaveChanges = async () => {
+    setIsLoading(true);
+    try {
+      const apiCall = selectedPresetIndex !== null ? editPreset : savePreset;
+      const params = {
+        organisationId: organisationDetails.id,
+        title: templateTitle,
+        objectives: objectives,
+        user,
+      };
+
+      if (selectedPresetIndex !== null) {
+        params.presetId = presets[selectedPresetIndex].id;
+      }
+
+      const { success, presetId, error } = await apiCall(params);
+      
+      if (success) {
+        if (selectedPresetIndex !== null) {
+          const updatedPresets = [...localPresets];
+          updatedPresets[selectedPresetIndex] = {
+            ...updatedPresets[selectedPresetIndex],
+            title: templateTitle,
+            objectives: objectives,
+          };
+          setLocalPresets(updatedPresets);
+          setToast({
+            show: true,
+            message: t('workspace.remoteMonitoring.toast.presetUpdated'),
+            type: 'success'
+          });
+        } else {
+          setLocalPresets([...localPresets, {
+            id: presetId,
+            title: templateTitle,
+            objectives: objectives,
+          }]);
+          setToast({
+            show: true,
+            message: t('workspace.remoteMonitoring.toast.presetSaved'),
+            type: 'success'
+          });
+        }
+        setIsEditingTemplate(false);
+      } else {
+        throw error;
+      }
+    } catch (error) {
+      setToast({
+        show: true,
+        message: t('workspace.remoteMonitoring.toast.error'),
+        type: 'error'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteTemplate = () => {
-    // Add delete logic here
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsLoading(true);
+    try {
+      const { success, error } = await deletePreset({
+        organisationId: organisationDetails.id,
+        presetId: presets[selectedPresetIndex].id,
+        user,
+      });
+      
+      if (success) {
+        setLocalPresets(localPresets.filter(preset => preset.id !== presets[selectedPresetIndex].id));
+        setSelectedPresetIndex(null);
+        setObjectives([]);
+        setTemplateTitle("");
+        setToast({
+          show: true,
+          message: t('workspace.remoteMonitoring.toast.presetDeleted'),
+          type: 'success'
+        });
+      } else {
+        throw error;
+      }
+    } catch (error) {
+      setToast({
+        show: true,
+        message: t('workspace.remoteMonitoring.toast.error'),
+        type: 'error'
+      });
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const handleAddObjective = () => {
@@ -180,16 +273,23 @@ const StepTwo = ({
                         <Button 
                           variant="outline"
                           onClick={handleSaveChanges}
-                          disabled={!templateTitle.trim() || objectives.length === 0}
+                          disabled={!templateTitle.trim() || objectives.length === 0 || isLoading}
                           className={`${
                             !templateTitle.trim() || objectives.length === 0
                               ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100"
                               : "text-black hover:bg-gray-100"
                           }`}
                         >
-                          {selectedPresetIndex === null 
-                            ? t('workspace.remoteMonitoring.stepTwo.template.save') 
-                            : t('workspace.remoteMonitoring.stepTwo.template.saveChanges')}
+                          {isLoading ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              {t('workspace.remoteMonitoring.stepTwo.template.saving')}
+                            </div>
+                          ) : (
+                            selectedPresetIndex === null 
+                              ? t('workspace.remoteMonitoring.stepTwo.template.save') 
+                              : t('workspace.remoteMonitoring.stepTwo.template.saveChanges')
+                          )}
                         </Button>
                       </div>
                     </>
@@ -317,6 +417,25 @@ const StepTwo = ({
           {t('workspace.remoteMonitoring.stepTwo.navigation.confirm')}
         </SecondaryButton>
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={confirmDelete}
+          title={t('workspace.remoteMonitoring.scheduler.deletePresetConfirm')}
+          message={t('workspace.remoteMonitoring.stepTwo.template.deleteConfirmMessage')}
+          isLoading={isLoading}
+        />
+      )}
+
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
     </div>
   );
 };
