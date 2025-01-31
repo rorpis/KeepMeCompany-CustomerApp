@@ -6,7 +6,7 @@ import { PlusCircle, Trash2, Edit2, Save, Loader2 } from "lucide-react";
 import { Button } from "@/_components/ui/StyledButton";
 import { SecondaryButton } from "@/app/_components/global_components";
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import { Card, CardContent } from "@/_components/ui/card";
+import { Card, CardContent } from "@/_components/ui/Card";
 import { savePreset, editPreset, deletePreset } from '../api';
 import { Toast } from "@/_components/ui/Toast";
 import { ConfirmDialog } from '@/_components/ui/ConfirmDialog';
