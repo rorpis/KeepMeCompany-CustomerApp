@@ -32,6 +32,7 @@ const RemoteMonitoringDashboardPage = () => {
   const { user } = useAuth();
   const [retryingCallId, setRetryingCallId] = useState(null);
   const [activeCalls, setActiveCalls] = useState([]);
+  const [activeTab, setActiveTab] = useState('new');
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -211,13 +212,25 @@ const RemoteMonitoringDashboardPage = () => {
     });
   }, [conversations, queuedCalls, processedCalls, activeCalls, startDate, endDate]);
 
-  // Filter calls based on status
+  // Calculate counts from all calls (before filtering)
+  const newCallsCount = mergedCalls.filter(call => !call.viewed).length;
+  const viewedCallsCount = mergedCalls.filter(call => call.viewed).length;
+
+  // Filter calls based on status and viewed state
   const filteredCalls = useMemo(() => {
     return mergedCalls.filter(call => {
-      if (statusFilter === 'all') return true;
-      return call.status === statusFilter;
+      // First filter by status
+      if (statusFilter !== 'all' && call.status !== statusFilter) {
+        return false;
+      }
+      
+      // Then filter by viewed state
+      if (activeTab === 'new') {
+        return !call.viewed;
+      }
+      return call.viewed;
     });
-  }, [mergedCalls, statusFilter]);
+  }, [mergedCalls, statusFilter, activeTab]);
 
   const handleViewResults = (conversation) => {
     // For failed or queued calls, we'll show objectives instead of results
@@ -406,39 +419,81 @@ const RemoteMonitoringDashboardPage = () => {
       <h2 className="text-xl font-semibold mb-4 text-text-primary">
         {t('workspace.remoteMonitoring.dashboard.title')}
       </h2>
-      
+
       {/* Filters Section */}
-      <div className="flex flex-row gap-5 mb-4">  
-        <div>
-          <DateRangePicker
-            startDate={new Date(startDate)}
-            endDate={endDate ? new Date(endDate) : null}
-            onStartDateChange={(date) => {
-              if (date) {
-                setStartDate(date.toISOString().split('T')[0]);
-              }
-            }}
-            onEndDateChange={(date) => {
-              if (date) {
-                setEndDate(date.toISOString().split('T')[0]);
-              } else {
-                setEndDate(null);
-              }
-            }}
-          />
+      <div className="flex items-center justify-between mb-4">  
+        <div className="flex items-center space-x-4">
+          <div>
+            <DateRangePicker
+              startDate={new Date(startDate)}
+              endDate={endDate ? new Date(endDate) : null}
+              onStartDateChange={(date) => {
+                if (date) {
+                  setStartDate(date.toISOString().split('T')[0]);
+                }
+              }}
+              onEndDateChange={(date) => {
+                if (date) {
+                  setEndDate(date.toISOString().split('T')[0]);
+                } else {
+                  setEndDate(null);
+                }
+              }}
+            />
+          </div>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
+            >
+              <option value="all">{t('workspace.remoteMonitoring.dashboard.statusFilter.all')}</option>
+              <option value="queued">{t('workspace.remoteMonitoring.dashboard.statusFilter.queued')}</option>
+              <option value="in_progress">{t('workspace.remoteMonitoring.dashboard.statusFilter.inProgress')}</option>
+              <option value="processed">{t('workspace.remoteMonitoring.dashboard.statusFilter.processed')}</option>
+              <option value="failed">{t('workspace.remoteMonitoring.dashboard.statusFilter.failed')}</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
+
+        {/* Switch-style Tabs */}
+        <div className="inline-flex rounded-lg bg-gray-100 p-0.5">
+          <button
+            onClick={() => setActiveTab('new')}
+            className={`
+              px-4 
+              py-2 
+              text-sm 
+              font-medium 
+              rounded-md
+              transition-colors
+              duration-200
+              ${activeTab === 'new'
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-500 hover:text-gray-700'
+              }
+            `}
           >
-            <option value="all">{t('workspace.remoteMonitoring.dashboard.statusFilter.all')}</option>
-            <option value="queued">{t('workspace.remoteMonitoring.dashboard.statusFilter.queued')}</option>
-            <option value="in_progress">{t('workspace.remoteMonitoring.dashboard.statusFilter.inProgress')}</option>
-            <option value="processed">{t('workspace.remoteMonitoring.dashboard.statusFilter.processed')}</option>
-            <option value="failed">{t('workspace.remoteMonitoring.dashboard.statusFilter.failed')}</option>
-          </select>
+            {t('workspace.triageDashboard.tabs.newCalls')} ({newCallsCount})
+          </button>
+          <button
+            onClick={() => setActiveTab('viewed')}
+            className={`
+              px-4 
+              py-2 
+              text-sm 
+              font-medium 
+              rounded-md
+              transition-colors
+              duration-200
+              ${activeTab === 'viewed'
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-500 hover:text-gray-700'
+              }
+            `}
+          >
+            {t('workspace.triageDashboard.tabs.viewedCalls')} ({viewedCallsCount})
+          </button>
         </div>
       </div>
 
@@ -451,6 +506,7 @@ const RemoteMonitoringDashboardPage = () => {
           handleCallAgain={handleCallAgain}
           handleDeleteCall={handleDeleteCall}
           retryingCallId={retryingCallId}
+          activeTab={activeTab}
         />
       </div>
 
