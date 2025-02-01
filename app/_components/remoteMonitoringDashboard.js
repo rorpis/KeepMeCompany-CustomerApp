@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../lib/contexts/LanguageContext';
 import { Dialog } from '@headlessui/react';
 import ObjectivesTable from '../workspace/remote-monitoring/_components/ObjectivesTable';
+import { CallDetailsModal } from './calls/CallDetailsModal';
 
 // Reuse the formatter helper with additional fields
 const formatCallData = (call, organisationDetails) => {
@@ -120,7 +121,8 @@ const formatCallData = (call, organisationDetails) => {
     fullDate: getFullDate(call.createdAt),
     status: call.recordingURL ? 'processed' : 'failed',
     viewed: call.viewed || false,
-    recordingURL: call.recordingURL || null
+    recordingURL: call.recordingURL || null,
+    conversationHistory: call.conversationHistory || null
   };
 };
 
@@ -138,6 +140,7 @@ export function RemoteMonitoringDashboard({
   const [activeTab, setActiveTab] = useState('new');
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [selectedCall, setSelectedCall] = useState(null);
+  const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
 
   // Format calls data first
   const formattedCalls = calls.map(call => formatCallData(call, organisationDetails));
@@ -218,6 +221,7 @@ export function RemoteMonitoringDashboard({
     whitespace-nowrap
     text-sm
     text-gray-900
+    text-center
   `;
 
   // Update the action button classes
@@ -272,12 +276,50 @@ export function RemoteMonitoringDashboard({
   ];
 
   const handleViewClick = (call) => {
-    if (call.status === 'queued' || call.status === 'failed') {
-      setSelectedCall(call);
-      setIsObjectivesOpen(true);
-    } else {
-      onViewResults(call);
+    if (call.status === 'in_progress') {
+      // Do nothing for in-progress calls
+      return;
     }
+    setSelectedCall(call);
+    setIsCallDetailsOpen(true);
+  };
+
+  const prepareCallDetailsData = (call, organisationDetails) => {
+    // Get patient details from organisation
+    const patientDetails = organisationDetails?.patientList?.find(
+      patient => patient.id === call.patientId
+    );
+
+    return {
+      id: call.id,
+      properties: {
+        fromNumber: call.userNumber || 'Unknown',
+        toNumber: process.env.NEXT_PUBLIC_TWILIO_NUMBER || 'Unknown',
+        timestamp: call.createdAt || call.enqueued_at,
+        completion: call.completion || 100,
+        direction: 'outbound',
+        duration: call.duration || 'N/A',
+        status: call.status
+      },
+      patient: patientDetails ? {
+        name: patientDetails.customerName,
+        dateOfBirth: patientDetails.dateOfBirth,
+        phoneNumber: patientDetails.phoneNumber,
+        ...Object.fromEntries(
+          Object.entries(patientDetails).filter(([key]) => 
+            !['id', 'customerName', 'dateOfBirth', 'phoneNumber'].includes(key)
+          )
+        )
+      } : null,
+      conversationHistory: call.conversationHistory || [],
+      medicalSummary: {
+        objectives: call.objectives?.map(objective => ({
+          item: objective,
+          status: call.status === 'processed' ? 'Achieved' : 'Pending',
+          notes: ''
+        })) || []
+      }
+    };
   };
 
   return (
@@ -316,7 +358,11 @@ export function RemoteMonitoringDashboard({
 
                 {/* Calls for this date */}
                 {dateCalls.map(call => (
-                  <tr key={call.id} className={tableRowClasses(call.status)}>
+                  <tr 
+                    key={call.id} 
+                    className={`${tableRowClasses(call.status)} cursor-pointer`}
+                    onClick={() => handleViewClick(call)}
+                  >
                     <td className={tableCellClasses}>{call.patientName}</td>
                     <td className={tableCellClasses}>{call.userNumber}</td>
                     <td className={tableCellClasses}>
@@ -328,7 +374,7 @@ export function RemoteMonitoringDashboard({
                       </span>
                     </td>
                     <td className={tableCellClasses}>
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                         {call.status !== 'in_progress' && (
                           <>
                             <button
@@ -374,7 +420,7 @@ export function RemoteMonitoringDashboard({
                                 onClick={() => handleDeleteCall(call)}
                                 className={deleteButtonClasses}
                               >
-                                {t('workspace.remoteMonitoring.upcomingCalls.table.delete')}
+                                {t('workspace.triageDashboard.table.deleteCall')}
                               </button>
                             )}
                             {call.status === 'processed' && call.recordingURL && (
@@ -415,6 +461,14 @@ export function RemoteMonitoringDashboard({
           </tbody>
         </table>
       </div>
+
+      {/* Call Details Modal */}
+      <CallDetailsModal 
+        isOpen={isCallDetailsOpen}
+        onClose={() => setIsCallDetailsOpen(false)}
+        call={selectedCall ? prepareCallDetailsData(selectedCall, organisationDetails) : null}
+        markAsViewed={markAsViewed}
+      />
 
       {/* Objectives Dialog */}
       <Dialog open={isObjectivesOpen} onClose={() => setIsObjectivesOpen(false)} className="relative z-50">

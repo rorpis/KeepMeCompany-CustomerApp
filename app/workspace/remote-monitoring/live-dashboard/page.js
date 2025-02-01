@@ -327,6 +327,8 @@ const RemoteMonitoringDashboardPage = () => {
   };
 
   const markAsViewed = async (callId) => {
+    console.log("Marking call as viewed:", callId);
+    console.log("Filtered calls:", filteredCalls);
     const callToMark = filteredCalls.find(call => call.id === callId);
 
     // Optimistically update the UI state first
@@ -356,6 +358,7 @@ const RemoteMonitoringDashboardPage = () => {
       });
     }
 
+    const call_sid = callToMark.call_sid || callToMark.Sid;
     // Then sync with the backend
     try {
       const idToken = await user.getIdToken();
@@ -368,10 +371,9 @@ const RemoteMonitoringDashboardPage = () => {
             Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
-            callId: callToMark.id,
+            callSid: call_sid,
             organisationId: selectedOrgId,
             callType: callToMark.status,
-            callSid: callToMark.call_sid
           }),
         }
       );
