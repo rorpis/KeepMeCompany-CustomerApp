@@ -10,7 +10,6 @@ import { Filter } from 'lucide-react';
 
 // Reuse the formatter helper with additional fields
 const formatCallData = (call, organisationDetails) => {
-  console.log(call)
   const formatTime = (date) => {
     if (!date) return '';
     
@@ -329,8 +328,6 @@ export function RemoteMonitoringDashboard({
     const patientDetails = organisationDetails?.patientList?.find(
       patient => patient.id === call.patientId
     );
-
-    console.log(call)
 
     return {
       id: call.id,
