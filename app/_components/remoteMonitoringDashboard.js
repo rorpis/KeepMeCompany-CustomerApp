@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLanguage } from '../../lib/contexts/LanguageContext';
 import { Dialog } from '@headlessui/react';
 import ObjectivesTable from '../workspace/remote-monitoring/_components/ObjectivesTable';
+import { CallDetailsModal } from './calls/CallDetailsModal';
+import { CheckboxDropdown } from './CheckboxDropdown';
+import { Filter } from 'lucide-react';
 
 // Reuse the formatter helper with additional fields
 const formatCallData = (call, organisationDetails) => {
+  console.log(call)
   const formatTime = (date) => {
     if (!date) return '';
     
@@ -68,7 +72,8 @@ const formatCallData = (call, organisationDetails) => {
       fullDate: scheduledDate ? getFullDate(scheduledDate) : null,
       status: 'queued',
       viewed: false,
-      enqueued_at: call.enqueued_at
+      enqueued_at: call.enqueued_at,
+      direction: call.direction || 'outbound'
     };
   }
 
@@ -86,6 +91,7 @@ const formatCallData = (call, organisationDetails) => {
       fullDate: getFullDate(call.createdAt),
       status: 'in_progress',
       viewed: false,
+      direction: call.direction || 'outbound'
     };
   }
 
@@ -103,6 +109,8 @@ const formatCallData = (call, organisationDetails) => {
       fullDate: getFullDate(call.createdAt),
       status: 'failed',
       viewed: call.viewed || false,
+      summaryURL: call.summaryURL || null,
+      direction: call.direction || 'outbound'
     };
   }
 
@@ -113,14 +121,18 @@ const formatCallData = (call, organisationDetails) => {
     id: call.id,
     call_sid: call.call_sid,
     patientName: patientDetails?.customerName || call.patientName || call.patient?.name || call.experience_custom_args?.patient_name || 'Unknown',
-    userNumber: patientDetails?.phoneNumber || call.userNumber || call.user_number || 'Unknown',
+    userNumber: call.userNumber || 'Unknown',
+    twilioNumber: call.twilioNumber || 'Unknown',
     objectives: call.objectives || [],
     patientId: call.patientId || null,
     formattedTimestamp: formatTime(call.createdAt),
     fullDate: getFullDate(call.createdAt),
     status: call.recordingURL ? 'processed' : 'failed',
     viewed: call.viewed || false,
-    recordingURL: call.recordingURL || null
+    recordingURL: call.recordingURL || null,
+    conversationHistory: call.conversationHistory || null,
+    summaryURL: call.summaryURL || null,
+    direction: call.direction || 'outbound'
   };
 };
 
@@ -138,6 +150,9 @@ export function RemoteMonitoringDashboard({
   const [activeTab, setActiveTab] = useState('new');
   const [isObjectivesOpen, setIsObjectivesOpen] = useState(false);
   const [selectedCall, setSelectedCall] = useState(null);
+  const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [columnFilters, setColumnFilters] = useState({});
 
   // Format calls data first
   const formattedCalls = calls.map(call => formatCallData(call, organisationDetails));
@@ -176,9 +191,11 @@ export function RemoteMonitoringDashboard({
   const tableHeaderClasses = `
     sticky 
     top-0 
-    z-20 
+    z-40
     bg-gray-900
     text-white
+    text-center
+    h-14
   `;
 
   const headerCellClasses = `
@@ -193,8 +210,8 @@ export function RemoteMonitoringDashboard({
 
   const dateGroupHeaderClasses = `
     sticky
-    top-[48px]
-    z-10
+    top-14
+    z-30
     bg-gray-200
     border-y
     border-gray-300
@@ -203,6 +220,7 @@ export function RemoteMonitoringDashboard({
     py-2
     text-gray-700
     text-left
+    h-10
   `;
 
   const tableRowClasses = (status) => `
@@ -218,6 +236,7 @@ export function RemoteMonitoringDashboard({
     whitespace-nowrap
     text-sm
     text-gray-900
+    text-center
   `;
 
   // Update the action button classes
@@ -264,19 +283,109 @@ export function RemoteMonitoringDashboard({
   `;
 
   const columns = [
-    { key: 'patientName', label: t('workspace.triageDashboard.table.patientName') },
-    { key: 'phoneNumber', label: t('workspace.triageDashboard.table.phoneNumber') },
-    { key: 'time', label: t('workspace.triageDashboard.table.time') },
-    { key: 'status', label: t('workspace.remoteMonitoring.upcomingCalls.table.status') },
-    { key: 'actions', label: t('workspace.triageDashboard.table.actions') }
+    { 
+      key: 'patientName', 
+      label: t('workspace.triageDashboard.table.patientName'),
+      filterable: false 
+    },
+    { 
+      key: 'direction', 
+      label: t('workspace.remoteMonitoring.dashboard.direction.title'),
+      filterable: true,
+      filterOptions: [
+        { value: 'inbound', label: t('workspace.remoteMonitoring.dashboard.direction.inbound') },
+        { value: 'outbound', label: t('workspace.remoteMonitoring.dashboard.direction.outbound') }
+      ]
+    },
+    { 
+      key: 'time', 
+      label: t('workspace.triageDashboard.table.time'),
+      filterable: false 
+    },
+    { 
+      key: 'status', 
+      label: t('workspace.remoteMonitoring.upcomingCalls.table.status'),
+      filterable: true,
+      filterOptions: [
+        { value: 'queued', label: t('workspace.remoteMonitoring.dashboard.statusFilter.queued') },
+        { value: 'in_progress', label: t('workspace.remoteMonitoring.dashboard.statusFilter.inProgress') },
+        { value: 'processed', label: t('workspace.remoteMonitoring.dashboard.statusFilter.processed') },
+        { value: 'failed', label: t('workspace.remoteMonitoring.dashboard.statusFilter.failed') }
+      ]
+    }
   ];
 
   const handleViewClick = (call) => {
-    if (call.status === 'queued' || call.status === 'failed') {
-      setSelectedCall(call);
-      setIsObjectivesOpen(true);
-    } else {
-      onViewResults(call);
+    if (call.status === 'in_progress') {
+      // Do nothing for in-progress calls
+      return;
+    }
+    setSelectedCall(call);
+    setIsCallDetailsOpen(true);
+  };
+
+  const prepareCallDetailsData = (call, organisationDetails) => {
+    // Get patient details from organisation
+    const patientDetails = organisationDetails?.patientList?.find(
+      patient => patient.id === call.patientId
+    );
+
+    console.log(call)
+
+    return {
+      id: call.id,
+      viewed: call.viewed,
+      properties: {
+        toNumber: call.userNumber || 'Unknown',
+        fromNumber: call.twilioNumber || 'Unknown',
+        timestamp: call.createdAt || call.enqueued_at,
+        completion: call.completion || 100,
+        direction: 'outbound',
+        duration: call.duration || 'N/A',
+        status: call.status,
+        medicalSummary: call.summaryURL || 'N/A'
+      },
+      patient: patientDetails ? {
+        name: patientDetails.customerName,
+        dateOfBirth: patientDetails.dateOfBirth,
+        phoneNumber: patientDetails.phoneNumber,
+        ...Object.fromEntries(
+          Object.entries(patientDetails).filter(([key]) => 
+            !['id', 'customerName', 'dateOfBirth', 'phoneNumber'].includes(key)
+          )
+        )
+      } : null,
+      conversationHistory: call.conversationHistory || [],
+      recordingURL: call.recordingURL || null,
+      objectivesSummary: {
+        objectives: call.objectives?.map(objective => ({
+          item: objective,
+          status: call.status === 'processed' ? 'Achieved' : 'Pending',
+          notes: ''
+        })) || []
+      }
+    };
+  };
+
+  const filteredCalls = useMemo(() => {
+    return formattedCalls.filter(call => {
+      // Check all column filters
+      return Object.entries(columnFilters).every(([field, selectedValues]) => {
+        if (!selectedValues || selectedValues.length === 0) return true;
+        return selectedValues.includes(call[field]);
+      });
+    });
+  }, [formattedCalls, columnFilters]);
+
+  const handleMarkAsViewed = async (callId) => {
+    if (!callId) return;
+    
+    try {
+      await markAsViewed(callId);
+      // Update the selectedCall state to reflect the viewed status
+      setSelectedCall(prev => prev?.id === callId ? { ...prev, viewed: true } : prev);
+    } catch (error) {
+      console.error('Error marking call as viewed:', error);
     }
   };
 
@@ -293,7 +402,40 @@ export function RemoteMonitoringDashboard({
                   className={headerCellClasses}
                   style={{ position: 'sticky', top: 0 }}
                 >
-                  {column.label}
+                  <div className="flex items-center justify-center gap-2">
+                    {column.label}
+                    {column.filterable && (
+                      <CheckboxDropdown
+                        title={<Filter size={14} className="text-gray-400" />}
+                        items={column.filterOptions}
+                        selectedItems={columnFilters[column.key] || []}
+                        onItemToggle={(value) => {
+                          const currentValues = columnFilters[column.key] || [];
+                          const newValues = currentValues.includes(value)
+                            ? currentValues.filter(v => v !== value)
+                            : [...currentValues, value];
+                          setColumnFilters(prev => ({
+                            ...prev,
+                            [column.key]: newValues
+                          }));
+                        }}
+                        onSelectAll={() => {
+                          setColumnFilters(prev => ({
+                            ...prev,
+                            [column.key]: column.filterOptions.map(option => option.value)
+                          }));
+                        }}
+                        onDeselectAll={() => {
+                          setColumnFilters(prev => ({
+                            ...prev,
+                            [column.key]: []
+                          }));
+                        }}
+                        buttonClassName="p-1 text-gray-400 hover:text-gray-600"
+                        dropdownClassName="right-0"
+                      />
+                    )}
+                  </div>
                 </th>
               ))}
             </tr>
@@ -301,120 +443,91 @@ export function RemoteMonitoringDashboard({
 
           {/* Table Body */}
           <tbody className="divide-y divide-gray-200">
-            {Object.entries(groupedCalls).map(([dateStr, dateCalls]) => (
-              <React.Fragment key={dateStr}>
-                {/* Date Group Header */}
-                <tr>
-                  <td 
-                    colSpan={columns.length} 
-                    className={dateGroupHeaderClasses}
-                    style={{ position: 'sticky', top: '48px' }}
-                  >
-                    {dateStr}
-                  </td>
-                </tr>
-
-                {/* Calls for this date */}
-                {dateCalls.map(call => (
-                  <tr key={call.id} className={tableRowClasses(call.status)}>
-                    <td className={tableCellClasses}>{call.patientName}</td>
-                    <td className={tableCellClasses}>{call.userNumber}</td>
-                    <td className={tableCellClasses}>
-                      {call.formattedTimestamp || call.createdAt?.toDate?.().toLocaleTimeString()}
-                    </td>
-                    <td className={tableCellClasses}>
-                      <span className={`px-2 py-1 rounded-full text-sm ${getStatusColor(call.status)}`}>
-                        {call.status}
-                      </span>
-                    </td>
-                    <td className={tableCellClasses}>
-                      <div className="flex space-x-2">
-                        {call.status !== 'in_progress' && (
-                          <>
-                            <button
-                              onClick={() => handleViewClick(call)}
-                              className={actionButtonClasses}
-                            >
-                              {(call.status === 'queued' || call.status === 'failed')
-                                ? t('workspace.triageDashboard.table.viewObjectives')
-                                : t('workspace.triageDashboard.table.viewResults.cell')}
-                            </button>
-                            {!call.viewed && activeTab === 'new' && call.status !== 'queued' && (
-                              <button
-                                onClick={() => markAsViewed(call.id)}
-                                className={actionButtonClasses}
-                              >
-                                {t('workspace.triageDashboard.table.markAsViewed')}
-                              </button>
-                            )}
-                            {call.status === 'failed' && (
-                              <button
-                                onClick={() => handleCallAgain(call)}
-                                disabled={retryingCallId === call.id}
-                                className={`${actionButtonClasses} w-10 h-10 p-0 flex items-center justify-center`}
-                              >
-                                <svg 
-                                  className={`h-5 w-5 ${retryingCallId === call.id ? 'animate-spin' : ''}`}
-                                  xmlns="http://www.w3.org/2000/svg" 
-                                  fill="none" 
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path 
-                                    strokeLinecap="round" 
-                                    strokeLinejoin="round" 
-                                    strokeWidth={2} 
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-                                  />
-                                </svg>
-                              </button>
-                            )}
-                            {call.status === 'queued' && (
-                              <button
-                                onClick={() => handleDeleteCall(call)}
-                                className={deleteButtonClasses}
-                              >
-                                {t('workspace.remoteMonitoring.upcomingCalls.table.delete')}
-                              </button>
-                            )}
-                            {call.status === 'processed' && call.recordingURL && (
-                              <a
-                                href={call.recordingURL}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`${actionButtonClasses} w-10 h-10 p-0 flex items-center justify-center`}
-                              >
-                                <svg
-                                  className="h-5 w-5"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
-                                  />
-                                </svg>
-                              </a>
-                            )}
-                          </>
-                        )}
-                      </div>
+            {Object.keys(groupedCalls).length === 0 ? (
+              <tr>
+                <td 
+                  colSpan={columns.length} 
+                  className="text-center py-12 text-gray-500 text-lg"
+                >
+                  {t('workspace.remoteMonitoring.dashboard.noCalls')}
+                </td>
+              </tr>
+            ) : (
+              Object.entries(groupedCalls).map(([dateStr, dateCalls]) => (
+                <React.Fragment key={dateStr}>
+                  {/* Date Group Header */}
+                  <tr>
+                    <td 
+                      colSpan={columns.length} 
+                      className={dateGroupHeaderClasses}
+                      style={{ position: 'sticky', top: '65px' }}
+                    >
+                      {dateStr}
                     </td>
                   </tr>
-                ))}
-              </React.Fragment>
-            ))}
-            {/* Padding row with background color */}
-            <tr>
-              <td colSpan={columns.length} className="h-5 bg-bg-elevated"></td>
-            </tr>
+
+                  {/* Calls for this date */}
+                  {dateCalls.map(call => (
+                    <tr 
+                      key={call.id} 
+                      className={`${tableRowClasses(call.status)} cursor-pointer`}
+                      onClick={() => handleViewClick(call)}
+                    >
+                      <td className={tableCellClasses}>{call.patientName}</td>
+                      <td className={tableCellClasses}>
+                        {call.direction === 'inbound' ? t('workspace.remoteMonitoring.dashboard.direction.inbound') : t('workspace.remoteMonitoring.dashboard.direction.outbound')}
+                      </td>
+                      <td className={tableCellClasses}>
+                        {call.formattedTimestamp || call.createdAt?.toDate?.().toLocaleTimeString()}
+                      </td>
+                      <td className={tableCellClasses}>
+                        <div className="flex items-center justify-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-sm ${getStatusColor(call.status)}`}>
+                            {call.status}
+                          </span>
+                          {call.status === 'failed' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCallAgain(call);
+                              }}
+                              disabled={retryingCallId === call.id}
+                              className={`w-8 h-8 p-0 flex items-center justify-center rounded-full text-primary-blue bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              <svg 
+                                className={`h-4 w-4 ${retryingCallId === call.id ? 'animate-spin' : ''}`}
+                                xmlns="http://www.w3.org/2000/svg" 
+                                fill="none" 
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round" 
+                                  strokeWidth={2} 
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                                />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Call Details Modal */}
+      <CallDetailsModal 
+        isOpen={isCallDetailsOpen}
+        onClose={() => setIsCallDetailsOpen(false)}
+        call={selectedCall ? prepareCallDetailsData(selectedCall, organisationDetails) : null}
+        markAsViewed={handleMarkAsViewed}
+      />
 
       {/* Objectives Dialog */}
       <Dialog open={isObjectivesOpen} onClose={() => setIsObjectivesOpen(false)} className="relative z-50">

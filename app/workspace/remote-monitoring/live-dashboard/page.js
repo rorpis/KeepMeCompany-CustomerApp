@@ -120,7 +120,23 @@ const RemoteMonitoringDashboardPage = () => {
   const mergedCalls = useMemo(() => {
     // Filter out conversations without recordingURL
     const validConversations = conversations.filter(conv => conv.recordingURL);
-    const allCalls = [...validConversations];
+    
+    // Find matching queue calls to get their viewed status
+    const allCalls = validConversations.map(conv => {
+      // Try to find a matching processed call to get its viewed status
+      const matchingProcessedCall = processedCalls.find(
+        qCall => qCall.call_sid === conv.callSid
+      );
+      
+      return {
+        ...conv,
+        type: 'processed',
+        status: 'processed',
+        viewed: matchingProcessedCall?.viewed || false, // Get viewed status from queue
+        call_sid: conv.callSid // Ensure consistent property name
+      };
+    });
+
     const conversationIds = new Set(validConversations.map(conv => conv.callSid));
     
     // Add queued calls that don't have a matching conversation yet
@@ -356,6 +372,7 @@ const RemoteMonitoringDashboardPage = () => {
       });
     }
 
+    const call_sid = callToMark.call_sid || callToMark.callSid;
     // Then sync with the backend
     try {
       const idToken = await user.getIdToken();
@@ -368,10 +385,9 @@ const RemoteMonitoringDashboardPage = () => {
             Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
-            callId: callToMark.id,
+            callSid: call_sid,
             organisationId: selectedOrgId,
             callType: callToMark.status,
-            callSid: callToMark.call_sid
           }),
         }
       );
@@ -415,7 +431,7 @@ const RemoteMonitoringDashboardPage = () => {
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="h-full flex flex-col p-6 max-w-[85%] mx-auto">
       <h2 className="text-xl font-semibold mb-4 text-text-primary">
         {t('workspace.remoteMonitoring.dashboard.title')}
       </h2>
@@ -440,19 +456,6 @@ const RemoteMonitoringDashboardPage = () => {
                 }
               }}
             />
-          </div>
-          <div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-bg-secondary border border-border-main rounded p-2 text-text-primary focus:border-primary-blue focus:ring-primary-blue"
-            >
-              <option value="all">{t('workspace.remoteMonitoring.dashboard.statusFilter.all')}</option>
-              <option value="queued">{t('workspace.remoteMonitoring.dashboard.statusFilter.queued')}</option>
-              <option value="in_progress">{t('workspace.remoteMonitoring.dashboard.statusFilter.inProgress')}</option>
-              <option value="processed">{t('workspace.remoteMonitoring.dashboard.statusFilter.processed')}</option>
-              <option value="failed">{t('workspace.remoteMonitoring.dashboard.statusFilter.failed')}</option>
-            </select>
           </div>
         </div>
 
