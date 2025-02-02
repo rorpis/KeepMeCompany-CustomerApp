@@ -262,7 +262,6 @@ const RemoteMonitoringDashboardPage = () => {
   };
 
   const handleCallAgain = async (call) => {
-    console.log("Retrying call:", call);
     setRetryingCallId(call.id);
     try {
       const currentDate = new Date();
