@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from "../../../../lib/firebase/authContext";
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 
-const ResultsTable = ({ callId }) => {
+const ResultsTable = ({ callId, onLoadingChange }) => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const [callData, setCallData] = useState(null);
@@ -15,6 +15,7 @@ const ResultsTable = ({ callId }) => {
     const fetchCallData = async () => {
       try {
         setIsLoading(true);
+        onLoadingChange?.(true);
         const idToken = await user.getIdToken();
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_up_results`,
@@ -34,13 +35,14 @@ const ResultsTable = ({ callId }) => {
         console.error('Error fetching call data:', error);
       } finally {
         setIsLoading(false);
+        onLoadingChange?.(false);
       }
     };
 
     if (callId) {
       fetchCallData();
     }
-  }, [callId, user]);
+  }, [callId, user, onLoadingChange]);
 
   const renderConversationHistory = () => (
     <div className="w-full max-w-4xl mx-auto bg-white rounded-lg">
