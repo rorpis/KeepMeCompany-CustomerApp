@@ -111,7 +111,7 @@ export const CallDetailsModal = ({ isOpen, onClose, call, markAsViewed }) => {
               {activeTab === "transcript" && (
                 <TranscriptView transcript={call?.conversationHistory} recordingURL={call?.recordingURL} />
               )}
-              {activeTab === "summary" && <MedicalSummary callId={call?.id} />}
+              {activeTab === "summary" && <MedicalSummary followUpSummary={call?.followUpSummary} />}
             </div>
           </div>
         </Dialog.Panel>

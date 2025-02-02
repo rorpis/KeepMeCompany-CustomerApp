@@ -1,27 +1,49 @@
 import { useLanguage } from '../../../../lib/contexts/LanguageContext';
-import ResultsTable from '../../../workspace/remote-monitoring/_components/ResultsTable';
-import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
 
-export const MedicalSummary = ({ callId }) => {
+export const MedicalSummary = ({ followUpSummary }) => {
   const { t } = useLanguage();
-  const [isLoading, setIsLoading] = useState(true);
   
-  if (!callId) {
+  if (!followUpSummary) {
     return <div className="text-gray-500 italic">{t('workspace.calls.modal.noData.summary')}</div>;
   }
 
+  const getConcernLevelColor = (level) => {
+    switch (level?.toUpperCase()) {
+      case 'HIGH':
+        return 'bg-red-100';
+      case 'MODERATE':
+        return 'bg-yellow-100';
+      case 'LOW':
+        return 'bg-green-100';
+      default:
+        return 'bg-gray-50';
+    }
+  };
+
   return (
     <div className="w-full">
-      {isLoading ? (
-        <div className="flex justify-center items-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        </div>
-      ) : null}
-      <ResultsTable 
-        callId={callId} 
-        onLoadingChange={(loading) => setIsLoading(loading)}
-      />
+      <table className="w-full border-collapse">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="py-3 px-4 text-left font-medium">
+              {t('workspace.calls.modal.summary.question')}
+            </th>
+            <th className="py-3 px-4 text-left font-medium">
+              {t('workspace.calls.modal.summary.response')}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {followUpSummary.map((item, index) => (
+            <tr key={index}>
+              <td className="py-3 px-4">{item.question}</td>
+              <td className={`py-3 px-4 ${getConcernLevelColor(item.concern_level)}`}>
+                {item.response}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

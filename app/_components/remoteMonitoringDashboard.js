@@ -109,6 +109,7 @@ const formatCallData = (call, organisationDetails) => {
       status: 'failed',
       viewed: call.viewed || false,
       summaryURL: call.summaryURL || null,
+      followUpSummary: call.followUpSummary || null,
       direction: call.direction || 'outbound'
     };
   }
@@ -131,6 +132,7 @@ const formatCallData = (call, organisationDetails) => {
     recordingURL: call.recordingURL || null,
     conversationHistory: call.conversationHistory || null,
     summaryURL: call.summaryURL || null,
+    followUpSummary: call.followUpSummary || null,
     direction: call.direction || 'outbound'
   };
 };
@@ -340,7 +342,7 @@ export function RemoteMonitoringDashboard({
         direction: 'outbound',
         duration: call.duration || 'N/A',
         status: call.status,
-        medicalSummary: call.summaryURL || 'N/A'
+        summaryURL: call.summaryURL || 'N/A',
       },
       patient: patientDetails ? {
         name: patientDetails.customerName,
@@ -353,6 +355,7 @@ export function RemoteMonitoringDashboard({
         )
       } : null,
       conversationHistory: call.conversationHistory || [],
+      followUpSummary: call.followUpSummary || null,
       recordingURL: call.recordingURL || null,
       objectivesSummary: {
         objectives: call.objectives?.map(objective => ({
