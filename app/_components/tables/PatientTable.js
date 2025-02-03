@@ -159,7 +159,7 @@ export const PatientTable = ({
         </div>
       )}
       
-      <div className="overflow-x-auto relative h-[calc(100vh-26rem)] rounded-lg">
+      <div className="overflow-x-auto relative h-[calc(100vh-24rem)] rounded-lg">
         <table className="w-full min-w-[600px] border-collapse bg-white relative">
           <thead className="sticky top-0 z-10">
             <tr>

@@ -3,44 +3,73 @@
 import { ActiveButton } from '@/app/_components/global_components';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import LoadingSpinner from "@/app/_components/ui/LoadingSpinner";
+import { Phone } from 'lucide-react';
 
 const CallTypeSelector = ({ onCallNow, onSchedule, isCallingNow }) => {
   const { t } = useLanguage();
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-medium text-text-primary mb-8">
-        {t('workspace.remoteMonitoring.callType.title')}
-      </h3>
-      
-      <div className="grid grid-cols-2 gap-8">
-        <div 
-          onClick={!isCallingNow ? onCallNow : undefined}
-          className={`cursor-pointer bg-bg-secondary hover:bg-bg-main p-8 rounded-lg border-2 border-border-main transition-colors duration-200 flex flex-col items-center justify-center gap-4 ${
-            isCallingNow ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
-        >
-          <h4 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-            {isCallingNow && <LoadingSpinner size="sm" />}
-            {t('workspace.remoteMonitoring.callType.callNow.title')}
-          </h4>
-          <p className="text-text-secondary text-center">
-            {t('workspace.remoteMonitoring.callType.callNow.description')}
-          </p>
-        </div>
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <div className="max-w-4xl w-full space-y-6">
+        
+        <div className="grid grid-cols-2 gap-12">
+          {/* Call Now */}
+          <div 
+            onClick={!isCallingNow ? onCallNow : undefined}
+            className={`h-[200px] bg-bg-elevated rounded-2xl p-6 pb-0 border border-border-main hover:border-primary-blue hover:bg-blue-500/10 transition-all duration-200 flex flex-col relative cursor-pointer ${
+              isCallingNow ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
+          >
+            <div className="flex justify-center mb-6">
+              <div className="rounded-xl p-4 bg-blue-500/10 text-blue-500">
+                <Phone className="h-8 w-8" />
+              </div>
+            </div>
+            <h4 className="text-lg font-semibold text-text-primary text-center flex items-center justify-center gap-2">
+              {isCallingNow && <LoadingSpinner size="sm" />}
+              {t('workspace.remoteMonitoring.callType.callNow.title')}
+            </h4>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-16 bg-blue-500 rounded-t-md" />
+          </div>
 
-        <div 
-          onClick={!isCallingNow ? onSchedule : undefined}
-          className={`cursor-pointer bg-bg-secondary hover:bg-bg-main p-8 rounded-lg border-2 border-border-main transition-colors duration-200 flex flex-col items-center justify-center gap-4 ${
-            isCallingNow ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
-        >
-          <h4 className="text-xl font-semibold text-text-primary">
-            {t('workspace.remoteMonitoring.callType.schedule.title')}
-          </h4>
-          <p className="text-text-secondary text-center">
-            {t('workspace.remoteMonitoring.callType.schedule.description')}
-          </p>
+          {/* Call in 15 minutes */}
+          <div className="h-[200px] bg-bg-elevated rounded-2xl p-6 pb-0 border border-border-main transition-all duration-200 flex flex-col relative opacity-50 cursor-not-allowed">
+            <div className="flex justify-center mb-6">
+              <div className="rounded-xl p-4 bg-slate-500/10 text-slate-500">
+                <Phone className="h-8 w-8" />
+              </div>
+            </div>
+            <h4 className="text-lg font-semibold text-text-primary text-center">
+              {t('workspace.remoteMonitoring.callType.schedule15.title', 'Call in 15 minutes')}
+            </h4>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-16 bg-slate-500 rounded-t-md" />
+          </div>
+
+          {/* Call in 30 minutes */}
+          <div className="h-[200px] bg-bg-elevated rounded-2xl p-6 pb-0 border border-border-main transition-all duration-200 flex flex-col relative opacity-50 cursor-not-allowed">
+            <div className="flex justify-center mb-6">
+              <div className="rounded-xl p-4 bg-slate-500/10 text-slate-500">
+                <Phone className="h-8 w-8" />
+              </div>
+            </div>
+            <h4 className="text-lg font-semibold text-text-primary text-center">
+              {t('workspace.remoteMonitoring.callType.schedule30.title', 'Call in 30 minutes')}
+            </h4>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-16 bg-slate-500 rounded-t-md" />
+          </div>
+
+          {/* Call in 60 minutes */}
+          <div className="h-[200px] bg-bg-elevated rounded-2xl p-6 pb-0 border border-border-main transition-all duration-200 flex flex-col relative opacity-50 cursor-not-allowed">
+            <div className="flex justify-center mb-6">
+              <div className="rounded-xl p-4 bg-slate-500/10 text-slate-500">
+                <Phone className="h-8 w-8" />
+              </div>
+            </div>
+            <h4 className="text-lg font-semibold text-text-primary text-center">
+              {t('workspace.remoteMonitoring.callType.schedule60.title', 'Call in 60 minutes')}
+            </h4>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-16 bg-slate-500 rounded-t-md" />
+          </div>
         </div>
       </div>
     </div>

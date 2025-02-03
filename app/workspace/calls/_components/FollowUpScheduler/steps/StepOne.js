@@ -232,7 +232,7 @@ const StepOne = ({
   };
 
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <div className="flex flex-col h-full bg-bg-elevated rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-text-primary">
           {t('workspace.remoteMonitoring.stepOne.title')}
@@ -245,7 +245,7 @@ const StepOne = ({
         />
       </div>
       
-      <div className="flex-1">
+      <div className="flex-1 mb-4">
         <PatientTable 
           allPatients={organisationDetails?.patientList || []}
           patients={organisationDetails?.patientList.filter(patient => {

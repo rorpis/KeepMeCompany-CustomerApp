@@ -65,14 +65,14 @@ const WorkspaceDashboard = () => {
     <div className="h-[calc(100vh-4rem)] bg-bg-main flex items-center">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {cards.map((card, index) => (
             <Link 
               key={index} 
               href={card.href}
               className="group transition-transform duration-200 hover:-translate-y-1"
             >
-              <div className={`h-[320px] bg-bg-elevated rounded-2xl p-8 pb-0 border border-border-main hover:border-primary-blue transition-all duration-200 flex flex-col relative ${card.hoverColor}`}>
+              <div className={`h-[340px] bg-bg-elevated rounded-2xl p-8 pb-0 border border-border-main hover:border-primary-blue transition-all duration-200 flex flex-col relative ${card.hoverColor}`}>
                 <div className="flex justify-center mb-8">
                   <div className={`rounded-xl p-4 ${card.color} ${card.textColor}`}>
                     <card.icon className="h-8 w-8" />
