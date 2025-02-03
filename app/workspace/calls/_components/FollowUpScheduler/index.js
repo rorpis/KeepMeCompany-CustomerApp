@@ -64,7 +64,7 @@ export const FollowUpScheduler = () => {
       });
 
       if (success) {
-        router.push('/workspace/remote-monitoring');
+        router.push('/workspace/calls');
       } else {
         throw error;
       }
@@ -114,7 +114,7 @@ export const FollowUpScheduler = () => {
       });
 
       if (success) {
-        router.push('/workspace/remote-monitoring');
+        router.push('/workspace/calls');
       } else {
         throw error;
       }

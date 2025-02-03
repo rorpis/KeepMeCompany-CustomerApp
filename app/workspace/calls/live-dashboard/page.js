@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useOrganisation } from '../../../../lib/contexts/OrganisationContext';
-import { RemoteMonitoringDashboard } from '../../../_components/remoteMonitoringDashboard';
+import { CallsDashboard } from '../../../_components/callsDashboard';
 import ResultsTable from '../_components/ResultsTable';
-import { listenToConversationsFollowUps, listenToQueueCalls } from '../../../../lib/firebase/realTimeMethods';
+import { listenToConversationsFollowUps, listenToQueueCalls, listenToAllConversations } from '../../../../lib/firebase/realTimeMethods';
 import { Dialog } from '@headlessui/react';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useAuth } from '../../../../lib/firebase/authContext';
 import DateRangePicker from '../../../_components/DateRangePicker';
 
-const RemoteMonitoringDashboardPage = () => {
+const CallsDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
   const { t } = useLanguage();
   const [conversations, setConversations] = useState([]);
@@ -33,6 +33,10 @@ const RemoteMonitoringDashboardPage = () => {
   const [retryingCallId, setRetryingCallId] = useState(null);
   const [activeCalls, setActiveCalls] = useState([]);
   const [activeTab, setActiveTab] = useState('new');
+  const [filters, setFilters] = useState({
+    status: ['queued', 'in_progress', 'processed', 'failed'],
+    direction: ['inbound', 'outbound']
+  });
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -40,19 +44,22 @@ const RemoteMonitoringDashboardPage = () => {
       return;
     }
 
-    // Listen to completed conversations
-    const unsubscribeConversations = listenToConversationsFollowUps(
+    // Listen to all conversations
+    const unsubscribeConversations = listenToAllConversations(
       selectedOrgId,
       new Date(startDate),
       new Date(endDate),
       (snapshot) => {
-        const customerConversations = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          status: 'processed',
-          type: 'completed'
-        }));
-        setConversations(customerConversations);
+        const allConversations = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            status: data.callDirection === 'inbound' ? 'processed' : 'processed',
+            type: data.callDirection === 'inbound' ? 'processed' : 'completed'
+          };
+        });
+        setConversations(allConversations);
       }
     );
 
@@ -63,7 +70,7 @@ const RemoteMonitoringDashboardPage = () => {
         if (!snapshot.exists()) {
           setQueuedCalls([]);
           setActiveCalls([]);
-          setIsLoading(false);
+          setProcessedCalls([]);
           return;
         }
         const data = snapshot.data();
@@ -116,14 +123,21 @@ const RemoteMonitoringDashboardPage = () => {
     };
   }, [selectedOrgId, startDate, endDate]);
 
-  // Merge and match conversations with queued calls
+  // Updated mergedCalls logic
   const mergedCalls = useMemo(() => {
-    // Filter out conversations without recordingURL
-    const validConversations = conversations.filter(conv => conv.recordingURL);
+    // Start with all conversations
+    const allCalls = conversations.map(conv => {
+      if (conv.callDirection === 'inbound') {
+        return {
+          ...conv,
+          type: 'processed',
+          status: 'processed',
+          viewed: conv.viewed || false,
+          direction: 'inbound'
+        };
+      }
     
-    // Find matching queue calls to get their viewed status
-    const allCalls = validConversations.map(conv => {
-      // Try to find a matching processed call to get its viewed status
+      // For outbound calls, check processed calls for viewed status
       const matchingProcessedCall = processedCalls.find(
         qCall => qCall.call_sid === conv.callSid
       );
@@ -132,12 +146,13 @@ const RemoteMonitoringDashboardPage = () => {
         ...conv,
         type: 'processed',
         status: 'processed',
-        viewed: matchingProcessedCall?.viewed || false, // Get viewed status from queue
-        call_sid: conv.callSid // Ensure consistent property name
+        viewed: matchingProcessedCall?.viewed || false,
+        call_sid: conv.callSid,
+        direction: 'outbound'
       };
     });
 
-    const conversationIds = new Set(validConversations.map(conv => conv.callSid));
+    const conversationIds = new Set(conversations.map(conv => conv.callSid));
     
     // Add queued calls that don't have a matching conversation yet
     queuedCalls.forEach(queuedCall => {
@@ -157,6 +172,7 @@ const RemoteMonitoringDashboardPage = () => {
         type: 'queued',
         viewed: queuedCall.viewed || false,
         formattedTimestamp: queuedCall.enqueued_at,
+        direction: 'outbound'
       });
     });
 
@@ -173,7 +189,8 @@ const RemoteMonitoringDashboardPage = () => {
         createdAt: activeCall.started_at,
         status: 'in_progress',
         type: 'in_progress',
-        viewed: false
+        viewed: false,
+        direction: 'outbound'
       });
     });
 
@@ -198,7 +215,8 @@ const RemoteMonitoringDashboardPage = () => {
             createdAt: processedCall.processed_at,
             status: 'failed',
             type: 'failed',
-            viewed: processedCall.viewed || false
+            viewed: processedCall.viewed || false,
+            direction: 'outbound'
           });
         }
       }
@@ -236,7 +254,12 @@ const RemoteMonitoringDashboardPage = () => {
   const filteredCalls = useMemo(() => {
     return mergedCalls.filter(call => {
       // First filter by status
-      if (statusFilter !== 'all' && call.status !== statusFilter) {
+      if (filters.status?.length > 0 && !filters.status.includes(call.status)) {
+        return false;
+      }
+
+      // Then filter by direction
+      if (filters.direction?.length > 0 && !filters.direction.includes(call.direction)) {
         return false;
       }
       
@@ -246,7 +269,7 @@ const RemoteMonitoringDashboardPage = () => {
       }
       return call.viewed;
     });
-  }, [mergedCalls, statusFilter, activeTab]);
+  }, [mergedCalls, filters, activeTab]);
 
   const handleViewResults = (conversation) => {
     // For failed or queued calls, we'll show objectives instead of results
@@ -500,7 +523,7 @@ const RemoteMonitoringDashboardPage = () => {
       </div>
 
       <div className="flex-1 bg-bg-elevated rounded-lg overflow-hidden">
-        <RemoteMonitoringDashboard 
+        <CallsDashboard 
           calls={filteredCalls}
           organisationDetails={organisationDetails}
           onViewResults={handleViewResults}
@@ -508,7 +531,13 @@ const RemoteMonitoringDashboardPage = () => {
           handleCallAgain={handleCallAgain}
           handleDeleteCall={handleDeleteCall}
           retryingCallId={retryingCallId}
-          activeTab={activeTab}
+          onFilterChange={(key, value) => {
+            setFilters(prev => ({
+              ...prev,
+              [key]: value
+            }));
+          }}
+          filters={filters}
         />
       </div>
 
@@ -560,4 +589,4 @@ const RemoteMonitoringDashboardPage = () => {
   );
 };
 
-export default RemoteMonitoringDashboardPage;
+export default CallsDashboardPage;

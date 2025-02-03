@@ -218,7 +218,7 @@ const WorkspaceLayout = ({ children }) => {
               {t('workspace.layout.menu.patientIntake')}
             </button>
             <button
-              onClick={() => handleNavigation('/workspace/remote-monitoring')}
+              onClick={() => handleNavigation('/workspace/calls')}
               className="p-2 text-text-primary hover:bg-bg-secondary rounded-md w-full text-left"
             >
               {t('workspace.layout.menu.remoteMonitoring')}

@@ -65,7 +65,7 @@ const WorkspaceDashboard = () => {
           </Link>
 
           {/* Remote Monitoring Card */}
-          <Link href="/workspace/remote-monitoring" className="block">
+          <Link href="/workspace/calls" className="block">
             <div className="bg-bg-elevated p-8 rounded-lg hover:bg-bg-secondary transition-colors duration-200">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
                 {t('workspace.cards.remoteMonitoring.title')}

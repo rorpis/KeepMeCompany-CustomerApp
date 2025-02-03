@@ -4,9 +4,8 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "../../../lib/contexts/LanguageContext";
 import { useOrganisation } from "../../../lib/contexts/OrganisationContext";
 import LoadingSpinner from "../../_components/ui/LoadingSpinner";
-import PhoneNumberWarning from "../intake/_components/PhoneNumberWarning";
 
-const RemoteMonitoringMainScreen = () => {
+const CallsMainScreen = () => {
   const router = useRouter();
   const { t } = useLanguage();
   const { organisationDetails, loading } = useOrganisation();
@@ -16,12 +15,12 @@ const RemoteMonitoringMainScreen = () => {
     {
       title: t('workspace.remoteMonitoring.mainScreen.cards.dashboard.title'),
       description: t('workspace.remoteMonitoring.mainScreen.cards.dashboard.description'),
-      path: "/workspace/remote-monitoring/live-dashboard",
+      path: "/workspace/calls/live-dashboard",
     },
     {
       title: t('workspace.remoteMonitoring.mainScreen.cards.createFollowUp.title'),
       description: t('workspace.remoteMonitoring.mainScreen.cards.createFollowUp.description'),
-      path: "/workspace/remote-monitoring/create-follow-up",
+      path: "/workspace/calls/create-follow-up",
     }
   ];
 
@@ -66,4 +65,4 @@ const RemoteMonitoringMainScreen = () => {
   );
 };
 
-export default RemoteMonitoringMainScreen; 
+export default CallsMainScreen; 
