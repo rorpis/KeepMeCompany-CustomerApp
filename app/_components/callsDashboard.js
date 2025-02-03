@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '../../lib/contexts/LanguageContext';
 import { Dialog } from '@headlessui/react';
-import ObjectivesTable from '../workspace/remote-monitoring/_components/ObjectivesTable';
+import ObjectivesTable from '../workspace/calls/_components/ObjectivesTable';
 import { CallDetailsModal } from './calls/CallDetailsModal';
 import { CheckboxDropdown } from './CheckboxDropdown';
 import { Filter } from 'lucide-react';
@@ -72,7 +72,7 @@ const formatCallData = (call, organisationDetails) => {
       status: 'queued',
       viewed: false,
       enqueued_at: call.enqueued_at,
-      direction: call.direction || 'outbound'
+      direction: 'outbound'
     };
   }
 
@@ -90,7 +90,7 @@ const formatCallData = (call, organisationDetails) => {
       fullDate: getFullDate(call.createdAt),
       status: 'in_progress',
       viewed: false,
-      direction: call.direction || 'outbound'
+      direction: 'outbound'
     };
   }
 
@@ -110,7 +110,7 @@ const formatCallData = (call, organisationDetails) => {
       viewed: call.viewed || false,
       summaryURL: call.summaryURL || null,
       followUpSummary: call.followUpSummary || null,
-      direction: call.direction || 'outbound'
+      direction: call.callDirection || 'outbound'
     };
   }
 
@@ -133,18 +133,20 @@ const formatCallData = (call, organisationDetails) => {
     conversationHistory: call.conversationHistory || null,
     summaryURL: call.summaryURL || null,
     followUpSummary: call.followUpSummary || null,
-    direction: call.direction || 'outbound'
+    direction: call.direction || call.callDirection || 'outbound'
   };
 };
 
-export function RemoteMonitoringDashboard({ 
+export function CallsDashboard({ 
   calls, 
   organisationDetails,
   onViewResults,
   markAsViewed,
   handleCallAgain,
   handleDeleteCall,
-  retryingCallId
+  retryingCallId,
+  onFilterChange,
+  filters
 }) {
   const { t } = useLanguage();
   const { language } = useLanguage();
@@ -153,17 +155,29 @@ export function RemoteMonitoringDashboard({
   const [selectedCall, setSelectedCall] = useState(null);
   const [isCallDetailsOpen, setIsCallDetailsOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [columnFilters, setColumnFilters] = useState({});
 
-  // Format calls data first
+  // First format the calls
   const formattedCalls = calls.map(call => formatCallData(call, organisationDetails));
 
-  // Calculate counts for each tab
-  const newCallsCount = formattedCalls.filter(call => !call.viewed).length;
-  const viewedCallsCount = formattedCalls.filter(call => call.viewed).length;
+  // Then filter the calls
+  const filteredCalls = useMemo(() => {
+    return formattedCalls.filter(call => {
+      // Filter by status
+      if (filters.status?.length > 0 && !filters.status.includes(call.status)) {
+        return false;
+      }
 
-  // Group filtered calls by date
-  const groupedCalls = formattedCalls.reduce((groups, call) => {
+      // Filter by direction
+      if (filters.direction?.length > 0 && !filters.direction.includes(call.direction)) {
+        return false;
+      }
+      
+      return true; // Remove the viewed state filter as it's handled by the parent
+    });
+  }, [formattedCalls, filters]);
+
+  // Then group the filtered calls
+  const groupedCalls = filteredCalls.reduce((groups, call) => {
     if (!call.fullDate) return groups;
     
     const dateStr = call.fullDate.toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
@@ -180,11 +194,16 @@ export function RemoteMonitoringDashboard({
     return groups;
   }, {});
 
+  // Calculate counts for each tab
+  const newCallsCount = formattedCalls.filter(call => !call.viewed).length;
+  const viewedCallsCount = formattedCalls.filter(call => call.viewed).length;
+
   // Update the table container classes
   const tableContainerClasses = `
     overflow-x-auto
+    overflow-y-auto
     relative 
-    h-[calc(100vh-12rem)]
+    h-[calc(100vh-11rem)]
     rounded-lg
     border
   `;
@@ -296,7 +315,9 @@ export function RemoteMonitoringDashboard({
       filterOptions: [
         { value: 'inbound', label: t('workspace.remoteMonitoring.dashboard.direction.inbound') },
         { value: 'outbound', label: t('workspace.remoteMonitoring.dashboard.direction.outbound') }
-      ]
+      ],
+      currentFilter: filters.direction,
+      onFilterChange: (value) => onFilterChange('direction', value)
     },
     { 
       key: 'time', 
@@ -312,7 +333,9 @@ export function RemoteMonitoringDashboard({
         { value: 'in_progress', label: t('workspace.remoteMonitoring.dashboard.statusFilter.inProgress') },
         { value: 'processed', label: t('workspace.remoteMonitoring.dashboard.statusFilter.processed') },
         { value: 'failed', label: t('workspace.remoteMonitoring.dashboard.statusFilter.failed') }
-      ]
+      ],
+      currentFilter: filters.status,
+      onFilterChange: (value) => onFilterChange('status', value)
     }
   ];
 
@@ -339,7 +362,7 @@ export function RemoteMonitoringDashboard({
         fromNumber: call.twilioNumber || 'Unknown',
         timestamp: call.createdAt || call.enqueued_at,
         completion: call.completion || 100,
-        direction: 'outbound',
+        direction: call.direction || 'N/A',
         duration: call.duration || 'N/A',
         status: call.status,
         summaryURL: call.summaryURL || 'N/A',
@@ -366,16 +389,6 @@ export function RemoteMonitoringDashboard({
       }
     };
   };
-
-  const filteredCalls = useMemo(() => {
-    return formattedCalls.filter(call => {
-      // Check all column filters
-      return Object.entries(columnFilters).every(([field, selectedValues]) => {
-        if (!selectedValues || selectedValues.length === 0) return true;
-        return selectedValues.includes(call[field]);
-      });
-    });
-  }, [formattedCalls, columnFilters]);
 
   const handleMarkAsViewed = async (callId) => {
     if (!callId) return;
@@ -408,29 +421,16 @@ export function RemoteMonitoringDashboard({
                       <CheckboxDropdown
                         title={<Filter size={14} className="text-gray-400" />}
                         items={column.filterOptions}
-                        selectedItems={columnFilters[column.key] || []}
+                        selectedItems={filters[column.key] || []}
                         onItemToggle={(value) => {
-                          const currentValues = columnFilters[column.key] || [];
+                          const currentValues = filters[column.key] || [];
                           const newValues = currentValues.includes(value)
                             ? currentValues.filter(v => v !== value)
                             : [...currentValues, value];
-                          setColumnFilters(prev => ({
-                            ...prev,
-                            [column.key]: newValues
-                          }));
+                          onFilterChange(column.key, newValues);
                         }}
-                        onSelectAll={() => {
-                          setColumnFilters(prev => ({
-                            ...prev,
-                            [column.key]: column.filterOptions.map(option => option.value)
-                          }));
-                        }}
-                        onDeselectAll={() => {
-                          setColumnFilters(prev => ({
-                            ...prev,
-                            [column.key]: []
-                          }));
-                        }}
+                        onSelectAll={() => onFilterChange(column.key, column.filterOptions.map(opt => opt.value))}
+                        onDeselectAll={() => onFilterChange(column.key, [])}
                         buttonClassName="p-1 text-gray-400 hover:text-gray-600"
                         dropdownClassName="right-0"
                       />

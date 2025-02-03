@@ -6,9 +6,13 @@
 
 :root {
   /* Background Colors */
-  --background-main: #000000;
+  /* --background-main: #000000;
   --background-elevated: #222222;
-  --background-secondary: #333333;
+  --background-secondary: #333333; */
+
+  --background-main: #0A0A0B;      /* Deeper, richer black */
+  --background-elevated: #1A1B1E;   /* Lighter for better contrast with main */
+  --background-secondary: #25262B;  /* Even lighter for secondary elements */
   
   /* Text Colors */
   --text-primary: #FFFFFF;

@@ -7,7 +7,6 @@ import { useAuth } from '../../../../../lib/firebase/authContext';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import StepOne from './steps/StepOne';
 import StepTwo from './steps/StepTwo';
-import StepThree from './steps/StepThree';
 import CallTypeSelector from './steps/CallTypeSelector';
 import { scheduleCall } from './api';
 
@@ -42,38 +41,6 @@ export const FollowUpScheduler = () => {
 
   // Add this to the existing state declarations (around line 31-40)
   const [isCallingNow, setIsCallingNow] = useState(false);
-
-  const handleScheduleCall = async () => {
-    setIsScheduling(true);
-    try {
-      const patients = Array.from(selectedPatients.entries()).map(([patientId]) => ({
-        patientId: patientId
-      }));
-
-      const scheduledFor = Array.from(scheduledDates).map(dateStr => ({
-        date: dateStr,
-        time: scheduledTimes[dateStr] || "10:00"
-      }));
-
-      const { success, error } = await scheduleCall({
-        organisationId: organisationDetails.id,
-        patients,
-        objectives,
-        scheduledFor,
-        user
-      });
-
-      if (success) {
-        router.push('/workspace/remote-monitoring');
-      } else {
-        throw error;
-      }
-    } catch (error) {
-      console.error(t('workspace.remoteMonitoring.scheduler.errors.schedulingError'), error);
-    } finally {
-      setIsScheduling(false);
-    }
-  };
 
   const handleCallNow = async () => {
     if (isCallingNow) return;
@@ -114,7 +81,7 @@ export const FollowUpScheduler = () => {
       });
 
       if (success) {
-        router.push('/workspace/remote-monitoring');
+        router.push('/workspace/calls/live-dashboard');
       } else {
         throw error;
       }
@@ -127,7 +94,7 @@ export const FollowUpScheduler = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto bg-bg-elevated rounded-lg p-8">
+    <div className="max-w-6xl mx-auto rounded-lg p-2">
       
       {currentStep === 1 && (
         <StepOne
@@ -164,18 +131,6 @@ export const FollowUpScheduler = () => {
           onCallNow={handleCallNow}
           onSchedule={() => setCurrentStep(4)}
           isCallingNow={isCallingNow}
-        />
-      )}
-
-      {currentStep === 4 && (
-        <StepThree
-          scheduledDates={scheduledDates}
-          setScheduledDates={setScheduledDates}
-          scheduledTimes={scheduledTimes}
-          setScheduledTimes={setScheduledTimes}
-          onBack={() => setCurrentStep(3)}
-          onSchedule={handleScheduleCall}
-          isScheduling={isScheduling}
         />
       )}
     </div>

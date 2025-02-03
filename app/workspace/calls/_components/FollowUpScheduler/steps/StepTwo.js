@@ -209,10 +209,10 @@ const StepTwo = ({
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-bg-elevated rounded-lg p-4">
       <Card className="flex-1 mb-4">
         <CardContent>
-          <div className="flex gap-8 h-[calc(100vh-340px)]">
+          <div className="flex gap-8 h-[calc(100vh-320px)]">
             {/* Left: Template Selection */}
             <div className="w-1/3 border-r pr-6">
               <h3 className="text-lg font-medium mb-4 text-black">
