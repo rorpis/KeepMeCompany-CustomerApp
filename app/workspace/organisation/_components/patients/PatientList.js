@@ -449,7 +449,7 @@ export const PatientList = ({
         </div>
       ) : (
         <>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-8">
             <h2 className="text-lg font-medium text-text-primary">
               {t('workspace.patientList.title')}
             </h2>

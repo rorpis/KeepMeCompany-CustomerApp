@@ -241,16 +241,8 @@ const OrganisationDashboard = () => {
   if (!organisationDetails) return <div>{t('workspace.organisation.dashboard.notFound')}</div>;
 
   return (
-    <div className="min-h-screen bg-bg-main">
+    <div className="bg-bg-main">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-bg-elevated rounded-lg p-6 mb-8">
-          <h1 className="text-2xl font-bold mb-2 text-text-primary">
-            {organisationDetails.name}
-          </h1>
-          <p className="text-text-secondary">
-            {organisationDetails.address.addressLine1}
-          </p>
-        </div>
 
         {/* Tabs */}
         <div className="flex space-x-4 border-b border-border-main mb-6">
@@ -293,7 +285,7 @@ const OrganisationDashboard = () => {
               {/* Address Card */}
               <div className="bg-bg-elevated rounded-lg p-6">
                 <h2 className="text-xl font-semibold mb-4 text-text-primary">
-                  {t('workspace.organisation.dashboard.address.title')}
+                  {organisationDetails.name}
                 </h2>
                 <div className="text-text-secondary">
                   <p>{organisationDetails.address.addressLine1}</p>
