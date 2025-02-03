@@ -201,8 +201,9 @@ export function CallsDashboard({
   // Update the table container classes
   const tableContainerClasses = `
     overflow-x-auto
+    overflow-y-auto
     relative 
-    h-[calc(100vh-12rem)]
+    h-[calc(100vh-11rem)]
     rounded-lg
     border
   `;

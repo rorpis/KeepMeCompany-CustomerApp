@@ -453,11 +453,7 @@ const CallsDashboardPage = () => {
   }
 
   return (
-    <div className="h-full flex flex-col p-6 max-w-[85%] mx-auto">
-      <h2 className="text-xl font-semibold mb-4 text-text-primary">
-        {t('workspace.remoteMonitoring.dashboard.title')}
-      </h2>
-
+    <div className="h-[calc(100vh-4rem)] flex flex-col p-6 max-w-7xl mx-auto">
       {/* Filters Section */}
       <div className="flex items-center justify-between mb-4">  
         <div className="flex items-center space-x-4">
