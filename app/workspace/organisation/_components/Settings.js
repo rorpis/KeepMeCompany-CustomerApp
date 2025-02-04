@@ -15,6 +15,7 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
       firstObjectives: [],
       lastObjectives: [],
       patientVerificationEnabled: false,
+      aiAnamnesisEnabled: false,
     },
     remoteMonitoring: {
       firstMessage: '',
@@ -110,6 +111,7 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
           firstObjectives: organisationDetails.settings.patientIntake?.firstObjectives || [],
           lastObjectives: organisationDetails.settings.patientIntake?.lastObjectives || [],
           patientVerificationEnabled: organisationDetails.settings.patientIntake?.patientVerificationEnabled || false,
+          aiAnamnesisEnabled: organisationDetails.settings.patientIntake?.aiAnamnesisEnabled || false,
         },
         remoteMonitoring: {
           firstMessage: organisationDetails.settings.remoteMonitoring?.firstMessage || '',
@@ -326,6 +328,24 @@ export const Settings = ({ organisationDetails, onUpdateSettings }) => {
                   </button>
                 </div>
               </div>
+
+              {/* AI Anamnesis Section - Only show for patientIntake */}
+              {section === 'patientIntake' && (
+                <div className="bg-bg-secondary rounded-lg p-6 border-2 border-primary-blue/20 mb-8">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block font-medium text-text-primary">
+                          {t('workspace.settings.aiAnamnesis.title')}
+                        </label>
+                        <p className="text-sm text-text-secondary mt-1">
+                          {t('workspace.settings.aiAnamnesis.description')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Last Objectives Section */}
               <div className="bg-bg-secondary rounded-lg p-6">

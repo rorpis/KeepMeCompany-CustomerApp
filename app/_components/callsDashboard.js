@@ -53,6 +53,40 @@ const formatCallData = (call, organisationDetails) => {
     return organisationDetails.patientList.find(patient => patient.id === patientId);
   };
 
+  // Add this helper function at the beginning with the other helpers
+  const calculateDuration = (createdAt, finishedAt) => {
+    if (!createdAt || !finishedAt) return '';
+    
+    let startDate, endDate;
+    
+    // Handle Firestore timestamps
+    if (typeof createdAt?.toDate === 'function') {
+      startDate = createdAt.toDate();
+    } else {
+      startDate = new Date(createdAt);
+    }
+    
+    if (typeof finishedAt?.toDate === 'function') {
+      endDate = finishedAt.toDate();
+    } else {
+      endDate = new Date(finishedAt);
+    }
+    
+    // Calculate difference in seconds
+    const diffInSeconds = Math.floor((endDate - startDate) / 1000);
+    
+    // Calculate minutes and remaining seconds
+    const minutes = Math.floor(diffInSeconds / 60);
+    const seconds = diffInSeconds % 60;
+    
+    // If less than a minute, just show seconds
+    if (minutes === 0) {
+      return `${seconds}s`;
+    }
+    
+    return `${minutes}m ${seconds}s`;
+  };
+
   if (call.type === 'queued') {
     const scheduledDate = call.scheduled_for?.date && call.scheduled_for?.time ? 
       new Date(`${call.scheduled_for.date} ${call.scheduled_for.time}`) : 
@@ -66,13 +100,15 @@ const formatCallData = (call, organisationDetails) => {
       patientName: patientDetails?.customerName || call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
       userNumber: patientDetails?.phoneNumber || call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
+      templateTitle: call.templateTitle || 'N/A',
       patientId: call.patientId || null,
       formattedTimestamp: scheduledDate ? formatTime(scheduledDate) : '',
       fullDate: scheduledDate ? getFullDate(scheduledDate) : null,
       status: 'queued',
       viewed: false,
       enqueued_at: call.enqueued_at,
-      direction: 'outbound'
+      direction: 'outbound',
+      duration: calculateDuration(call.enqueued_at, call.scheduled_for?.date && call.scheduled_for?.time ? new Date(`${call.scheduled_for.date} ${call.scheduled_for.time}`) : null)
     };
   }
 
@@ -85,12 +121,14 @@ const formatCallData = (call, organisationDetails) => {
       patientName: patientDetails?.customerName || call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
       userNumber: patientDetails?.phoneNumber || call.userNumber || call.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
+      templateTitle: call.templateTitle || 'N/A',
       patientId: call.patientId || null,
       formattedTimestamp: formatTime(call.createdAt),
       fullDate: getFullDate(call.createdAt),
       status: 'in_progress',
       viewed: false,
-      direction: 'outbound'
+      direction: 'outbound',
+      duration: calculateDuration(call.createdAt, call.finishedAt)
     };
   }
 
@@ -103,6 +141,7 @@ const formatCallData = (call, organisationDetails) => {
       patientName: patientDetails?.customerName || call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
       userNumber: patientDetails?.phoneNumber || call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
+      templateTitle: call.templateTitle || 'N/A',
       patientId: call.patientId || null,
       formattedTimestamp: formatTime(call.createdAt),
       fullDate: getFullDate(call.createdAt),
@@ -110,13 +149,36 @@ const formatCallData = (call, organisationDetails) => {
       viewed: call.viewed || false,
       summaryURL: call.summaryURL || null,
       followUpSummary: call.followUpSummary || null,
-      direction: call.callDirection || 'outbound'
+      direction: call.callDirection || 'outbound',
+      duration: calculateDuration(call.createdAt, call.finishedAt)
     };
   }
 
   // For processed calls, check if there's a recording URL
   const patientDetails = getPatientDetails(call.patientId);
-  
+
+  // Helper function to check if call is too old (> 8 minutes)
+  const isCallTooOld = (createdAt) => {
+    if (!createdAt) return false;
+    const createdDate = new Date(createdAt);
+    const eightMinutesAgo = new Date(Date.now() - 8 * 60 * 1000);
+    return createdDate < eightMinutesAgo;
+  };
+
+  // Determine call status
+  let status = 'processed';
+  if (!call.recordingURL) {
+    if (call.direction === 'inbound') {
+      if (isCallTooOld(call.createdAt)) {
+        status = 'failed';
+      } else {
+        status = 'in_progress';
+      }
+    } else {
+      status = 'failed';
+    }
+  }
+
   return {
     id: call.id,
     call_sid: call.call_sid,
@@ -124,17 +186,32 @@ const formatCallData = (call, organisationDetails) => {
     userNumber: call.userNumber || 'Unknown',
     twilioNumber: call.twilioNumber || 'Unknown',
     objectives: call.objectives || [],
+    templateTitle: call.templateTitle || 'N/A',
     patientId: call.patientId || null,
     formattedTimestamp: formatTime(call.createdAt),
     fullDate: getFullDate(call.createdAt),
-    status: call.recordingURL ? 'processed' : 'failed',
+    status,
     viewed: call.viewed || false,
     recordingURL: call.recordingURL || null,
     conversationHistory: call.conversationHistory || null,
     summaryURL: call.summaryURL || null,
     followUpSummary: call.followUpSummary || null,
-    direction: call.direction || call.callDirection || 'outbound'
+    direction: call.direction || call.callDirection || 'outbound',
+    duration: calculateDuration(call.createdAt, call.finishedAt)
   };
+};
+
+const getTemplateFilterOptions = (calls, t) => {
+  // Get unique template titles
+  const uniqueTemplates = [...new Set(calls.map(call => call.templateTitle))];
+  
+  // Map them to filter options format
+  return uniqueTemplates.map(template => ({
+    value: template,
+    label: template === 'patientIntake' 
+      ? t('workspace.remoteMonitoring.stepTwo.template.patientIntake')
+      : template
+  }));
 };
 
 export function CallsDashboard({ 
@@ -146,7 +223,8 @@ export function CallsDashboard({
   handleDeleteCall,
   retryingCallId,
   onFilterChange,
-  filters
+  filters,
+  availableFilters
 }) {
   const { t } = useLanguage();
   const { language } = useLanguage();
@@ -162,17 +240,27 @@ export function CallsDashboard({
   // Then filter the calls
   const filteredCalls = useMemo(() => {
     return formattedCalls.filter(call => {
+      // If any filter array is empty, don't show any calls
+      if (!filters.status?.length || !filters.direction?.length || !filters.templateTitle?.length) {
+        return false;
+      }
+
       // Filter by status
-      if (filters.status?.length > 0 && !filters.status.includes(call.status)) {
+      if (!filters.status.includes(call.status)) {
         return false;
       }
 
       // Filter by direction
-      if (filters.direction?.length > 0 && !filters.direction.includes(call.direction)) {
+      if (!filters.direction.includes(call.direction)) {
+        return false;
+      }
+
+      // Filter by template
+      if (!filters.templateTitle.includes(call.templateTitle)) {
         return false;
       }
       
-      return true; // Remove the viewed state filter as it's handled by the parent
+      return true;
     });
   }, [formattedCalls, filters]);
 
@@ -312,10 +400,12 @@ export function CallsDashboard({
       key: 'direction', 
       label: t('workspace.remoteMonitoring.dashboard.direction.title'),
       filterable: true,
-      filterOptions: [
-        { value: 'inbound', label: t('workspace.remoteMonitoring.dashboard.direction.inbound') },
-        { value: 'outbound', label: t('workspace.remoteMonitoring.dashboard.direction.outbound') }
-      ],
+      filterOptions: availableFilters.direction.map(dir => ({
+        value: dir,
+        label: dir === 'inbound' 
+          ? t('workspace.remoteMonitoring.dashboard.direction.inbound')
+          : t('workspace.remoteMonitoring.dashboard.direction.outbound')
+      })),
       currentFilter: filters.direction,
       onFilterChange: (value) => onFilterChange('direction', value)
     },
@@ -325,15 +415,33 @@ export function CallsDashboard({
       filterable: false 
     },
     { 
+      key: 'templateTitle', 
+      label: 'Template',
+      filterable: true,
+      filterOptions: availableFilters.templateTitle.map(template => ({
+        value: template,
+        label: template === 'patientIntake' 
+          ? t('workspace.remoteMonitoring.stepTwo.template.patientIntake')
+          : template === 'aiAnamnesis'
+            ? t('workspace.remoteMonitoring.stepTwo.template.aiAnamnesis')
+            : template
+      })),
+      currentFilter: filters.templateTitle,
+      onFilterChange: (value) => onFilterChange('templateTitle', value)
+    },
+    {
+      key: 'duration',
+      label: t('workspace.remoteMonitoring.dashboard.duration'),
+      filterable: false
+    },
+    { 
       key: 'status', 
       label: t('workspace.remoteMonitoring.upcomingCalls.table.status'),
       filterable: true,
-      filterOptions: [
-        { value: 'queued', label: t('workspace.remoteMonitoring.dashboard.statusFilter.queued') },
-        { value: 'in_progress', label: t('workspace.remoteMonitoring.dashboard.statusFilter.inProgress') },
-        { value: 'processed', label: t('workspace.remoteMonitoring.dashboard.statusFilter.processed') },
-        { value: 'failed', label: t('workspace.remoteMonitoring.dashboard.statusFilter.failed') }
-      ],
+      filterOptions: availableFilters.status.map(status => ({
+        value: status,
+        label: t(`workspace.remoteMonitoring.dashboard.statusFilter.${status}`)
+      })),
       currentFilter: filters.status,
       onFilterChange: (value) => onFilterChange('status', value)
     }
@@ -386,7 +494,8 @@ export function CallsDashboard({
           status: call.status === 'processed' ? 'Achieved' : 'Pending',
           notes: ''
         })) || []
-      }
+      },
+      templateTitle: call.templateTitle || 'N/A'
     };
   };
 
@@ -481,11 +590,19 @@ export function CallsDashboard({
                         {call.formattedTimestamp || call.createdAt?.toDate?.().toLocaleTimeString()}
                       </td>
                       <td className={tableCellClasses}>
+                        {call.templateTitle === 'patientIntake' 
+                          ? t('workspace.remoteMonitoring.stepTwo.template.patientIntake')
+                          : call.templateTitle}
+                      </td>
+                      <td className={tableCellClasses}>
+                        {call.duration || ''}
+                      </td>
+                      <td className={tableCellClasses}>
                         <div className="flex items-center justify-center gap-2">
                           <span className={`px-2 py-1 rounded-full text-sm ${getStatusColor(call.status)}`}>
                             {call.status}
                           </span>
-                          {call.status === 'failed' && (
+                          {call.status === 'failed' && call.direction !== 'inbound' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

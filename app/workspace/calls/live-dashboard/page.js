@@ -10,6 +10,19 @@ import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useAuth } from '../../../../lib/firebase/authContext';
 import DateRangePicker from '../../../_components/DateRangePicker';
 
+// Add these helper functions
+const getUniqueValues = (calls, key) => {
+  return [...new Set(calls.map(call => call[key]))];
+};
+
+const getInitialFilters = (calls) => {
+  return {
+    status: getUniqueValues(calls, 'status'),
+    direction: getUniqueValues(calls, 'direction'),
+    templateTitle: getUniqueValues(calls, 'templateTitle')
+  };
+};
+
 const CallsDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
   const { t } = useLanguage();
@@ -34,8 +47,9 @@ const CallsDashboardPage = () => {
   const [activeCalls, setActiveCalls] = useState([]);
   const [activeTab, setActiveTab] = useState('new');
   const [filters, setFilters] = useState({
-    status: ['queued', 'in_progress', 'processed', 'failed'],
-    direction: ['inbound', 'outbound']
+    status: [],
+    direction: [],
+    templateTitle: []
   });
 
   useEffect(() => {
@@ -133,7 +147,8 @@ const CallsDashboardPage = () => {
           type: 'processed',
           status: 'processed',
           viewed: conv.viewed || false,
-          direction: 'inbound'
+          direction: 'inbound',
+          templateTitle: 'patientIntake'
         };
       }
     
@@ -148,7 +163,8 @@ const CallsDashboardPage = () => {
         status: 'processed',
         viewed: matchingProcessedCall?.viewed || false,
         call_sid: conv.callSid,
-        direction: 'outbound'
+        direction: 'outbound',
+        templateTitle: matchingProcessedCall?.template || conv.template || 'N/A'
       };
     });
 
@@ -164,6 +180,7 @@ const CallsDashboardPage = () => {
         patientId: queuedCall.patient_id,
         userNumber: queuedCall.phone_number,
         objectives: queuedCall.experience_custom_args?.objectives,
+        templateTitle: queuedCall.template || 'N/A',
         scheduled_for: {
           date: queuedCall.scheduled_for?.[0]?.date,
           time: queuedCall.scheduled_for?.[0]?.time
@@ -190,7 +207,8 @@ const CallsDashboardPage = () => {
         status: 'in_progress',
         type: 'in_progress',
         viewed: false,
-        direction: 'outbound'
+        direction: 'outbound',
+        templateTitle: activeCall.template || 'N/A'
       });
     });
 
@@ -216,7 +234,8 @@ const CallsDashboardPage = () => {
             status: 'failed',
             type: 'failed',
             viewed: processedCall.viewed || false,
-            direction: 'outbound'
+            direction: 'outbound',
+            templateTitle: processedCall.template || 'N/A'
           });
         }
       }
@@ -253,13 +272,23 @@ const CallsDashboardPage = () => {
   // Filter calls based on status and viewed state
   const filteredCalls = useMemo(() => {
     return mergedCalls.filter(call => {
-      // First filter by status
-      if (filters.status?.length > 0 && !filters.status.includes(call.status)) {
+      // If any filter array is empty, don't show any calls
+      if (!filters.status?.length || !filters.direction?.length || !filters.templateTitle?.length) {
         return false;
       }
 
-      // Then filter by direction
-      if (filters.direction?.length > 0 && !filters.direction.includes(call.direction)) {
+      // Filter by status
+      if (!filters.status.includes(call.status)) {
+        return false;
+      }
+
+      // Filter by direction
+      if (!filters.direction.includes(call.direction)) {
+        return false;
+      }
+
+      // Filter by template
+      if (!filters.templateTitle.includes(call.templateTitle)) {
         return false;
       }
       
@@ -270,6 +299,17 @@ const CallsDashboardPage = () => {
       return call.viewed;
     });
   }, [mergedCalls, filters, activeTab]);
+
+  // Use useEffect to set initial filters once mergedCalls is available
+  useEffect(() => {
+    if (mergedCalls.length > 0) {
+      const initialFilters = getInitialFilters(mergedCalls);
+      setFilters(initialFilters);
+    }
+  }, [mergedCalls]);  // Run whenever mergedCalls changes
+
+  // Store available filter options separately from active filters
+  const availableFilters = useMemo(() => getInitialFilters(mergedCalls), [mergedCalls]);
 
   const handleViewResults = (conversation) => {
     // For failed or queued calls, we'll show objectives instead of results
@@ -320,7 +360,8 @@ const CallsDashboardPage = () => {
             organisationId: selectedOrgId,
             patients,
             objectives: call.objectives,
-            scheduledFor
+            scheduledFor,
+            templateTitle: call.templateTitle
           }),
         }
       );
@@ -328,11 +369,8 @@ const CallsDashboardPage = () => {
       if (!response.ok) {
         throw new Error('Failed to reschedule call');
       }
-
-      // Optionally show a success toast/notification here
     } catch (error) {
       console.error('Error rescheduling call:', error);
-      // Optionally show an error toast/notification here
     } finally {
       setRetryingCallId(null);
     }
@@ -534,6 +572,7 @@ const CallsDashboardPage = () => {
             }));
           }}
           filters={filters}
+          availableFilters={availableFilters}
         />
       </div>
 
