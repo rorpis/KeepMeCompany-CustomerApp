@@ -20,7 +20,7 @@ const callingCodes = [
 
 export const FollowUpScheduler = () => {
   const router = useRouter();
-  const { organisationDetails } = useOrganisation();
+  const organisation = useOrganisation();
   const { user } = useAuth();
   const { t } = useLanguage();
   
@@ -38,9 +38,15 @@ export const FollowUpScheduler = () => {
   // Preset related state
   const [presetName, setPresetName] = useState('');
   const [selectedPresetIndex, setSelectedPresetIndex] = useState(null);
-
-  // Add this to the existing state declarations (around line 31-40)
   const [isCallingNow, setIsCallingNow] = useState(false);
+
+  // Handle step changes with refresh
+  const handleStepChange = async (newStep) => {
+    if (newStep === 2 && organisation.refresh) {
+      await organisation.refresh();
+    }
+    setCurrentStep(newStep);
+  };
 
   const handleCallNow = async () => {
     if (isCallingNow) return;
@@ -73,10 +79,11 @@ export const FollowUpScheduler = () => {
       }];
 
       const { success, error } = await scheduleCall({
-        organisationId: organisationDetails.id,
+        organisationId: organisation.organisationDetails.id,
         patients,
         objectives,
         scheduledFor,
+        templateTitle: presetName,
         user
       });
 
@@ -95,13 +102,12 @@ export const FollowUpScheduler = () => {
 
   return (
     <div className="max-w-6xl mx-auto rounded-lg p-2">
-      
       {currentStep === 1 && (
         <StepOne
-          organisationDetails={organisationDetails}
+          organisationDetails={organisation.organisationDetails}
           selectedPatients={selectedPatients}
           setSelectedPatients={setSelectedPatients}
-          onNext={() => setCurrentStep(2)}
+          onNext={() => handleStepChange(2)}
           callingCodes={callingCodes}
         />
       )}
@@ -110,9 +116,9 @@ export const FollowUpScheduler = () => {
         <StepTwo
           objectives={objectives}
           setObjectives={setObjectives}
-          onBack={() => setCurrentStep(1)}
-          onNext={() => setCurrentStep(3)}
-          organisationDetails={organisationDetails}
+          onBack={() => handleStepChange(1)}
+          onNext={() => handleStepChange(3)}
+          organisationDetails={organisation.organisationDetails}
           user={user}
           selectedPresetIndex={selectedPresetIndex}
           setSelectedPresetIndex={setSelectedPresetIndex}
@@ -129,8 +135,9 @@ export const FollowUpScheduler = () => {
       {currentStep === 3 && (
         <CallTypeSelector
           onCallNow={handleCallNow}
-          onSchedule={() => setCurrentStep(4)}
+          onSchedule={() => handleStepChange(4)}
           isCallingNow={isCallingNow}
+          onBack={() => handleStepChange(2)}
         />
       )}
     </div>

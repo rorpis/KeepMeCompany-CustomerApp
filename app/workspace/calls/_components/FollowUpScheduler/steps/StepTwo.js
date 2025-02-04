@@ -1,8 +1,8 @@
 'use client';
 
 import React from "react";
-import { useState } from 'react';
-import { PlusCircle, Trash2, Edit2, Save, Loader2 } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { PlusCircle, Trash2, Edit2, Save, Loader2, Info } from "lucide-react";
 import { Button } from "@/_components/ui/StyledButton";
 import { SecondaryButton } from "@/app/_components/global_components";
 import { useLanguage } from '@/lib/contexts/LanguageContext';
@@ -33,9 +33,17 @@ const StepTwo = ({
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Update presets memo to use new structure
+  // Add after the initial state declarations (around line 34)
+  const defaultTemplate = {
+    id: 'default-intake',
+    title: 'patientIntake',
+    objectives: ['AI Anamnesis']
+  };
+
+  // Modify the presets memo to always include the default template first
   const presets = React.useMemo(() => {
-    return [...localPresets].sort((a, b) => a.title.localeCompare(b.title));
+    const userPresets = [...localPresets].sort((a, b) => a.title.localeCompare(b.title));
+    return [defaultTemplate, ...userPresets];
   }, [localPresets]);
 
   // Select first preset by default when component mounts
@@ -51,6 +59,13 @@ const StepTwo = ({
     firstObjectives: [],
     lastObjectives: []
   };
+
+  // Add after the initial state declarations (around line 34)
+  useEffect(() => {
+    if (organisationDetails?.presets) {
+      setLocalPresets(organisationDetails.presets);
+    }
+  }, [organisationDetails?.presets]);
 
   const handlePresetSelect = (index) => {
     if (index === "custom") {
@@ -81,27 +96,27 @@ const StepTwo = ({
         user,
       };
 
-      if (selectedPresetIndex !== null) {
+      if (selectedPresetIndex !== null && selectedPresetIndex !== 0) {
         params.presetId = presets[selectedPresetIndex].id;
       }
 
       const { success, presetId, error } = await apiCall(params);
       
       if (success) {
-        if (selectedPresetIndex !== null) {
-          const updatedPresets = [...localPresets];
-          updatedPresets[selectedPresetIndex] = {
-            ...updatedPresets[selectedPresetIndex],
+        if (selectedPresetIndex !== null && selectedPresetIndex !== 0) {
+          // Remove the old preset and add the updated one
+          const filteredPresets = localPresets.filter(preset => preset.id !== presets[selectedPresetIndex].id);
+          setLocalPresets([...filteredPresets, {
+            id: presets[selectedPresetIndex].id,
             title: templateTitle,
             objectives: objectives,
-          };
-          setLocalPresets(updatedPresets);
+          }]);
           setToast({
             show: true,
             message: t('workspace.remoteMonitoring.toast.presetUpdated'),
             type: 'success'
           });
-        } else {
+        } else if (selectedPresetIndex === null) {
           setLocalPresets([...localPresets, {
             id: presetId,
             title: templateTitle,
@@ -225,10 +240,20 @@ const StepTwo = ({
                     key={index}
                     onClick={() => handlePresetSelect(index)}
                     className={`w-full p-3 rounded-lg border text-black ${
-                      selectedPresetIndex === index ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-500"
+                      selectedPresetIndex === index 
+                        ? index === 0    // add the border-2 to the selected preset if it's the patient intake template
+                          ? "border-2 border-blue-500 bg-blue-50"
+                          : "border-blue-500 bg-blue-50"
+                        : index === 0  // Patient Intake template
+                          ? "border-2 border-gray-300 hover:border-blue-500" 
+                          : "border-gray-200 hover:border-blue-500"
                     }`}
                   >
-                    <span className="font-medium">{preset.title}</span>
+                    <span className="font-medium">
+                      {preset.title === 'patientIntake' 
+                        ? t('workspace.remoteMonitoring.stepTwo.template.patientIntake')
+                        : preset.title}
+                    </span>
                   </button>
                 ))}
                 {/* Custom Objectives button at the bottom */}
@@ -250,7 +275,7 @@ const StepTwo = ({
             <div className="flex-1 flex flex-col">
               {/* Title and buttons section */}
               {(selectedPresetIndex === null || selectedPresetIndex !== null) && (
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 h-[44px]">
                   {isEditingTemplate || selectedPresetIndex === null ? (
                     <>
                       <input
@@ -261,7 +286,7 @@ const StepTwo = ({
                         className="text-lg p-2 rounded-lg border text-black"
                       />
                       <div className="flex gap-2">
-                        {selectedPresetIndex !== null && (
+                        {selectedPresetIndex !== null && selectedPresetIndex !== 0 && (
                           <Button 
                             variant="outline" 
                             onClick={handleDeleteTemplate}
@@ -296,15 +321,33 @@ const StepTwo = ({
                   ) : (
                     <>
                       <h3 className="text-lg font-medium text-black">
-                        {templateTitle}
+                        {selectedPresetIndex === 0 
+                          ? t('workspace.remoteMonitoring.stepTwo.template.patientIntake')
+                          : templateTitle}
                       </h3>
-                      <Button 
-                        variant="outline"
-                        onClick={() => setIsEditingTemplate(true)}
-                        className="text-black"
-                      >
-                        {t('workspace.remoteMonitoring.stepTwo.template.edit')}
-                      </Button>
+                      <div className="flex items-center">
+                        {selectedPresetIndex === 0 ? (
+                          <div className="relative group">
+                            <button
+                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                              aria-label="Information"
+                            >
+                              <Info className="h-5 w-5 text-gray-600" />
+                            </button>
+                            <div className="absolute right-0 w-64 p-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 mt-1">
+                              {t('workspace.remoteMonitoring.stepTwo.template.patientIntakeDescription')}
+                            </div>
+                          </div>
+                        ) : (
+                          <Button 
+                            variant="outline"
+                            onClick={() => setIsEditingTemplate(true)}
+                            className="text-black"
+                          >
+                            {t('workspace.remoteMonitoring.stepTwo.template.edit')}
+                          </Button>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>
@@ -328,7 +371,11 @@ const StepTwo = ({
                     {objectives.map((objective, index) => (
                       <div 
                         key={index} 
-                        className="p-3 rounded-lg border border-gray-200 bg-gray-50 text-black flex justify-between items-center"
+                        className={`p-3 rounded-lg border ${
+                          objective === 'AI Anamnesis' 
+                            ? 'border-blue-500 border-dashed' 
+                            : 'border-gray-200 bg-gray-50'
+                        } text-black flex justify-between items-center`}
                       >
                         {editingObjectiveIndex === index ? (
                           <input
@@ -336,13 +383,17 @@ const StepTwo = ({
                             value={editingObjectiveText}
                             onChange={(e) => setEditingObjectiveText(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleSaveObjectiveEdit()}
-                            className="flex-1 p-2 rounded-lg border mr-2"
+                            className="flex-1 p-2 rounded-lg border text-black"
                             autoFocus
                           />
                         ) : (
-                          <span>{objective}</span>
+                          <span>{
+                            objective === 'AI Anamnesis' 
+                              ? t('workspace.remoteMonitoring.stepTwo.template.aiAnamnesis')
+                              : objective
+                          }</span>
                         )}
-                        {(selectedPresetIndex === null || isEditingTemplate) && (
+                        {(selectedPresetIndex === null || (isEditingTemplate && selectedPresetIndex !== 0)) && (
                           <div className="flex gap-2">
                             {editingObjectiveIndex === index ? (
                               <Button

@@ -1,11 +1,11 @@
 'use client';
 
-import { ActiveButton } from '@/app/_components/global_components';
+import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import LoadingSpinner from "@/app/_components/ui/LoadingSpinner";
 import { Phone } from 'lucide-react';
 
-const CallTypeSelector = ({ onCallNow, onSchedule, isCallingNow }) => {
+const CallTypeSelector = ({ onCallNow, onSchedule, isCallingNow, onBack }) => {
   const { t } = useLanguage();
 
   return (
@@ -70,6 +70,13 @@ const CallTypeSelector = ({ onCallNow, onSchedule, isCallingNow }) => {
             </h4>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-16 bg-slate-500 rounded-t-md" />
           </div>
+        </div>
+
+        {/* Back button */}
+        <div className="flex justify-between items-center pt-4 border-t border-border-main">
+          <SecondaryButton onClick={onBack}>
+            {t('workspace.remoteMonitoring.stepTwo.navigation.back')}
+          </SecondaryButton>
         </div>
       </div>
     </div>

@@ -33,7 +33,7 @@ const WorkspaceDashboard = () => {
       title: t('workspace.cards.createCall.title'),
       description: t('workspace.cards.createCall.description'),
       icon: PlusCircle,
-      href: "/workspace/calls/create-follow-up",
+      href: "/workspace/calls/create-call",
       color: "bg-blue-500/10",
       hoverColor: "group-hover:bg-blue-500/10",
       textColor: "text-blue-500",

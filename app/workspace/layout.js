@@ -79,7 +79,7 @@ const WorkspaceLayout = ({ children }) => {
 
   const getPageTitle = () => {
     switch (pathname) {
-      case '/workspace/calls/create-follow-up':
+      case '/workspace/calls/create-call':
         return 'Create Call';
       case '/workspace/calls/live-dashboard':
         return 'Calls Dashboard';
