@@ -180,9 +180,9 @@ const formatCallData = (call, organisationDetails) => {
   }
 
   const completedObjectives = (call.CompletedGoals?.length) || 0;
-  const totalGoals = (call.settings?.initial_goals?.length || 0) + (call.settings?.final_goals?.length || 0) + (call.settings?.max_goals_to_generate || 0);
+  const totalGoals = (call.settings?.initial_goals?.length || 0) + (call.settings?.final_goals?.length - 1 || 0) + (call.settings?.max_goals_to_generate || 0);
   // if totalGoals is 0 set completion to 100
-  const completitionPct = totalGoals === 0 ? 0 : Math.round((completedObjectives / totalGoals) * 100);
+  const completitionPct = totalGoals === 0 ? 0 : Math.min(Math.round((completedObjectives / totalGoals) * 100), 100);
 
   return {
     id: call.id,

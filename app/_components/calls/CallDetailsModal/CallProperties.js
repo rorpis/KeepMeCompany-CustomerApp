@@ -57,7 +57,6 @@ export const CallProperties = ({ properties }) => {
     { key: 'Completion', value: properties.completion || 'N/A' },
     { key: 'Duration', value: properties.duration || 'N/A' },
     { key: 'Status', value: properties.status || 'N/A' },
-    { key: 'Summary URL', value: formatValue(properties.summaryURL) || 'N/A' },
     { key: 'Template', value: getTemplateTranslation(properties.templateTitle) || 'N/A' },
   ]
 
