@@ -14,8 +14,6 @@ export const CallDetailsModal = ({ isOpen, onClose, call, markAsViewed }) => {
   const [isMarking, setIsMarking] = useState(false);
   const [localViewed, setLocalViewed] = useState(call?.viewed);
 
-  console.log('Call Details Modal', call);
-
   useEffect(() => {
     setLocalViewed(call?.viewed);
   }, [call?.viewed]);
