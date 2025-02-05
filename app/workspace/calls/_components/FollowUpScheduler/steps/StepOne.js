@@ -246,68 +246,80 @@ const StepOne = ({
       </div>
       
       <div className="flex-1 mb-4">
-        <PatientTable 
-          allPatients={organisationDetails?.patientList || []}
-          patients={organisationDetails?.patientList.filter(patient => {
-            return Object.entries(columnFilters).every(([field, filter]) => {
-              if (!filter) return true;
+        {(!organisationDetails?.patientList || organisationDetails.patientList.length === 0) ? (
+          <div className="flex flex-col items-center justify-center h-full text-center p-6">
+            <p className="text-text-secondary mb-2">
+              {t('workspace.remoteMonitoring.stepOne.noPatients')}
+            </p>
+            <p className="text-text-secondary">
+              {t('workspace.remoteMonitoring.stepOne.addPatientsGuide', 
+                'To add patients, go to Organisation Settings → Patients → Add Patient (it will take seconds)')}
+            </p>
+          </div>
+        ) : (
+          <PatientTable 
+            allPatients={organisationDetails?.patientList || []}
+            patients={organisationDetails?.patientList.filter(patient => {
+              return Object.entries(columnFilters).every(([field, filter]) => {
+                if (!filter) return true;
 
-              const value = patient[field];
-              
-              // Handle date filters
-              if (isDateColumn(field, [{ value }])) {
-                const date = parseDate(value);
-                if (!date) return false;
+                const value = patient[field];
                 
-                const { type, start, end } = filter;
-                switch (type) {
-                  case 'range':
-                    return (!start || date >= start) && (!end || date <= end);
-                  case 'from':
-                    return date >= start;
-                  case 'until':
-                    return date <= end;
-                  default:
-                    return true;
+                // Handle date filters
+                if (isDateColumn(field, [{ value }])) {
+                  const date = parseDate(value);
+                  if (!date) return false;
+                  
+                  const { type, start, end } = filter;
+                  switch (type) {
+                    case 'range':
+                      return (!start || date >= start) && (!end || date <= end);
+                    case 'from':
+                      return date >= start;
+                    case 'until':
+                      return date <= end;
+                    default:
+                      return true;
+                  }
+                }
+                
+                // Handle regular filters (arrays of values)
+                return filter.includes?.(value?.toString() || '');
+              });
+            }) || []}
+            columnFilters={columnFilters}
+            onColumnFilterChange={handleColumnFilterChange}
+            visibleColumns={visibleColumns}
+            showSearch={true}
+            selectable={true}
+            selectedPatients={selectedPatients}
+            onPatientSelect={(patientId) => {
+              const patient = organisationDetails?.patientList?.find(p => p.id === patientId);
+              if (patient?.phoneNumber) {
+                handlePatientSelect(patientId);
+              }
+            }}
+            onSelectAll={handleSelectAll}
+            renderCell={(patient, field) => {
+              if (field === 'lastScheduled' && patient.lastScheduled) {
+                try {
+                  const date = typeof patient.lastScheduled === 'string' 
+                    ? parseISO(patient.lastScheduled)
+                    : patient.lastScheduled?.toDate?.()
+                    || new Date(patient.lastScheduled);
+                  
+                  return format(date, 'dd/MM/yyyy HH:mm');
+                } catch (error) {
+                  return '';
                 }
               }
-              
-              // Handle regular filters (arrays of values)
-              return filter.includes?.(value?.toString() || '');
-            });
-          }) || []}
-          columnFilters={columnFilters}
-          onColumnFilterChange={handleColumnFilterChange}
-          visibleColumns={visibleColumns}
-          showSearch={true}
-          selectable={true}
-          selectedPatients={selectedPatients}
-          onPatientSelect={(patientId) => {
-            const patient = organisationDetails?.patientList?.find(p => p.id === patientId);
-            if (patient?.phoneNumber) {
-              handlePatientSelect(patientId);
+              return undefined;
+            }}
+            customRowClassName={(patient) => 
+              !patient.phoneNumber ? 'opacity-50 cursor-not-allowed' : ''
             }
-          }}
-          onSelectAll={handleSelectAll}
-          renderCell={(patient, field) => {
-            if (field === 'lastScheduled' && patient.lastScheduled) {
-              try {
-                const date = typeof patient.lastScheduled === 'string' 
-                  ? parseISO(patient.lastScheduled)
-                  : patient.lastScheduled?.toDate?.()
-                  || new Date(patient.lastScheduled);
-                
-                return format(date, 'dd/MM/yyyy HH:mm');
-              } catch (error) {
-                return '';
-              }
-            }
-            return undefined;
-          }}
-          customRowClassName={(patient) => 
-            !patient.phoneNumber ? 'opacity-50 cursor-not-allowed' : ''
-          }
-        />
+          />
+        )}
       </div>
 
       <div className="flex justify-between items-center pt-4 border-t border-border-main">
