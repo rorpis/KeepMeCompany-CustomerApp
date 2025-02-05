@@ -4,14 +4,17 @@ import { X, CheckCircle } from 'lucide-react';
 import { CallProperties } from './CallProperties';
 import { PatientDetails } from './PatientDetails';
 import { TranscriptView } from './TranscriptView';
-import { MedicalSummary } from './MedicalSummary';
+import { ObjectivesSummary } from './ObjectivesSummary';
 import { useLanguage } from '../../../../lib/contexts/LanguageContext';
+import { MedicalSummary } from './MedicalSummary';
 
 export const CallDetailsModal = ({ isOpen, onClose, call, markAsViewed }) => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("transcript");
   const [isMarking, setIsMarking] = useState(false);
   const [localViewed, setLocalViewed] = useState(call?.viewed);
+
+  console.log('Call Details Modal', call);
 
   useEffect(() => {
     setLocalViewed(call?.viewed);
@@ -34,10 +37,31 @@ export const CallDetailsModal = ({ isOpen, onClose, call, markAsViewed }) => {
 
   const tabs = [
     { id: "transcript", label: t('workspace.calls.modal.tabs.transcript') },
-    { id: "summary", label: t('workspace.calls.modal.tabs.summary') },
+    { 
+      id: "summary", 
+      label: t('workspace.calls.modal.tabs.summary'),
+      show: call?.templateTitle === 'patientIntake' ? Boolean(call?.summary) : Boolean(call?.followUpSummary)
+    },
     { id: "patient", label: t('workspace.calls.modal.tabs.patient') },
     { id: "properties", label: t('workspace.calls.modal.tabs.properties') },
-  ];
+  ].filter(tab => tab.show !== false);
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "transcript":
+        return <TranscriptView transcript={call?.conversationHistory} recordingURL={call?.recordingURL} />;
+      case "summary":
+        return call?.templateTitle === 'patientIntake' ? 
+          <MedicalSummary summary={call?.summary} /> :
+          <ObjectivesSummary followUpSummary={call?.followUpSummary} />;
+      case "patient":
+        return <PatientDetails patient={call?.patient} />;
+      case "properties":
+        return <CallProperties properties={call?.properties} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
@@ -106,12 +130,7 @@ export const CallDetailsModal = ({ isOpen, onClose, call, markAsViewed }) => {
 
             {/* Content */}
             <div className="flex-1 p-6 overflow-auto min-h-0">
-              {activeTab === "properties" && <CallProperties properties={call?.properties} />}
-              {activeTab === "patient" && <PatientDetails patient={call?.patient} />}
-              {activeTab === "transcript" && (
-                <TranscriptView transcript={call?.conversationHistory} recordingURL={call?.recordingURL} />
-              )}
-              {activeTab === "summary" && <MedicalSummary followUpSummary={call?.followUpSummary} />}
+              {renderTabContent()}
             </div>
           </div>
         </Dialog.Panel>

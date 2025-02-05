@@ -30,15 +30,45 @@ export const CallProperties = ({ properties }) => {
     return value;
   };
 
+  const getTemplateTranslation = (templateTitle) => {
+    switch (templateTitle) {
+      case 'patientIntake':
+        return t('workspace.remoteMonitoring.stepTwo.template.patientIntake');
+      default:
+        return templateTitle;
+    }
+  };
+
+  const getDirectionTranslation = (direction) => {
+    switch (direction) {
+      case 'inbound':
+        return t('workspace.remoteMonitoring.dashboard.direction.inbound');
+      case 'outbound':
+        return t('workspace.remoteMonitoring.dashboard.direction.outbound');
+      default:
+        return direction;
+    }
+  };
+
+  const propertiesList = [
+    { key: 'Patient Number', value: properties.toNumber || 'Unknown' },
+    { key: 'System Number', value: properties.fromNumber || 'Unknown' },
+    { key: 'Direction', value: getDirectionTranslation(properties.direction) || 'N/A' },
+    { key: 'Completion', value: properties.completion || 'N/A' },
+    { key: 'Duration', value: properties.duration || 'N/A' },
+    { key: 'Status', value: properties.status || 'N/A' },
+    { key: 'Summary URL', value: formatValue(properties.summaryURL) || 'N/A' },
+    { key: 'Template', value: getTemplateTranslation(properties.templateTitle) || 'N/A' },
+  ]
+
+  // return a table with the properties list
   return (
     <table className="w-full border-collapse">
       <tbody className="divide-y divide-gray-200">
-        {Object.entries(properties).map(([key, value]) => (
+        {propertiesList.map(({ key, value }) => (
           <tr key={key}>
-            <td className="py-3 px-4 font-medium capitalize bg-gray-50">
-              {key.replace(/([A-Z])/g, " $1")}
-            </td>
-            <td className="py-3 px-4">{formatValue(value)}</td>
+            <td className="py-3 px-4 font-medium capitalize bg-gray-50">{key}</td>
+            <td className="py-3 px-4">{value}</td>
           </tr>
         ))}
       </tbody>
