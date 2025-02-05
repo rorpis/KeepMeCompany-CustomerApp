@@ -10,6 +10,7 @@ import { Filter } from 'lucide-react';
 
 // Reuse the formatter helper with additional fields
 const formatCallData = (call, organisationDetails) => {
+  console.log('Format Call Data', call);
   const formatTime = (date) => {
     if (!date) return '';
     
@@ -179,6 +180,11 @@ const formatCallData = (call, organisationDetails) => {
     }
   }
 
+  const completedObjectives = (call.CompletedGoals?.length) || 0;
+  const totalGoals = (call.settings?.initial_goals?.length || 0) + (call.settings?.final_goals?.length || 0) + (call.settings?.max_goals_to_generate || 0);
+  // if totalGoals is 0 set completion to 100
+  const completitionPct = totalGoals === 0 ? 0 : Math.round((completedObjectives / totalGoals) * 100);
+
   return {
     id: call.id,
     call_sid: call.call_sid,
@@ -195,6 +201,8 @@ const formatCallData = (call, organisationDetails) => {
     recordingURL: call.recordingURL || null,
     conversationHistory: call.conversationHistory || null,
     summaryURL: call.summaryURL || null,
+    summary: call.summary || null,
+    completion: completitionPct,
     followUpSummary: call.followUpSummary || null,
     direction: call.direction || call.callDirection || 'outbound',
     duration: calculateDuration(call.createdAt, call.finishedAt)
@@ -458,6 +466,7 @@ export function CallsDashboard({
 
   const prepareCallDetailsData = (call, organisationDetails) => {
     // Get patient details from organisation
+    console.log('Prepare Call Details Data', call);
     const patientDetails = organisationDetails?.patientList?.find(
       patient => patient.id === call.patientId
     );
@@ -469,11 +478,12 @@ export function CallsDashboard({
         toNumber: call.userNumber || 'Unknown',
         fromNumber: call.twilioNumber || 'Unknown',
         timestamp: call.createdAt || call.enqueued_at,
-        completion: call.completion || 100,
+        completion: (call.completion || 100) + '%',
         direction: call.direction || 'N/A',
         duration: call.duration || 'N/A',
         status: call.status,
         summaryURL: call.summaryURL || 'N/A',
+        templateTitle: call.templateTitle || 'N/A'
       },
       patient: patientDetails ? {
         name: patientDetails.customerName,
@@ -488,6 +498,7 @@ export function CallsDashboard({
       conversationHistory: call.conversationHistory || [],
       followUpSummary: call.followUpSummary || null,
       recordingURL: call.recordingURL || null,
+      summary: call.summary || null,
       objectivesSummary: {
         objectives: call.objectives?.map(objective => ({
           item: objective,
