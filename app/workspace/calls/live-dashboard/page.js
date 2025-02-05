@@ -23,6 +23,19 @@ const getInitialFilters = (calls) => {
   };
 };
 
+const getStatusPriority = (status) => {
+  switch (status) {
+    case 'processed':
+      return 2;
+    case 'in_progress':
+      return 3;
+    case 'failed':
+      return 1;
+    default:
+      return 0;
+  }
+};
+
 const CallsDashboardPage = () => {
   const { selectedOrgId, organisationDetails } = useOrganisation();
   const { t } = useLanguage();
@@ -148,11 +161,11 @@ const CallsDashboardPage = () => {
           status: 'processed',
           viewed: conv.viewed || false,
           direction: 'inbound',
-          templateTitle: 'patientIntake'
+          templateTitle: 'patientIntake',
+          call_sid: conv.callSid
         };
       }
     
-      // For outbound calls, check processed calls for viewed status
       const matchingProcessedCall = processedCalls.find(
         qCall => qCall.call_sid === conv.callSid
       );
@@ -241,8 +254,34 @@ const CallsDashboardPage = () => {
       }
     });
 
+    // Deduplicate calls based on call_sid and priority
+    const callsBySid = new Map();
+    
+    allCalls.forEach(call => {
+      if (!call.call_sid) {
+        callsBySid.set(call.id, call);
+        return;
+      }
+
+      const existingCall = callsBySid.get(call.call_sid);
+      if (!existingCall) {
+        callsBySid.set(call.call_sid, call);
+        return;
+      }
+
+      const existingPriority = getStatusPriority(existingCall.status);
+      const newPriority = getStatusPriority(call.status);
+      
+      if (newPriority > existingPriority) {
+        callsBySid.set(call.call_sid, call);
+      }
+    });
+
+    // Convert back to array and sort
+    const dedupedCalls = Array.from(callsBySid.values());
+
     // Sort by timestamp
-    return allCalls.sort((a, b) => {
+    return dedupedCalls.sort((a, b) => {
       let dateA, dateB;
 
       if (a.type === 'queued') {
