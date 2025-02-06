@@ -8,11 +8,12 @@ import LoadingSpinner from "./_components/ui/LoadingSpinner";
 
 export default function Home() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { organisations, loading: orgLoading } = useOrganisation();
 
   useEffect(() => {
-    if (!loading && !orgLoading) {
+    // Only redirect when both auth and org loading are complete
+    if (!authLoading && !orgLoading) {
       if (!user) {
         router.push("/welcome");
       } else if (organisations.length === 0) {
@@ -21,9 +22,10 @@ export default function Home() {
         router.push("/workspace");
       }
     }
-  }, [user, loading, orgLoading, organisations, router]);
+  }, [user, authLoading, orgLoading, organisations, router]);
 
-  if (loading || orgLoading) {
+  // Show loading spinner while either auth or org is loading
+  if (authLoading || orgLoading) {
     return <LoadingSpinner />;
   }
 

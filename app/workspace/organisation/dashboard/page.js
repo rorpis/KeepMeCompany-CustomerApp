@@ -24,6 +24,7 @@ const OrganisationDashboard = () => {
   const { userDetails, loading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState('general');
   const [isPatientListLoading, setIsPatientListLoading] = useState(false);
+  const [isTabLoading, setIsTabLoading] = useState(false);
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -236,6 +237,19 @@ const OrganisationDashboard = () => {
     }
   };
 
+  const handleTabChange = async (tabName) => {
+    setIsTabLoading(true);
+    setActiveTab(tabName);
+    
+    // If switching to patients tab, we need to wait for the next render cycle
+    // to ensure the loading state is displayed
+    if (tabName === 'patients') {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+    
+    setIsTabLoading(false);
+  };
+
   if (!selectedOrgId) return null;
   if (loading) return <div>{t('workspace.organisation.dashboard.loading')}</div>;
   if (!organisationDetails) return <div>{t('workspace.organisation.dashboard.notFound')}</div>;
@@ -247,7 +261,7 @@ const OrganisationDashboard = () => {
         {/* Tabs */}
         <div className="flex space-x-4 border-b border-border-main mb-6">
           <button
-            onClick={() => setActiveTab('general')}
+            onClick={() => handleTabChange('general')}
             className={`pb-2 px-4 ${
               activeTab === 'general'
                 ? 'border-b-2 border-primary-blue text-primary-blue'
@@ -257,7 +271,7 @@ const OrganisationDashboard = () => {
             {t('workspace.organisation.dashboard.tabs.general')}
           </button>
           <button
-            onClick={() => setActiveTab('patients')}
+            onClick={() => handleTabChange('patients')}
             className={`pb-2 px-4 ${
               activeTab === 'patients'
                 ? 'border-b-2 border-primary-blue text-primary-blue'
@@ -267,7 +281,7 @@ const OrganisationDashboard = () => {
             {t('workspace.organisation.dashboard.tabs.patients')}
           </button>
           <button
-            onClick={() => setActiveTab('settings')}
+            onClick={() => handleTabChange('settings')}
             className={`pb-2 px-4 ${
               activeTab === 'settings'
                 ? 'border-b-2 border-primary-blue text-primary-blue'
@@ -339,14 +353,20 @@ const OrganisationDashboard = () => {
           {/* Patients Tab Content */}
           {activeTab === 'patients' && (
             <div className="md:col-span-2">
-              <PatientList 
-                patientList={organisationDetails.patientList || []}
-                onUploadList={handleUploadPatientList}
-                onAddPatient={handleAddPatient}
-                onEditPatient={handleEditSinglePatient}
-                onDeletePatient={handleDeletePatients}
-                isLoading={isPatientListLoading}
-              />
+              {(isTabLoading || isPatientListLoading) ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
+                </div>
+              ) : (
+                <PatientList 
+                  patientList={organisationDetails.patientList || []}
+                  onUploadList={handleUploadPatientList}
+                  onAddPatient={handleAddPatient}
+                  onEditPatient={handleEditSinglePatient}
+                  onDeletePatient={handleDeletePatients}
+                  isLoading={isPatientListLoading}
+                />
+              )}
             </div>
           )}
 

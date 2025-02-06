@@ -231,7 +231,8 @@ export function CallsDashboard({
   retryingCallId,
   onFilterChange,
   filters,
-  availableFilters
+  availableFilters,
+  loading
 }) {
   const { t } = useLanguage();
   const { language } = useLanguage();
@@ -561,7 +562,15 @@ export function CallsDashboard({
 
           {/* Table Body */}
           <tbody className="divide-y divide-gray-200">
-            {Object.keys(groupedCalls).length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={columns.length} className="text-center py-12">
+                  <div className="flex justify-center items-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
+                  </div>
+                </td>
+              </tr>
+            ) : Object.keys(groupedCalls).length === 0 ? (
               <tr>
                 <td 
                   colSpan={columns.length} 

@@ -64,12 +64,15 @@ const CallsDashboardPage = () => {
     direction: [],
     templateTitle: []
   });
+  const [isProcessingData, setIsProcessingData] = useState(false);
 
   useEffect(() => {
     if (!selectedOrgId) {
       setIsLoading(false);
       return;
     }
+
+    setIsLoading(true); // Set loading when starting to fetch
 
     // Listen to all conversations
     const unsubscribeConversations = listenToAllConversations(
@@ -87,6 +90,7 @@ const CallsDashboardPage = () => {
           };
         });
         setConversations(allConversations);
+        setIsLoading(false); // Set loading to false after receiving first batch of data
       }
     );
 
@@ -141,8 +145,6 @@ const CallsDashboardPage = () => {
       }
     );
 
-    setIsLoading(false);
-
     return () => {
       unsubscribeConversations();
       unsubscribeQueue();
@@ -152,156 +154,161 @@ const CallsDashboardPage = () => {
 
   // Updated mergedCalls logic
   const mergedCalls = useMemo(() => {
-    // Start with all conversations
-    const allCalls = conversations.map(conv => {
-      if (conv.callDirection === 'inbound') {
+    setIsProcessingData(true);
+    try {
+      // Start with all conversations
+      const allCalls = conversations.map(conv => {
+        if (conv.callDirection === 'inbound') {
+          return {
+            ...conv,
+            type: 'processed',
+            status: 'processed',
+            viewed: conv.viewed || false,
+            direction: 'inbound',
+            templateTitle: 'patientIntake',
+            call_sid: conv.callSid
+          };
+        }
+      
+        const matchingProcessedCall = processedCalls.find(
+          qCall => qCall.call_sid === conv.callSid
+        );
+        
         return {
           ...conv,
           type: 'processed',
           status: 'processed',
-          viewed: conv.viewed || false,
-          direction: 'inbound',
-          templateTitle: 'patientIntake',
-          call_sid: conv.callSid
+          viewed: matchingProcessedCall?.viewed || false,
+          call_sid: conv.callSid,
+          direction: 'outbound',
+          templateTitle: matchingProcessedCall?.template || conv.template || 'N/A'
         };
-      }
-    
-      const matchingProcessedCall = processedCalls.find(
-        qCall => qCall.call_sid === conv.callSid
-      );
+      });
+
+      const conversationIds = new Set(conversations.map(conv => conv.callSid));
       
-      return {
-        ...conv,
-        type: 'processed',
-        status: 'processed',
-        viewed: matchingProcessedCall?.viewed || false,
-        call_sid: conv.callSid,
-        direction: 'outbound',
-        templateTitle: matchingProcessedCall?.template || conv.template || 'N/A'
-      };
-    });
-
-    const conversationIds = new Set(conversations.map(conv => conv.callSid));
-    
-    // Add queued calls that don't have a matching conversation yet
-    queuedCalls.forEach(queuedCall => {
-      allCalls.push({
-        id: queuedCall.id,
-        call_sid: queuedCall.call_sid,
-        patientName: queuedCall.experience_custom_args?.patient_name,
-        patientDateOfBirth: queuedCall.experience_custom_args?.patient_dob,
-        patientId: queuedCall.patient_id,
-        userNumber: queuedCall.phone_number,
-        objectives: queuedCall.experience_custom_args?.objectives,
-        templateTitle: queuedCall.template || 'N/A',
-        scheduled_for: {
-          date: queuedCall.scheduled_for?.[0]?.date,
-          time: queuedCall.scheduled_for?.[0]?.time
-        },
-        status: 'queued',
-        type: 'queued',
-        viewed: queuedCall.viewed || false,
-        formattedTimestamp: queuedCall.enqueued_at,
-        direction: 'outbound'
+      // Add queued calls that don't have a matching conversation yet
+      queuedCalls.forEach(queuedCall => {
+        allCalls.push({
+          id: queuedCall.id,
+          call_sid: queuedCall.call_sid,
+          patientName: queuedCall.experience_custom_args?.patient_name,
+          patientDateOfBirth: queuedCall.experience_custom_args?.patient_dob,
+          patientId: queuedCall.patient_id,
+          userNumber: queuedCall.phone_number,
+          objectives: queuedCall.experience_custom_args?.objectives,
+          templateTitle: queuedCall.template || 'N/A',
+          scheduled_for: {
+            date: queuedCall.scheduled_for?.[0]?.date,
+            time: queuedCall.scheduled_for?.[0]?.time
+          },
+          status: 'queued',
+          type: 'queued',
+          viewed: queuedCall.viewed || false,
+          formattedTimestamp: queuedCall.enqueued_at,
+          direction: 'outbound'
+        });
       });
-    });
 
-    // Add active calls
-    activeCalls.forEach(activeCall => {
-      allCalls.push({
-        id: activeCall.id,
-        call_sid: activeCall.call_sid,
-        patientName: activeCall.experience_custom_args?.patient_name,
-        patientDateOfBirth: activeCall.experience_custom_args?.patient_dob,
-        patientId: activeCall.patient_id,
-        userNumber: activeCall.phone_number,
-        objectives: activeCall.experience_custom_args?.objectives,
-        createdAt: activeCall.started_at,
-        status: 'in_progress',
-        type: 'in_progress',
-        viewed: false,
-        direction: 'outbound',
-        templateTitle: activeCall.template || 'N/A'
+      // Add active calls
+      activeCalls.forEach(activeCall => {
+        allCalls.push({
+          id: activeCall.id,
+          call_sid: activeCall.call_sid,
+          patientName: activeCall.experience_custom_args?.patient_name,
+          patientDateOfBirth: activeCall.experience_custom_args?.patient_dob,
+          patientId: activeCall.patient_id,
+          userNumber: activeCall.phone_number,
+          objectives: activeCall.experience_custom_args?.objectives,
+          createdAt: activeCall.started_at,
+          status: 'in_progress',
+          type: 'in_progress',
+          viewed: false,
+          direction: 'outbound',
+          templateTitle: activeCall.template || 'N/A'
+        });
       });
-    });
 
-    // Add processed (failed) calls that don't have a matching conversation
-    processedCalls.forEach(processedCall => {
-      if (!conversationIds.has(processedCall.call_sid)) {
-        const processedDate = processedCall.processed_at?.toDate?.() || new Date(processedCall.processed_at);
-        const startDateTime = new Date(startDate);
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999); // Set end date to end of day
+      // Add processed (failed) calls that don't have a matching conversation
+      processedCalls.forEach(processedCall => {
+        if (!conversationIds.has(processedCall.call_sid)) {
+          const processedDate = processedCall.processed_at?.toDate?.() || new Date(processedCall.processed_at);
+          const startDateTime = new Date(startDate);
+          const endDateTime = new Date(endDate);
+          endDateTime.setHours(23, 59, 59, 999); // Set end date to end of day
 
-        // Only add if the processed date falls within the selected date range
-        if (processedDate >= startDateTime && processedDate <= endDateTime) {
-          allCalls.push({
-            id: processedCall.id,
-            call_sid: processedCall.call_sid,
-            patientName: processedCall.experience_custom_args?.patient_name,
-            patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
-            patientId: processedCall.patient_id,
-            userNumber: processedCall.phone_number,
-            objectives: processedCall.experience_custom_args?.objectives,
-            createdAt: processedCall.processed_at,
-            status: 'failed',
-            type: 'failed',
-            viewed: processedCall.viewed || false,
-            direction: 'outbound',
-            templateTitle: processedCall.template || 'N/A'
-          });
+          // Only add if the processed date falls within the selected date range
+          if (processedDate >= startDateTime && processedDate <= endDateTime) {
+            allCalls.push({
+              id: processedCall.id,
+              call_sid: processedCall.call_sid,
+              patientName: processedCall.experience_custom_args?.patient_name,
+              patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
+              patientId: processedCall.patient_id,
+              userNumber: processedCall.phone_number,
+              objectives: processedCall.experience_custom_args?.objectives,
+              createdAt: processedCall.processed_at,
+              status: 'failed',
+              type: 'failed',
+              viewed: processedCall.viewed || false,
+              direction: 'outbound',
+              templateTitle: processedCall.template || 'N/A'
+            });
+          }
         }
-      }
-    });
+      });
 
-    // Deduplicate calls based on call_sid and priority
-    const callsBySid = new Map();
-    
-    allCalls.forEach(call => {
-      if (!call.call_sid) {
-        callsBySid.set(call.id, call);
-        return;
-      }
-
-      const existingCall = callsBySid.get(call.call_sid);
-      if (!existingCall) {
-        callsBySid.set(call.call_sid, call);
-        return;
-      }
-
-      const existingPriority = getStatusPriority(existingCall.status);
-      const newPriority = getStatusPriority(call.status);
+      // Deduplicate calls based on call_sid and priority
+      const callsBySid = new Map();
       
-      if (newPriority > existingPriority) {
-        callsBySid.set(call.call_sid, call);
-      }
-    });
+      allCalls.forEach(call => {
+        if (!call.call_sid) {
+          callsBySid.set(call.id, call);
+          return;
+        }
 
-    // Convert back to array and sort
-    const dedupedCalls = Array.from(callsBySid.values());
+        const existingCall = callsBySid.get(call.call_sid);
+        if (!existingCall) {
+          callsBySid.set(call.call_sid, call);
+          return;
+        }
 
-    // Sort by timestamp
-    return dedupedCalls.sort((a, b) => {
-      let dateA, dateB;
+        const existingPriority = getStatusPriority(existingCall.status);
+        const newPriority = getStatusPriority(call.status);
+        
+        if (newPriority > existingPriority) {
+          callsBySid.set(call.call_sid, call);
+        }
+      });
 
-      if (a.type === 'queued') {
-        dateA = new Date(`${a.scheduled_for?.date} ${a.scheduled_for?.time}`);
-      } else if (typeof a.createdAt?.toDate === 'function') {
-        dateA = a.createdAt.toDate();
-      } else {
-        dateA = new Date(a.createdAt);
-      }
+      // Convert back to array and sort
+      const dedupedCalls = Array.from(callsBySid.values());
 
-      if (b.type === 'queued') {
-        dateB = new Date(`${b.scheduled_for?.date} ${b.scheduled_for?.time}`);
-      } else if (typeof b.createdAt?.toDate === 'function') {
-        dateB = b.createdAt.toDate();
-      } else {
-        dateB = new Date(b.createdAt);
-      }
-      
-      return dateB - dateA;
-    });
+      // Sort by timestamp
+      return dedupedCalls.sort((a, b) => {
+        let dateA, dateB;
+
+        if (a.type === 'queued') {
+          dateA = new Date(`${a.scheduled_for?.date} ${a.scheduled_for?.time}`);
+        } else if (typeof a.createdAt?.toDate === 'function') {
+          dateA = a.createdAt.toDate();
+        } else {
+          dateA = new Date(a.createdAt);
+        }
+
+        if (b.type === 'queued') {
+          dateB = new Date(`${b.scheduled_for?.date} ${b.scheduled_for?.time}`);
+        } else if (typeof b.createdAt?.toDate === 'function') {
+          dateB = b.createdAt.toDate();
+        } else {
+          dateB = new Date(b.createdAt);
+        }
+        
+        return dateB - dateA;
+      });
+    } finally {
+      setIsProcessingData(false);
+    }
   }, [conversations, queuedCalls, processedCalls, activeCalls, startDate, endDate]);
 
   // Calculate counts from all calls (before filtering)
@@ -525,8 +532,12 @@ const CallsDashboardPage = () => {
     }
   };
 
-  if (isLoading) {
-    return <div className="p-6">{t('workspace.remoteMonitoring.dashboard.loading')}</div>;
+  if (isLoading || isProcessingData) {
+    return (
+      <div className="flex-1 bg-bg-elevated rounded-lg overflow-hidden flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
+      </div>
+    );
   }
 
   return (
@@ -612,6 +623,7 @@ const CallsDashboardPage = () => {
           }}
           filters={filters}
           availableFilters={availableFilters}
+          loading={isLoading || isProcessingData}
         />
       </div>
 
