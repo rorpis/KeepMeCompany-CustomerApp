@@ -5,7 +5,7 @@ import { useAuth } from "../../lib/firebase/authContext";
 import { useOrganisation } from "../../lib/contexts/OrganisationContext";
 import { useUser } from "../../lib/contexts/UserContext";
 import { useLanguage } from "../../lib/contexts/LanguageContext";
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "../_components/ui/LoadingSpinner";
@@ -20,6 +20,8 @@ const WorkspaceLayout = ({ children }) => {
   const router = useRouter();
   const profileMenuRef = useRef(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPageLoading, setIsPageLoading] = useState(false);
 
   const getInitials = () => {
     if (!userDetails) return "U";
@@ -77,6 +79,18 @@ const WorkspaceLayout = ({ children }) => {
     }
   }, [user, authLoading, userDetails, userLoading, organisations, router]);
 
+  // Track route changes using pathname and searchParams
+  useEffect(() => {
+    setIsPageLoading(true);
+    
+    // Small delay to ensure loading state is visible
+    const timeout = setTimeout(() => {
+      setIsPageLoading(false);
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [pathname, searchParams]);
+
   const getPageTitle = () => {
     switch (pathname) {
       case '/workspace/calls/create-call':
@@ -92,13 +106,25 @@ const WorkspaceLayout = ({ children }) => {
     }
   };
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  const renderContent = () => {
+    if (isPageLoading) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
+        </div>
+      );
+    }
 
-  if (!user || !userDetails) {
-    return null;
-  }
+    if (isLoading) {
+      return <LoadingSpinner />;
+    }
+
+    if (!user || !userDetails) {
+      return null;
+    }
+
+    return children;
+  };
 
   return (
     <div className="min-h-screen bg-bg-main">
@@ -193,7 +219,7 @@ const WorkspaceLayout = ({ children }) => {
 
       {/* Main Content */}
       <main className="h-[calc(100vh-4rem)]">
-        {children}
+        {renderContent()}
       </main>
     </div>
   );

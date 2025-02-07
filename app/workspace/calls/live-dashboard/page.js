@@ -534,8 +534,36 @@ const CallsDashboardPage = () => {
 
   if (isLoading || isProcessingData) {
     return (
-      <div className="flex-1 bg-bg-elevated rounded-lg overflow-hidden flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
+      <div className="h-[calc(100vh-4rem)] flex flex-col p-6 max-w-7xl mx-auto">
+        {/* Keep the filters section with disabled state */}
+        <div className="flex items-center justify-between mb-4 opacity-50 pointer-events-none">  
+          <div className="flex items-center space-x-4">
+            <div>
+              <DateRangePicker
+                startDate={new Date(startDate)}
+                endDate={endDate ? new Date(endDate) : null}
+                onStartDateChange={() => {}}
+                onEndDateChange={() => {}}
+              />
+            </div>
+          </div>
+
+          <div className="inline-flex rounded-lg bg-gray-100 p-0.5">
+            <button className="px-4 py-2 text-sm font-medium rounded-md text-gray-500">
+              {t('workspace.triageDashboard.tabs.newCalls')} (0)
+            </button>
+            <button className="px-4 py-2 text-sm font-medium rounded-md text-gray-500">
+              {t('workspace.triageDashboard.tabs.viewedCalls')} (0)
+            </button>
+          </div>
+        </div>
+
+        {/* Loading spinner in the content area */}
+        <div className="flex-1 bg-bg-elevated rounded-lg overflow-hidden">
+          <div className="h-full flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
+          </div>
+        </div>
       </div>
     );
   }

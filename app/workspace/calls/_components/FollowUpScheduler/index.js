@@ -20,7 +20,7 @@ const callingCodes = [
 
 export const FollowUpScheduler = () => {
   const router = useRouter();
-  const organisation = useOrganisation();
+  const { organisationDetails, loading: orgLoading } = useOrganisation();
   const { user } = useAuth();
   const { t } = useLanguage();
   
@@ -40,10 +40,18 @@ export const FollowUpScheduler = () => {
   const [selectedPresetIndex, setSelectedPresetIndex] = useState(null);
   const [isCallingNow, setIsCallingNow] = useState(false);
 
+  if (orgLoading) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
+      </div>
+    );
+  }
+
   // Handle step changes with refresh
   const handleStepChange = async (newStep) => {
-    if (newStep === 2 && organisation.refresh) {
-      await organisation.refresh();
+    if (newStep === 2 && organisationDetails.refresh) {
+      await organisationDetails.refresh();
     }
     setCurrentStep(newStep);
   };
@@ -79,7 +87,7 @@ export const FollowUpScheduler = () => {
       }];
 
       const { success, error } = await scheduleCall({
-        organisationId: organisation.organisationDetails.id,
+        organisationId: organisationDetails.id,
         patients,
         objectives,
         scheduledFor,
@@ -104,7 +112,7 @@ export const FollowUpScheduler = () => {
     <div className="max-w-6xl mx-auto rounded-lg p-2">
       {currentStep === 1 && (
         <StepOne
-          organisationDetails={organisation.organisationDetails}
+          organisationDetails={organisationDetails}
           selectedPatients={selectedPatients}
           setSelectedPatients={setSelectedPatients}
           onNext={() => handleStepChange(2)}
@@ -118,7 +126,7 @@ export const FollowUpScheduler = () => {
           setObjectives={setObjectives}
           onBack={() => handleStepChange(1)}
           onNext={() => handleStepChange(3)}
-          organisationDetails={organisation.organisationDetails}
+          organisationDetails={organisationDetails}
           user={user}
           selectedPresetIndex={selectedPresetIndex}
           setSelectedPresetIndex={setSelectedPresetIndex}
