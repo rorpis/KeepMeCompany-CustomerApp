@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useAuth } from "../../lib/firebase/authContext";
 import { useOrganisation } from "../../lib/contexts/OrganisationContext";
 import { useUser } from "../../lib/contexts/UserContext";
@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import LoadingSpinner from "../_components/ui/LoadingSpinner";
 import LanguageSelector from "../_components/LanguageSelector";
 
-const WorkspaceLayout = ({ children }) => {
+const WorkspaceLayoutContent = ({ children }) => {
   const { user, logout, loading: authLoading } = useAuth();
   const { userDetails, loading: userLoading } = useUser();
   const { organisations, selectedOrgId, setSelectedOrgId, loading: orgLoading, organisationDetails } = useOrganisation();
@@ -222,6 +222,26 @@ const WorkspaceLayout = ({ children }) => {
         {renderContent()}
       </main>
     </div>
+  );
+};
+
+// Wrap the layout with Suspense
+const WorkspaceLayout = ({ children }) => {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-bg-main">
+          <nav className="bg-bg-elevated border-b border-border-main/30 h-16 shadow-sm">
+            {/* Minimal nav content for loading state */}
+          </nav>
+          <main className="h-[calc(100vh-4rem)] flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
+          </main>
+        </div>
+      }
+    >
+      <WorkspaceLayoutContent>{children}</WorkspaceLayoutContent>
+    </Suspense>
   );
 };
 
