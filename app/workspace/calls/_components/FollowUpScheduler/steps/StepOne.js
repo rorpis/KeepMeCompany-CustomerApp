@@ -9,16 +9,6 @@ import { PatientTable } from '@/app/_components/tables/PatientTable';
 import { ChevronDown } from 'lucide-react';
 import { isDateColumn, parseDate } from '@/app/_utils/dateUtils';
 
-const callingCodes = [
-  { country: 'UK', code: '44', iso2: 'GB' },
-  { country: 'FR', code: '33', iso2: 'FR' },
-  { country: 'DE', code: '49', iso2: 'DE' },
-  { country: 'ES', code: '34', iso2: 'ES' },
-  { country: 'CL', code: '56', iso2: 'CL' },
-].map(item => ({
-  ...item,
-  label: `${item.country} (+${item.code})`
-}));
 
 const ColumnSelector = ({ 
   availableColumns, 
@@ -98,7 +88,6 @@ const StepOne = ({
   onNext 
 }) => {
   const { t } = useLanguage();
-  const [selectedCode, setSelectedCode] = useState('44');
   const [searchQuery, setSearchQuery] = useState('');
   const standardFields = ['customerName', 'dateOfBirth', 'phoneNumber'];
   const [visibleColumns, setVisibleColumns] = useState([...standardFields, 'lastScheduled']);
@@ -147,32 +136,11 @@ const StepOne = ({
     
     if (selectedPatients.has(patientId)) {
       newSelectedPatients.delete(patientId);
-    } else {
-      let phoneNumber = '';
-      let countryCode = selectedCode;
-
-      if (selectedPatientDetails?.phoneNumber) {
-        const phoneStr = selectedPatientDetails.phoneNumber.replace(/\D/g, '');
-        const matchedCode = callingCodes.find(code => phoneStr.startsWith(code.code));
-        if (matchedCode) {
-          countryCode = matchedCode.code;
-          phoneNumber = phoneStr.substring(matchedCode.code.length);
-        } else {
-          phoneNumber = phoneStr;
-        }
-      }
-
-      const countryIso2 = callingCodes.find(c => c.code === countryCode)?.iso2;
-      const fullNumber = `+${countryCode}${phoneNumber}`;
-      let isValid = false;
-      try {
-        const parsedPhoneNumber = parsePhoneNumberFromString(fullNumber, countryIso2);
-        isValid = parsedPhoneNumber?.isValid() ?? false;
-      } catch (error) {
-        isValid = false;
-      }
-
-      newSelectedPatients.set(patientId, { phoneNumber, countryCode, isValid });
+    } else if (selectedPatientDetails?.phoneNumber) {
+      newSelectedPatients.set(patientId, { 
+        phoneNumber: selectedPatientDetails.phoneNumber,
+        isValid: true // We assume the number is valid since it was validated on upload/edit
+      });
     }
     
     setSelectedPatients(newSelectedPatients);
@@ -192,29 +160,10 @@ const StepOne = ({
     } else {
       patients.forEach(patient => {
         if (patient.phoneNumber && !selectedPatients.has(patient.id)) {
-          let phoneNumber = '';
-          let countryCode = selectedCode;
-
-          const phoneStr = patient.phoneNumber.replace(/\D/g, '');
-          const matchedCode = callingCodes.find(code => phoneStr.startsWith(code.code));
-          if (matchedCode) {
-            countryCode = matchedCode.code;
-            phoneNumber = phoneStr.substring(matchedCode.code.length);
-          } else {
-            phoneNumber = phoneStr;
-          }
-
-          const countryIso2 = callingCodes.find(c => c.code === countryCode)?.iso2;
-          const fullNumber = `+${countryCode}${phoneNumber}`;
-          let isValid = false;
-          try {
-            const parsedPhoneNumber = parsePhoneNumberFromString(fullNumber, countryIso2);
-            isValid = parsedPhoneNumber?.isValid() ?? false;
-          } catch (error) {
-            isValid = false;
-          }
-
-          newSelectedPatients.set(patient.id, { phoneNumber, countryCode, isValid });
+          newSelectedPatients.set(patient.id, {
+            phoneNumber: patient.phoneNumber,
+            isValid: true // We assume the number is valid since it was validated on upload/edit
+          });
         }
       });
     }

@@ -328,6 +328,10 @@ export const PatientList = ({
     }
   };
 
+  const handleEditAction = (patient) => {
+    setEditingPatient(patient);
+  };
+
   const handleEditPatient = async (updatedPatient) => {
     setIsEditing(true);
     try {
@@ -475,7 +479,7 @@ export const PatientList = ({
               <PatientListTable
                 patients={localPatientList}
                 allPatients={localPatientList}
-                onEdit={handleEditPatient}
+                onEdit={handleEditAction}
                 onDelete={handleDeletePatient}
                 showActions={true}
                 showSearch={true}
