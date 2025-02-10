@@ -148,6 +148,18 @@ const WorkspaceLayoutContent = ({ children }) => {
               <h1 className="text-lg font-medium text-text-primary">
                 {getPageTitle()}
               </h1>
+
+              {/* Credits Display */}
+              {organisationDetails?.credits !== undefined && organisationDetails.credits <= 3 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-secondary rounded-md border border-red-500">
+                  <span className="text-sm text-text-secondary">
+                    {t('workspace.organisation.dashboard.credits.remaining')}:
+                  </span>
+                  <span className="text-sm font-semibold text-primary-blue">
+                    {organisationDetails.credits}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Right Section */}
