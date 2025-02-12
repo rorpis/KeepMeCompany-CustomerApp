@@ -60,7 +60,6 @@ const OrganisationDashboard = () => {
 
   const handleUploadPatientList = async (patients) => {
     try {
-      setIsPatientListLoading(true);
       const idToken = await user.getIdToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/upload_patient_list`,
@@ -94,8 +93,6 @@ const OrganisationDashboard = () => {
         success: false,
         error: error.message
       };
-    } finally {
-      setIsPatientListLoading(false);
     }
   };
 
