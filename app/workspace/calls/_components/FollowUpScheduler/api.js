@@ -67,7 +67,14 @@ export const deletePreset = async ({ organisationId, presetId, user }) => {
   }
 };
 
-export const scheduleCall = async ({ organisationId, patients, objectives, scheduledFor, templateTitle, user }) => {
+export const scheduleCall = async ({ 
+  organisationId, 
+  patients, 
+  objectives, 
+  scheduledFor, 
+  templateTitle,
+  activeNodes
+}) => {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
       method: 'POST',
@@ -80,7 +87,8 @@ export const scheduleCall = async ({ organisationId, patients, objectives, sched
         patients,
         objectives,
         scheduledFor,
-        templateTitle
+        templateTitle,
+        activeNodes: Array.from(activeNodes)
       }),
     });
 

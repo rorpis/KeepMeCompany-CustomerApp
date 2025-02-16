@@ -1,6 +1,6 @@
 'use client';
 
-import { ActiveButton, SecondaryButton } from '@/app/_components/global_components';
+import { ActiveButton, SecondaryButton } from '../../../../../../app/_components/global_components';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import LoadingSpinner from "@/app/_components/ui/LoadingSpinner";
 import { Phone } from 'lucide-react';
