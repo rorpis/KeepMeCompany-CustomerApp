@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 export const useDecisionTree = (selectedTemplate, organisationDetails) => {
@@ -8,49 +8,32 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
   const [nodes, setNodes] = useState([]);
   const [activeNodes, setActiveNodes] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [allNodesData, setAllNodesData] = useState({});
 
   useEffect(() => {
-    const fetchNodes = async () => {
-      console.log('🔍 Fetching nodes...', { selectedTemplate });
+    const fetchAllNodes = async () => {
+      console.log('🔍 Fetching all nodes...');
       setLoading(true);
       try {
-        // Set active nodes from the selected template
-        if (selectedTemplate?.activeNodes) {
-          console.log('📋 Setting active nodes from template:', selectedTemplate.activeNodes);
-          setActiveNodes(new Set(['GREETING', ...selectedTemplate.activeNodes]));
-        }
-
-        // Create greeting node
-        const greetingNode = {
-          id: 'GREETING',
-          title: {
-            en: 'Greeting',
-            es: 'Saludo'
-          },
-          description: {
-            en: `"Hello! this is Alex from the London Medical Centre"`,
-            es: `"¡Hola! soy Alex del Centro Médico de Londres"`
-          },
-          paths: [{
-            targetNode: selectedTemplate?.activeNodes?.[0] || 'ANAMNESIS',
-            sourceHandle: 'GREETING-source',
-            targetHandle: `${selectedTemplate?.activeNodes?.[0] || 'ANAMNESIS'}-target`
-          }]
-        };
-
-        // Fetch nodes and filter to only include active ones plus greeting
         const nodesSnapshot = await getDocs(collection(db, 'nodes'));
-        const fetchedNodes = nodesSnapshot.docs.map(doc => {
+        const nodesData = {};
+        
+        // Transform the data as we store it
+        nodesSnapshot.docs.forEach(doc => {
           const data = doc.data();
-          return {
+          nodesData[doc.id] = {
             id: doc.id,
             title: {
               en: data.Title?.EN || 'Untitled',
-              es: data.Title?.ES || '',
+              es: data.Title?.ES || 'Sin título',
             },
             description: {
               en: data.Description?.EN || '',
               es: data.Description?.ES || '',
+            },
+            activationInstructions: {
+              en: data.ActivationInstruction?.EN || '',
+              es: data.ActivationInstruction?.ES || '',
             },
             paths: (data.Paths || []).map(path => {
               const targetNode = typeof path === 'string' ? path : path.TargetNode;
@@ -60,37 +43,73 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
                 targetHandle: `${targetNode}-target`
               };
             }),
-            activationInstructions: {
-              en: data.ActivationInstructions?.EN || '',
-              es: data.ActivationInstructions?.ES || '',
-            },
             objectives: {
               en: data.Objectives?.EN || [],
               es: data.Objectives?.ES || [],
             }
           };
         });
-        
-        // Filter nodes to only include active ones and the greeting node
-        const activeNodeIds = new Set(['GREETING', ...selectedTemplate.activeNodes]);
-        const filteredNodes = [
-          greetingNode,
-          ...fetchedNodes.filter(node => activeNodeIds.has(node.id))
-        ];
-        
-        setNodes(filteredNodes);
+
+        // Add greeting node
+        nodesData['GREETING'] = {
+          id: 'GREETING',
+          title: {
+            en: 'Greeting',
+            es: 'Saludo'
+          },
+          description: {
+            en: `"Hello! this is Alex from the London Medical Centre"`,
+            es: `"¡Hola! soy Alex del Centro Médico de Londres"`
+          },
+          activationInstructions: {
+            en: '',
+            es: ''
+          },
+          paths: []  // Will be updated when template changes
+        };
+
+        setAllNodesData(nodesData);
+        setLoading(false);
       } catch (error) {
-        console.error('❌ Error fetching nodes:', error);
-        setNodes([]);
-      } finally {
+        console.error('Error fetching nodes:', error);
         setLoading(false);
       }
     };
 
-    fetchNodes();
-  }, [selectedTemplate]);
+    if (Object.keys(allNodesData).length === 0) {
+      fetchAllNodes();
+    }
+  }, []);
 
-  const toggleNode = (nodeId) => {
+  // Update nodes when template changes
+  useEffect(() => {
+    if (selectedTemplate && Object.keys(allNodesData).length > 0) {
+      console.log('📋 Setting active nodes from template:', selectedTemplate.activeNodes);
+      const activeNodesSet = new Set(['GREETING', ...selectedTemplate.activeNodes]);
+      setActiveNodes(activeNodesSet);
+      
+      // Update GREETING node paths based on selected template
+      const updatedNodesData = {
+        ...allNodesData,
+        GREETING: {
+          ...allNodesData.GREETING,
+          paths: [{
+            targetNode: selectedTemplate.activeNodes[0] || 'ANAMNESIS',
+            sourceHandle: 'GREETING-source',
+            targetHandle: `${selectedTemplate.activeNodes[0] || 'ANAMNESIS'}-target`
+          }]
+        }
+      };
+      
+      // Filter nodes to only include active ones and convert to array
+      const nodesArray = Object.values(updatedNodesData)
+        .filter(node => activeNodesSet.has(node.id));
+      
+      setNodes(nodesArray);
+    }
+  }, [selectedTemplate, allNodesData]);
+
+  const toggleNode = useCallback((nodeId) => {
     setActiveNodes(prev => {
       const newSet = new Set(prev);
       if (newSet.has(nodeId)) {
@@ -100,21 +119,21 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const getNodeContent = (node) => {
+  const getNodeContent = useCallback((node, langKey = currentLanguage?.toLowerCase()) => {
     return {
-      title: node.title[currentLanguage] || node.title['en'],
-      description: node.description[currentLanguage] || node.description['en'],
-      instructions: node.activationInstructions?.[currentLanguage] || node.activationInstructions?.['en'],
-      objectives: node.objectives?.[currentLanguage] || node.objectives?.['en'] || []
+      title: node.title?.[langKey] || node.title?.en || '',
+      description: node.description?.[langKey] || node.description?.en || '',
+      instructions: node.activationInstructions?.[langKey] || node.activationInstructions?.en || '',
+      objectives: node.objectives?.[langKey] || node.objectives?.en || []
     };
-  };
+  }, [currentLanguage]);
 
   return {
     nodes,
     activeNodes,
-    loading,
+    loading: loading && Object.keys(allNodesData).length === 0,
     toggleNode,
     getNodeContent
   };

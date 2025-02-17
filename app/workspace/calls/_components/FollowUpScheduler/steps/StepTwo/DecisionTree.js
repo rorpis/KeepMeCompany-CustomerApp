@@ -12,39 +12,36 @@ const DecisionTree = ({
 }) => {
   const { t } = useLanguage();
   const { nodes, activeNodes, loading, toggleNode, getNodeContent } = useDecisionTree(selectedTemplate, organisationDetails);
-  
-  if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-black">
-          {selectedTemplate?.title || t('workspace.remoteMonitoring.stepTwo.noTemplate')}
-        </h3>
-        <Button
-          onClick={() => setIsEditMode(!isEditMode)}
-          variant="secondary"
-          className="bg-[#F8FAFC] text-black hover:bg-gray-100"
-        >
-          {isEditMode ? t('common.save') : t('common.edit')}
-        </Button>
-      </div>
-      
-      <div className="flex-1 min-h-[500px]">
-        <TreeVisualization 
-          nodes={nodes}
-          activeNodes={activeNodes}
-          getNodeContent={getNodeContent}
-          isEditMode={isEditMode}
-          onToggleNode={toggleNode}
-        />
-      </div>
+    <div className="flex-1 relative h-full">
+      {/* Only show Edit Button for custom templates */}
+      {selectedTemplate?.isCustom && (
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            onClick={() => setIsEditMode(!isEditMode)}
+            variant="outline"
+            className={`
+              transition-colors bg-white/95 shadow-md
+              ${isEditMode 
+                ? 'text-gray-900 hover:bg-gray-100' 
+                : 'text-gray-900 hover:bg-gray-100'
+              }
+            `}
+          >
+            {isEditMode ? t('workspace.remoteMonitoring.stepTwo.template.saveChanges') : t('workspace.remoteMonitoring.stepTwo.template.edit')}
+          </Button>
+        </div>
+      )}
+
+      <TreeVisualization 
+        nodes={nodes}
+        activeNodes={activeNodes}
+        getNodeContent={getNodeContent}
+        isEditMode={isEditMode}
+        onToggleNode={toggleNode}
+        loading={loading}
+      />
     </div>
   );
 };

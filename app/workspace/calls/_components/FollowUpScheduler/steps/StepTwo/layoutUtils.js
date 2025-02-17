@@ -1,57 +1,79 @@
-const HORIZONTAL_SPACING = 300;
-const VERTICAL_SPACING = 150;
+import dagre from '@dagrejs/dagre';
 
-export function autoLayoutNodes(nodes, edges) {
-  // Create a map of node levels
-  const nodeLevels = new Map();
-  const processed = new Set();
+const HORIZONTAL_SPACING = 350;
+const VERTICAL_SPACING = 200;
+
+export const autoLayoutNodes = (nodes, edges) => {
+  // First, create a map of nodes that have multiple incoming edges
+  const incomingEdges = edges.reduce((acc, edge) => {
+    if (!acc[edge.target]) {
+      acc[edge.target] = [];
+    }
+    acc[edge.target].push(edge);
+    return acc;
+  }, {});
+
+  // Calculate total width needed for each node's incoming instructions
+  const getRequiredWidth = (nodeId) => {
+    const edges = incomingEdges[nodeId] || [];
+    if (edges.length <= 1) return 250; // Base width for single edge
+
+    // Calculate total width needed for all instructions
+    const totalInstructionsWidth = edges.reduce((total, edge) => {
+      const instructionLength = edge.data?.instructions?.length || 0;
+      return total + (instructionLength * 8) + 60; // 8px per character + padding
+    }, 0);
+
+    return Math.max(250, totalInstructionsWidth + ((edges.length - 1) * 100));
+  };
+
+  // Create dagre graph
+  const g = new dagre.graphlib.Graph();
   
-  // Find root nodes (nodes with no incoming edges)
-  const hasIncoming = new Set(edges.map(e => e.target));
-  const roots = nodes.filter(n => !hasIncoming.has(n.id));
+  // Adjust the graph settings for better centering
+  g.setGraph({
+    rankdir: 'TB',
+    // align: 'UL',          // Align nodes to upper left within their ranks
+    nodesep: 150,         // Increased horizontal spacing between nodes
+    ranksep: 150,         // Vertical spacing between ranks
+    edgesep: 80,          // Edge spacing
+    marginx: 50,          // Margin from the left and right
+    marginy: 50,          // Margin from the top and bottom
+  });
   
-  // Assign levels through BFS
-  let currentLevel = roots;
-  let level = 0;
-  
-  while (currentLevel.length > 0) {
-    nodeLevels.set(level, currentLevel);
-    processed.add(...currentLevel.map(n => n.id));
-    
-    // Find next level nodes
-    const nextLevel = [];
-    currentLevel.forEach(node => {
-      const childEdges = edges.filter(e => e.source === node.id);
-      childEdges.forEach(edge => {
-        const targetNode = nodes.find(n => n.id === edge.target);
-        if (targetNode && !processed.has(targetNode.id)) {
-          nextLevel.push(targetNode);
-        }
-      });
+  g.setDefaultEdgeLabel(() => ({}));
+
+  // Add nodes with width based on incoming instructions
+  nodes.forEach((node) => {
+    g.setNode(node.id, {
+      width: getRequiredWidth(node.id),
+      height: 100
     });
-    
-    currentLevel = nextLevel;
-    level++;
-  }
-  
-  // Position nodes
-  const layoutedNodes = nodes.map(node => {
-    const nodeLevel = Array.from(nodeLevels.entries())
-      .find(([_, levelNodes]) => levelNodes.includes(node))
-      ?.[0] ?? 0;
-      
-    const levelNodes = nodeLevels.get(nodeLevel) ?? [];
-    const nodeIndex = levelNodes.indexOf(node);
-    const levelWidth = levelNodes.length * HORIZONTAL_SPACING;
-    
+  });
+
+  // Add edges
+  edges.forEach((edge) => {
+    g.setEdge(edge.source, edge.target);
+  });
+
+  // Apply layout
+  dagre.layout(g);
+
+  // Get graph dimensions
+  const graphWidth = g.graph().width;
+  const graphHeight = g.graph().height;
+
+  // Get the laid out nodes with positions and center them
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = g.node(node.id);
     return {
       ...node,
       position: {
-        x: (nodeIndex * HORIZONTAL_SPACING) - (levelWidth / 2) + (HORIZONTAL_SPACING / 2),
-        y: nodeLevel * VERTICAL_SPACING
+        x: nodeWithPosition.x - nodeWithPosition.width / 2,
+        y: nodeWithPosition.y - nodeWithPosition.height / 2
       }
     };
   });
-  
+
   return { nodes: layoutedNodes };
-} 
+}; 

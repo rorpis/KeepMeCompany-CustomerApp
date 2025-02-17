@@ -73,7 +73,8 @@ export const scheduleCall = async ({
   objectives, 
   scheduledFor, 
   templateTitle,
-  activeNodes
+  activeNodes,
+  user
 }) => {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer_app_api/follow_ups/schedule_call`, {
