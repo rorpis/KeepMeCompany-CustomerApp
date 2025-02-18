@@ -77,13 +77,12 @@ const StepTwo = ({
         setTreePresets(fetchedTreePresets);
         setCustomObjectives(fetchedCustomObjectives);
         
-        const allTemplates = [
-          ...fetchedCustomObjectives,
-          ...fetchedTreePresets,
-          ...fetchedDefaultTemplates
-        ];
-        if (allTemplates.length > 0) {
-          setSelectedTemplate(allTemplates[0]);
+        // Always select the first default template if available
+        if (fetchedDefaultTemplates.length > 0) {
+          const firstDefaultTemplate = fetchedDefaultTemplates[0];
+          setSelectedTemplate(firstDefaultTemplate);
+          setIsCustomMode(false);
+          setIsEditMode(false);
         }
       } catch (error) {
         console.error('Error fetching templates:', error);
@@ -97,26 +96,23 @@ const StepTwo = ({
     if (template === "custom") {
       setSelectedTemplate(null);
       setIsCustomMode(true);
-      setIsEditMode(true); // New custom templates start in edit mode
-      setObjectives([]); // Reset objectives for custom mode
+      setIsEditMode(true);
+      setObjectives([]);
       setTemplateTitle("");
     } else {
       setSelectedTemplate(template);
-      // Set custom mode for custom objectives templates, but don't enable edit mode
       setIsCustomMode(template.type === 'customObjectives');
       setIsEditMode(false);
       
-      // Set objectives based on template type
       if (template.type === 'customObjectives') {
         setObjectives(template.objectives || []);
         setTemplateTitle(template.title);
-        // Set a default template with GREETING, CUSTOM_OBJECTIVES, and FINISH_CALL nodes
         setSelectedTemplate({
           ...template,
           activeNodes: ['GREETING', 'CUSTOM_OBJECTIVES', 'FINISH_CALL']
         });
       } else {
-        setObjectives([]); // Reset for tree presets and default templates
+        setObjectives([]);
       }
     }
   };

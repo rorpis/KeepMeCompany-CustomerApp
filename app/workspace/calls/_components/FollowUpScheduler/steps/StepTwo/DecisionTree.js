@@ -19,7 +19,8 @@ const DecisionTree = ({
   onTemplateChange,
   onSaveTemplate,
   isLoading,
-  onCustomModeChange
+  onCustomModeChange,
+  ...props
 }) => {
   const { t } = useLanguage();
   const { nodes, activeNodes, loading, toggleNode, getNodeContent } = useDecisionTree(selectedTemplate, organisationDetails);
@@ -79,18 +80,21 @@ const DecisionTree = ({
         )}
       </div>
 
-      <TreeVisualization 
+      <TreeVisualization
         nodes={nodes}
         activeNodes={activeNodes}
         getNodeContent={getNodeContent}
         isEditMode={isEditMode}
         onToggleNode={toggleNode}
         loading={loading}
+        selectedTemplate={selectedTemplate}
         objectives={objectives}
         onAddObjective={onAddObjective}
         onEditObjective={onEditObjective}
         onDeleteObjective={onDeleteObjective}
         isCustomMode={isCustomMode}
+        templateTitle={templateTitle}
+        onTemplateChange={onTemplateChange}
       />
     </div>
   );

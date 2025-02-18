@@ -6,8 +6,8 @@ import { db } from '@/lib/firebase/config';
 export const useDecisionTree = (selectedTemplate, organisationDetails) => {
   const { currentLanguage } = useLanguage();
   const [nodes, setNodes] = useState([]);
-  const [activeNodes, setActiveNodes] = useState(new Set(['GREETING']));
-  const [loading, setLoading] = useState(true);
+  const [activeNodes, setActiveNodes] = useState(new Set());
+  const [loading, setLoading] = useState(false);
   const [allNodesData, setAllNodesData] = useState({});
 
   useEffect(() => {
@@ -185,7 +185,7 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
   return {
     nodes,
     activeNodes,
-    loading: loading && Object.keys(allNodesData).length === 0,
+    loading,
     toggleNode,
     getNodeContent
   };

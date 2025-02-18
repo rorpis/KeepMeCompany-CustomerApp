@@ -84,60 +84,76 @@ const ConversationNode = ({ data }) => {
 
 const ObjectivesNode = ({ data }) => {
   const [newObjective, setNewObjective] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingText, setEditingText] = useState("");
   const { t } = useLanguage();
   const inputRef = useRef(null);
 
-  const handleClick = (e) => {
-    e.stopPropagation();
-    if (data.isEditMode) {
-      inputRef.current?.focus();
+  const handleEditStart = (index, text) => {
+    setEditingIndex(index);
+    setEditingText(text);
+  };
+
+  const handleEditSave = () => {
+    if (editingText.trim() && editingIndex !== null) {
+      data.onEditObjective(editingIndex, editingText.trim());
+      setEditingIndex(null);
+      setEditingText("");
     }
   };
 
   return (
-    <div 
-      className="bg-white rounded-lg p-6 min-w-[400px] max-w-[500px] border border-gray-200 shadow-sm"
-      onClick={handleClick}
-    >
+    <div className="bg-white rounded-lg p-6 min-w-[400px] max-w-[500px] border border-gray-200 shadow-sm">
       <Handle type="target" position={Position.Top} style={{ background: '#555' }} />
       <Handle type="source" position={Position.Bottom} style={{ background: '#555' }} />
 
       <div className="space-y-4">
-        {/* Existing objectives */}
-        <div className="space-y-3">
-          {data.objectives?.map((objective, index) => (
-            <div 
-              key={index}
-              className="p-4 rounded-lg border border-gray-200 bg-white text-black flex justify-between items-center group"
-            >
-              <span className="text-gray-900">{objective}</span>
-              {data.isEditMode && (
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      data.onEditObjective(index, objective);
-                    }}
-                    className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-                  >
-                    <Edit2 className="h-4 w-4 text-gray-600" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      data.onDeleteObjective(index);
-                    }}
-                    className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        {data.objectives.map((objective, index) => (
+          <div key={index} className={`
+            group flex items-center justify-between p-3 rounded-lg border border-gray-200
+            ${data.isEditMode ? 'bg-gray-50' : 'bg-white'}
+          `}>
+            {editingIndex === index ? (
+              <div className="flex-1 flex gap-2">
+                <input
+                  type="text"
+                  value={editingText}
+                  onChange={(e) => setEditingText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleEditSave()}
+                  className="flex-1 p-2 rounded border border-gray-200 text-gray-900"
+                  autoFocus
+                />
+                <button
+                  onClick={handleEditSave}
+                  className="p-1 rounded hover:bg-green-50 transition-colors"
+                >
+                  <Save className="h-4 w-4 text-gray-600 hover:text-green-600" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <span className="text-gray-900">{objective}</span>
+                {data.isEditMode && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditStart(index, objective)}
+                      className="p-1 rounded hover:bg-blue-50 transition-colors"
+                    >
+                      <Edit2 className="h-4 w-4 text-gray-600 hover:text-blue-600" />
+                    </button>
+                    <button
+                      onClick={() => data.onDeleteObjective(index)}
+                      className="p-1 rounded hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4 text-gray-600 hover:text-red-600" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ))}
 
-        {/* Add new objective */}
         {data.isEditMode && (
           <div className="flex gap-2 mt-4">
             <input
@@ -151,7 +167,7 @@ const ObjectivesNode = ({ data }) => {
                   setNewObjective("");
                 }
               }}
-              placeholder={t('workspace.remoteMonitoring.stepTwo.objectives.addNew')}
+              placeholder={t('workspace.remoteMonitoring.stepTwo.template.addNewObjective')}
               className="flex-1 p-3 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-500"
             />
             <button 
@@ -256,11 +272,11 @@ const edgeTypes = {
 };
 
 const TreeVisualization = ({ 
-  nodes, 
-  activeNodes, 
-  getNodeContent, 
+  nodes = [],
+  activeNodes = new Set(),
+  getNodeContent = () => ({}),
   isEditMode, 
-  onToggleNode,
+  onToggleNode = () => {},
   loading,
   objectives,
   onAddObjective,
@@ -323,10 +339,12 @@ const TreeVisualization = ({
           type: 'objectivesNode',
           position: { x: horizontalCenter, y: objectivesY },
           data: {
-            objectives: objectives || [],
+            objectives,
             onAddObjective,
             onEditObjective,
-            onDeleteObjective
+            onDeleteObjective,
+            isEditMode,
+            isCustomMode
           }
         },
         {
@@ -377,7 +395,7 @@ const TreeVisualization = ({
           reactFlowInstance.fitView({ duration: 200, padding: 0.4 }); // Increased padding
         }
       }, 50);
-    } else {
+    } else if (nodes && nodes.length > 0) {
       // Convert nodes to ReactFlow format
       const reactFlowNodes = nodes.map(node => {
         const content = getNodeContent(node);
