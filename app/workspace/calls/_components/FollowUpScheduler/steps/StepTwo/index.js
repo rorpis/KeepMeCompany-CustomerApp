@@ -120,7 +120,7 @@ const StepTwo = ({
         setTemplateTitle(template.title);
         setSelectedTemplate({
           ...template,
-          activeNodes: ['GREETING', 'CUSTOM_OBJECTIVES', 'FINISH_CALL']
+          activeNodes: ['GREETING', 'CUSTOM_EXPERIENCE', 'FINISH_CALL']
         });
       } else {
         setObjectives([]);
@@ -171,7 +171,7 @@ const StepTwo = ({
               ...updatedTemplate,
               type: 'customObjectives',
               isCustom: true,
-              activeNodes: ['GREETING', 'CUSTOM_OBJECTIVES', 'FINISH_CALL']
+              activeNodes: ['GREETING', 'CUSTOM_EXPERIENCE', 'FINISH_CALL']
             });
             setIsCustomMode(true);
             setObjectives(updatedTemplate.objectives || []);
@@ -186,7 +186,7 @@ const StepTwo = ({
               ...newTemplate,
               type: 'customObjectives',
               isCustom: true,
-              activeNodes: ['GREETING', 'CUSTOM_OBJECTIVES', 'FINISH_CALL']
+              activeNodes: ['GREETING', 'CUSTOM_EXPERIENCE', 'FINISH_CALL']
             });
             setIsCustomMode(true);
             setObjectives(newTemplate.objectives || []);

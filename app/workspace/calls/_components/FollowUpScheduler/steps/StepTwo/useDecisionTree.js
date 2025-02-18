@@ -68,13 +68,13 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
           paths: []  // Will be updated when template changes
         };
 
-        // For custom objectives templates, ensure CUSTOM_OBJECTIVES has path to FINISH_CALL
-        if (nodesData['CUSTOM_OBJECTIVES']) {
-          nodesData['CUSTOM_OBJECTIVES'] = {
-            ...nodesData['CUSTOM_OBJECTIVES'],
+        // For custom objectives templates, ensure CUSTOM_EXPERIENCE has path to FINISH_CALL
+        if (nodesData['CUSTOM_EXPERIENCE']) {
+          nodesData['CUSTOM_EXPERIENCE'] = {
+            ...nodesData['CUSTOM_EXPERIENCE'],
             paths: [{
               targetNode: 'FINISH_CALL',
-              sourceHandle: 'CUSTOM_OBJECTIVES-source',
+              sourceHandle: 'CUSTOM_EXPERIENCE-source',
               targetHandle: 'FINISH_CALL-target'
             }]
           };
@@ -102,7 +102,7 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
       // Set active nodes based on template type
       const activeNodesSet = new Set(
         isCustomObjectives 
-          ? ['GREETING', 'CUSTOM_OBJECTIVES', 'FINISH_CALL']
+          ? ['GREETING', 'CUSTOM_EXPERIENCE', 'FINISH_CALL']
           : ['GREETING', ...(Array.isArray(selectedTemplate.activeNodes) ? selectedTemplate.activeNodes : [])]
       );
       setActiveNodes(activeNodesSet);
@@ -113,20 +113,20 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
         GREETING: {
           ...allNodesData.GREETING,
           paths: [{
-            targetNode: isCustomObjectives ? 'CUSTOM_OBJECTIVES' : (selectedTemplate.activeNodes?.[0] || 'ANAMNESIS'),
+            targetNode: isCustomObjectives ? 'CUSTOM_EXPERIENCE' : (selectedTemplate.activeNodes?.[0] || 'ANAMNESIS'),
             sourceHandle: 'GREETING-source',
-            targetHandle: isCustomObjectives ? 'CUSTOM_OBJECTIVES-target' : `${selectedTemplate.activeNodes?.[0] || 'ANAMNESIS'}-target`
+            targetHandle: isCustomObjectives ? 'CUSTOM_EXPERIENCE-target' : `${selectedTemplate.activeNodes?.[0] || 'ANAMNESIS'}-target`
           }]
         }
       };
 
       if (isCustomObjectives) {
-        // Ensure CUSTOM_OBJECTIVES has path to FINISH_CALL
-        updatedNodesData['CUSTOM_OBJECTIVES'] = {
-          ...allNodesData['CUSTOM_OBJECTIVES'],
+        // Ensure CUSTOM_EXPERIENCE has path to FINISH_CALL
+        updatedNodesData['CUSTOM_EXPERIENCE'] = {
+          ...allNodesData['CUSTOM_EXPERIENCE'],
           paths: [{
             targetNode: 'FINISH_CALL',
-            sourceHandle: 'CUSTOM_OBJECTIVES-source',
+            sourceHandle: 'CUSTOM_EXPERIENCE-source',
             targetHandle: 'FINISH_CALL-target'
           }]
         };
