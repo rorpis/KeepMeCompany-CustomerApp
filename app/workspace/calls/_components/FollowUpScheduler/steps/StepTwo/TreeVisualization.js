@@ -298,29 +298,30 @@ const TreeVisualization = ({
   useEffect(() => {
     if (isCustomMode) {
       // Different spacing values for top and bottom
-      const topNodeSpacing = 150; // Space between greeting and objectives
-      const bottomNodeSpacing = 100; // Reduced space between objectives and finish
+      const topNodeSpacing = 150;
+      const bottomNodeSpacing = 100;
       const horizontalCenter = 350;
       
       // Base heights
       const greetingY = 50;
       const objectivesY = greetingY + topNodeSpacing;
       
-      // Calculate objectives node height more accurately
-      const objectiveItemHeight = 65; // Height of each objective item
-      const objectivesPadding = 48; // Container padding
-      const addNewObjectiveHeight = 70; // "Add new" section height
+      // Calculate objectives node height
+      const objectiveItemHeight = 65;
+      const objectivesPadding = 48;
+      const addNewObjectiveHeight = 70;
       
-      // Calculate total height with a smaller minimum
       const objectivesHeight = Math.max(
-        150, // Minimum height
+        150,
         objectives.length === 0 
           ? addNewObjectiveHeight + objectivesPadding
           : (objectives.length * objectiveItemHeight) + objectivesPadding + addNewObjectiveHeight
       );
       
-      // Position finish node with reduced bottom spacing
       const finishY = objectivesY + objectivesHeight + bottomNodeSpacing;
+
+      // Get node content from Firebase data
+      const finishContent = getNodeContent(nodes.find(n => n.id === 'FINISH_CALL') || {});
 
       const customNodes = [
         {
@@ -352,8 +353,14 @@ const TreeVisualization = ({
           type: 'conversationNode',
           position: { x: horizontalCenter, y: finishY },
           data: {
-            title: { en: 'Finish Call', es: 'Finalizar Llamada' },
-            description: { en: 'End the conversation', es: 'Finalizar la conversación' },
+            title: finishContent.title ? {
+              en: finishContent.title,
+              es: finishContent.title
+            } : { en: 'Finish Call', es: 'Finalizar Llamada' },
+            description: finishContent.description ? {
+              en: finishContent.description,
+              es: finishContent.description
+            } : { en: 'End the conversation', es: 'Finalizar la conversación' },
             nodeType: 'last',
             isActive: true
           }
@@ -380,7 +387,9 @@ const TreeVisualization = ({
           type: 'custom',
           animated: true,
           data: {
-            instructions: 'End conversation'
+            instructions: finishContent.instructions ?
+              finishContent.instructions
+            : '-',
           },
           style: { strokeWidth: 2 }
         }

@@ -67,45 +67,17 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
           paths: []  // Will be updated when template changes
         };
 
-        // Add custom objectives node
-        nodesData['CUSTOM_OBJECTIVES'] = {
-          id: 'CUSTOM_OBJECTIVES',
-          title: {
-            en: 'Custom Objectives',
-            es: 'Objetivos Personalizados'
-          },
-          description: {
-            en: 'Custom follow-up objectives',
-            es: 'Objetivos de seguimiento personalizados'
-          },
-          activationInstructions: {
-            en: '',
-            es: ''
-          },
-          paths: [{
-            targetNode: 'FINISH_CALL',
-            sourceHandle: 'CUSTOM_OBJECTIVES-source',
-            targetHandle: 'FINISH_CALL-target'
-          }]
-        };
-
-        // Add finish call node
-        nodesData['FINISH_CALL'] = {
-          id: 'FINISH_CALL',
-          title: {
-            en: 'Finish Call',
-            es: 'Finalizar Llamada'
-          },
-          description: {
-            en: 'End the follow-up call',
-            es: 'Finalizar la llamada de seguimiento'
-          },
-          activationInstructions: {
-            en: '',
-            es: ''
-          },
-          paths: []
-        };
+        // For custom objectives templates, ensure CUSTOM_OBJECTIVES has path to FINISH_CALL
+        if (nodesData['CUSTOM_OBJECTIVES']) {
+          nodesData['CUSTOM_OBJECTIVES'] = {
+            ...nodesData['CUSTOM_OBJECTIVES'],
+            paths: [{
+              targetNode: 'FINISH_CALL',
+              sourceHandle: 'CUSTOM_OBJECTIVES-source',
+              targetHandle: 'FINISH_CALL-target'
+            }]
+          };
+        }
 
         setAllNodesData(nodesData);
         setLoading(false);
@@ -146,8 +118,20 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
           }]
         }
       };
+
+      if (isCustomObjectives) {
+        // Ensure CUSTOM_OBJECTIVES has path to FINISH_CALL
+        updatedNodesData['CUSTOM_OBJECTIVES'] = {
+          ...allNodesData['CUSTOM_OBJECTIVES'],
+          paths: [{
+            targetNode: 'FINISH_CALL',
+            sourceHandle: 'CUSTOM_OBJECTIVES-source',
+            targetHandle: 'FINISH_CALL-target'
+          }]
+        };
+      }
       
-      // Filter nodes to only include active ones
+      // Filter nodes to only include active ones and use Firebase data
       const nodesArray = Object.values(updatedNodesData)
         .filter(node => activeNodesSet.has(node.id));
       
