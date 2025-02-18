@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrganisation } from '../../../../../lib/contexts/OrganisationContext';
 import { useAuth } from '../../../../../lib/firebase/authContext';
-import { useLanguage } from '@/lib/contexts/LanguageContext';
+import { useLanguage } from '../../../../../lib/contexts/LanguageContext';
 import StepOne from './steps/StepOne';
-import StepTwo from './steps/StepTwo';
+import StepTwo from './steps/StepTwo/index';
 import CallTypeSelector from './steps/CallTypeSelector';
 import { scheduleCall } from './api';
 
@@ -39,6 +39,9 @@ export const FollowUpScheduler = () => {
   const [presetName, setPresetName] = useState('');
   const [selectedPresetIndex, setSelectedPresetIndex] = useState(null);
   const [isCallingNow, setIsCallingNow] = useState(false);
+
+  // Add state for active nodes that will be passed to the API
+  const [activeNodes, setActiveNodes] = useState(new Set(['ANAMNESIS', 'FINISH_CALL']));
 
   if (orgLoading) {
     return (
@@ -92,6 +95,7 @@ export const FollowUpScheduler = () => {
         objectives,
         scheduledFor,
         templateTitle: presetName,
+        activeNodes,
         user
       });
 
@@ -125,18 +129,16 @@ export const FollowUpScheduler = () => {
           objectives={objectives}
           setObjectives={setObjectives}
           onBack={() => handleStepChange(1)}
-          onNext={() => handleStepChange(3)}
+          onNext={({ templateTitle, activeNodes: newActiveNodes }) => {
+            setPresetName(templateTitle);
+            setActiveNodes(newActiveNodes);
+            handleStepChange(3);
+          }}
           organisationDetails={organisationDetails}
           user={user}
           selectedPresetIndex={selectedPresetIndex}
           setSelectedPresetIndex={setSelectedPresetIndex}
           setPresetName={setPresetName}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          instructions={instructions}
-          setInstructions={setInstructions}
-          isGeneratingObjectives={isGeneratingObjectives}
-          setIsGeneratingObjectives={setIsGeneratingObjectives}
         />
       )}
 

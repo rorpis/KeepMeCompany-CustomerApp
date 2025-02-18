@@ -12,7 +12,15 @@ import DateRangePicker from '../../../_components/DateRangePicker';
 
 // Add these helper functions
 const getUniqueValues = (calls, key) => {
-  return [...new Set(calls.map(call => call[key]))];
+  return [...new Set(calls.map(call => {
+    const value = call[key];
+    // Special handling for templateTitle that could be either string or object
+    if (key === 'templateTitle' && typeof value === 'object') {
+      // If it's an object with language keys, get the English title or first available
+      return value.en || value.EN || Object.values(value)[0];
+    }
+    return value;
+  }))];
 };
 
 const getInitialFilters = (calls) => {
@@ -174,6 +182,12 @@ const CallsDashboardPage = () => {
           qCall => qCall.call_sid === conv.callSid
         );
         
+        // Handle both template formats
+        const templateTitle = matchingProcessedCall?.template || conv.template;
+        const finalTemplateTitle = typeof templateTitle === 'object' 
+          ? (templateTitle.EN || templateTitle.en || Object.values(templateTitle)[0])
+          : templateTitle || 'N/A';
+        
         return {
           ...conv,
           type: 'processed',
@@ -181,7 +195,7 @@ const CallsDashboardPage = () => {
           viewed: matchingProcessedCall?.viewed || false,
           call_sid: conv.callSid,
           direction: 'outbound',
-          templateTitle: matchingProcessedCall?.template || conv.template || 'N/A'
+          templateTitle: finalTemplateTitle
         };
       });
 
@@ -232,29 +246,27 @@ const CallsDashboardPage = () => {
       // Add processed (failed) calls that don't have a matching conversation
       processedCalls.forEach(processedCall => {
         if (!conversationIds.has(processedCall.call_sid)) {
-          const processedDate = processedCall.processed_at?.toDate?.() || new Date(processedCall.processed_at);
-          const startDateTime = new Date(startDate);
-          const endDateTime = new Date(endDate);
-          endDateTime.setHours(23, 59, 59, 999); // Set end date to end of day
+          // Handle both template formats
+          const templateTitle = processedCall.template;
+          const finalTemplateTitle = typeof templateTitle === 'object' 
+            ? (templateTitle.EN || templateTitle.en || Object.values(templateTitle)[0])
+            : templateTitle || 'N/A';
 
-          // Only add if the processed date falls within the selected date range
-          if (processedDate >= startDateTime && processedDate <= endDateTime) {
-            allCalls.push({
-              id: processedCall.id,
-              call_sid: processedCall.call_sid,
-              patientName: processedCall.experience_custom_args?.patient_name,
-              patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
-              patientId: processedCall.patient_id,
-              userNumber: processedCall.phone_number,
-              objectives: processedCall.experience_custom_args?.objectives,
-              createdAt: processedCall.processed_at,
-              status: 'failed',
-              type: 'failed',
-              viewed: processedCall.viewed || false,
-              direction: 'outbound',
-              templateTitle: processedCall.template || 'N/A'
-            });
-          }
+          allCalls.push({
+            id: processedCall.id,
+            call_sid: processedCall.call_sid,
+            patientName: processedCall.experience_custom_args?.patient_name,
+            patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
+            patientId: processedCall.patient_id,
+            userNumber: processedCall.phone_number,
+            objectives: processedCall.experience_custom_args?.objectives,
+            createdAt: processedCall.processed_at,
+            status: 'failed',
+            type: 'failed',
+            viewed: processedCall.viewed || false,
+            direction: 'outbound',
+            templateTitle: finalTemplateTitle
+          });
         }
       });
 
