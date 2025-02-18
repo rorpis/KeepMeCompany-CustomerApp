@@ -203,6 +203,12 @@ const CallsDashboardPage = () => {
       
       // Add queued calls that don't have a matching conversation yet
       queuedCalls.forEach(queuedCall => {
+        // Handle template title with language keys
+        const templateTitle = queuedCall.template;
+        const finalTemplateTitle = typeof templateTitle === 'object' 
+          ? (templateTitle.EN || templateTitle.en || Object.values(templateTitle)[0])
+          : templateTitle || 'N/A';
+
         allCalls.push({
           id: queuedCall.id,
           call_sid: queuedCall.call_sid,
@@ -211,7 +217,7 @@ const CallsDashboardPage = () => {
           patientId: queuedCall.patient_id,
           userNumber: queuedCall.phone_number,
           objectives: queuedCall.experience_custom_args?.objectives,
-          templateTitle: queuedCall.template || 'N/A',
+          templateTitle: finalTemplateTitle,
           scheduled_for: {
             date: queuedCall.scheduled_for?.[0]?.date,
             time: queuedCall.scheduled_for?.[0]?.time
@@ -226,6 +232,12 @@ const CallsDashboardPage = () => {
 
       // Add active calls
       activeCalls.forEach(activeCall => {
+        // Handle template title with language keys
+        const templateTitle = activeCall.template;
+        const finalTemplateTitle = typeof templateTitle === 'object' 
+          ? (templateTitle.EN || templateTitle.en || Object.values(templateTitle)[0])
+          : templateTitle || 'N/A';
+
         allCalls.push({
           id: activeCall.id,
           call_sid: activeCall.call_sid,
@@ -239,7 +251,7 @@ const CallsDashboardPage = () => {
           type: 'in_progress',
           viewed: false,
           direction: 'outbound',
-          templateTitle: activeCall.template || 'N/A'
+          templateTitle: finalTemplateTitle
         });
       });
 
@@ -260,6 +272,7 @@ const CallsDashboardPage = () => {
             patientId: processedCall.patient_id,
             userNumber: processedCall.phone_number,
             objectives: processedCall.experience_custom_args?.objectives,
+            activeNodes: processedCall.experience_custom_args?.active_nodes,
             createdAt: processedCall.processed_at,
             status: 'failed',
             type: 'failed',
@@ -419,7 +432,8 @@ const CallsDashboardPage = () => {
             patients,
             objectives: call.objectives,
             scheduledFor,
-            templateTitle: call.templateTitle
+            templateTitle: call.templateTitle,
+            activeNodes: call.activeNodes // Add activeNodes to the request
           }),
         }
       );
