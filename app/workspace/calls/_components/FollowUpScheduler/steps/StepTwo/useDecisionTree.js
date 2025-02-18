@@ -123,41 +123,35 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
   // Update nodes when template changes
   useEffect(() => {
     if (selectedTemplate && Object.keys(allNodesData).length > 0) {
-      // Only spread activeNodes if it exists and is an array
-      const templateNodes = Array.isArray(selectedTemplate.activeNodes) 
-        ? selectedTemplate.activeNodes 
-        : [];
+      // First, determine if this is a custom objectives template
+      const isCustomObjectives = selectedTemplate.type === 'customObjectives';
       
-      const activeNodesSet = new Set(['GREETING', ...templateNodes]);
+      // Set active nodes based on template type
+      const activeNodesSet = new Set(
+        isCustomObjectives 
+          ? ['GREETING', 'CUSTOM_OBJECTIVES', 'FINISH_CALL']
+          : ['GREETING', ...(Array.isArray(selectedTemplate.activeNodes) ? selectedTemplate.activeNodes : [])]
+      );
       setActiveNodes(activeNodesSet);
       
-      // Update GREETING node paths based on selected template
+      // Update GREETING node paths based on template type
       const updatedNodesData = {
         ...allNodesData,
         GREETING: {
           ...allNodesData.GREETING,
           paths: [{
-            targetNode: templateNodes[0] || 'ANAMNESIS',
+            targetNode: isCustomObjectives ? 'CUSTOM_OBJECTIVES' : (selectedTemplate.activeNodes?.[0] || 'ANAMNESIS'),
             sourceHandle: 'GREETING-source',
-            targetHandle: `${templateNodes[0] || 'ANAMNESIS'}-target`
+            targetHandle: isCustomObjectives ? 'CUSTOM_OBJECTIVES-target' : `${selectedTemplate.activeNodes?.[0] || 'ANAMNESIS'}-target`
           }]
         }
       };
       
-      // Filter nodes to only include active ones and convert to array
+      // Filter nodes to only include active ones
       const nodesArray = Object.values(updatedNodesData)
         .filter(node => activeNodesSet.has(node.id));
       
       setNodes(nodesArray);
-
-      // Update GREETING node paths for custom objectives
-      if (selectedTemplate?.type === 'customObjectives') {
-        updatedNodesData.GREETING.paths = [{
-          targetNode: 'CUSTOM_OBJECTIVES',
-          sourceHandle: 'GREETING-source',
-          targetHandle: 'CUSTOM_OBJECTIVES-target'
-        }];
-      }
     }
   }, [selectedTemplate, allNodesData]);
 

@@ -4,6 +4,8 @@ import { Button } from "@/_components/ui/StyledButton";
 import LoadingSpinner from "@/_components/ui/LoadingSpinner";
 import TreeVisualization from './TreeVisualization';
 import { Loader2 } from 'lucide-react';
+import { ConfirmDialog } from '@/_components/ui/ConfirmDialog';
+import { useState } from 'react';
 
 const DecisionTree = ({
   isEditMode,
@@ -20,10 +22,12 @@ const DecisionTree = ({
   onSaveTemplate,
   isLoading,
   onCustomModeChange,
+  onDeleteTemplate,
   ...props
 }) => {
   const { t } = useLanguage();
   const { nodes, activeNodes, loading, toggleNode, getNodeContent } = useDecisionTree(selectedTemplate, organisationDetails);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleEditClick = () => {
     if (selectedTemplate?.type === 'customObjectives') {
@@ -53,31 +57,43 @@ const DecisionTree = ({
           )
         )}
         
-        {/* Show edit/save button for custom templates */}
-        {(selectedTemplate?.isCustom || isCustomMode) && (
-          <Button
-            onClick={isCustomMode && isEditMode ? onSaveTemplate : handleEditClick}
-            variant="outline"
-            className={`
-              transition-colors shadow-md
-              ${isEditMode && (!templateTitle.trim() || objectives.length === 0)
-                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100"
-                : "bg-white/95 text-gray-900 hover:bg-gray-100"
-              }
-            `}
-            disabled={isEditMode && (!templateTitle.trim() || objectives.length === 0 || isLoading)}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              isCustomMode && isEditMode
-                ? t('workspace.remoteMonitoring.stepTwo.template.save')
-                : isEditMode 
-                  ? t('workspace.remoteMonitoring.stepTwo.template.saveChanges') 
+        {/* Button section */}
+        <div className="flex gap-2">
+          {/* Show delete button only for custom templates in edit mode */}
+          {selectedTemplate?.isCustom && isEditMode && (
+            <Button
+              onClick={() => setShowDeleteConfirm(true)}
+              variant="outline"
+              className="bg-white/95 text-red-600 hover:bg-red-50"
+            >
+              {t('workspace.remoteMonitoring.stepTwo.template.delete')}
+            </Button>
+          )}
+          {(selectedTemplate?.isCustom || isCustomMode) && (
+            <Button
+              onClick={isCustomMode && isEditMode ? onSaveTemplate : handleEditClick}
+              variant="outline"
+              className={`
+                transition-colors shadow-md
+                ${isEditMode && (!templateTitle.trim() || objectives.length === 0)
+                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100"
+                  : "bg-white/95 text-gray-900 hover:bg-gray-100"
+                }
+              `}
+              disabled={isEditMode && (!templateTitle.trim() || objectives.length === 0 || isLoading)}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                isEditMode
+                  ? selectedTemplate?.isCustom 
+                    ? t('workspace.remoteMonitoring.stepTwo.template.saveChanges')
+                    : t('workspace.remoteMonitoring.stepTwo.template.save')
                   : t('workspace.remoteMonitoring.stepTwo.template.edit')
-            )}
-          </Button>
-        )}
+              )}
+            </Button>
+          )}
+        </div>
       </div>
 
       <TreeVisualization
@@ -96,6 +112,20 @@ const DecisionTree = ({
         templateTitle={templateTitle}
         onTemplateChange={onTemplateChange}
       />
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={() => {
+            onDeleteTemplate();
+            setShowDeleteConfirm(false);
+          }}
+          title={t('workspace.remoteMonitoring.scheduler.deletePresetConfirm')}
+          message={t('workspace.remoteMonitoring.stepTwo.template.deleteConfirmMessage')}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   );
 };

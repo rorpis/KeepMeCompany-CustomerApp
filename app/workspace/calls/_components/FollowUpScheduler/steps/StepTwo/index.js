@@ -7,7 +7,7 @@ import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { ActiveButton, SecondaryButton } from '@/_components/global_components';
 import { Button } from "@/_components/ui/StyledButton";
 import { Toast } from "@/_components/ui/Toast";
-import { savePreset } from '../../api';
+import { savePreset, editPreset, deletePreset } from '../../api';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent } from "@/_components/ui/Card";
 
@@ -72,19 +72,29 @@ const StepTwo = ({
         }));
       }
       
-      setDefaultTemplates(fetchedDefaultTemplates);
-      setTreePresets(fetchedTreePresets);
-      setCustomObjectives(fetchedCustomObjectives);
-      
+      const fetchedData = {
+        defaultTemplates: fetchedDefaultTemplates,
+        treePresets: fetchedTreePresets,
+        customObjectives: fetchedCustomObjectives
+      };
+
+      // Update state
+      setDefaultTemplates(fetchedData.defaultTemplates);
+      setTreePresets(fetchedData.treePresets);
+      setCustomObjectives(fetchedData.customObjectives);
+
       // Always select the first default template if available
-      if (fetchedDefaultTemplates.length > 0) {
-        const firstDefaultTemplate = fetchedDefaultTemplates[0];
+      if (fetchedData.defaultTemplates.length > 0) {
+        const firstDefaultTemplate = fetchedData.defaultTemplates[0];
         setSelectedTemplate(firstDefaultTemplate);
         setIsCustomMode(false);
         setIsEditMode(false);
       }
+
+      return fetchedData;  // Return the fetched data
     } catch (error) {
       console.error('Error fetching templates:', error);
+      return null;
     }
   };
 
@@ -123,32 +133,117 @@ const StepTwo = ({
 
     setIsLoading(true);
     try {
-      const { success } = await savePreset({
+      const isEditing = selectedTemplate?.isCustom && selectedTemplate?.id;
+      
+      const apiCall = isEditing ? editPreset : savePreset;
+      const params = {
         organisationId: organisationDetails.id,
         title: templateTitle,
         objectives,
+        user
+      };
+
+      if (isEditing) {
+        params.presetId = selectedTemplate.id;
+      }
+
+      const { success, presetId } = await apiCall(params);  // Get presetId from response
+
+      if (success) {
+        setToast({
+          show: true,
+          message: t(isEditing 
+            ? 'workspace.remoteMonitoring.toast.presetUpdated'
+            : 'workspace.remoteMonitoring.toast.presetSaved'),
+          type: 'success'
+        });
+        
+        // Get fresh data
+        const freshData = await fetchAllTemplates();
+        
+        if (isEditing && freshData) {
+          const updatedTemplate = freshData.customObjectives.find(
+            t => t.id === selectedTemplate.id
+          );
+          
+          if (updatedTemplate) {
+            setSelectedTemplate({
+              ...updatedTemplate,
+              type: 'customObjectives',
+              isCustom: true,
+              activeNodes: ['GREETING', 'CUSTOM_OBJECTIVES', 'FINISH_CALL']
+            });
+            setIsCustomMode(true);
+            setObjectives(updatedTemplate.objectives || []);
+          }
+        } else if (freshData) {
+          const newTemplate = freshData.customObjectives.find(
+            t => t.id === presetId
+          );
+          
+          if (newTemplate) {
+            setSelectedTemplate({
+              ...newTemplate,
+              type: 'customObjectives',
+              isCustom: true,
+              activeNodes: ['GREETING', 'CUSTOM_OBJECTIVES', 'FINISH_CALL']
+            });
+            setIsCustomMode(true);
+            setObjectives(newTemplate.objectives || []);
+          }
+        }
+        setIsEditMode(false);
+        setTemplateTitle('');
+      } else {
+        throw new Error('Failed to save template');
+      }
+    } catch (error) {
+      console.error('Error saving template:', error);
+      setToast({
+        show: true,
+        message: t('workspace.remoteMonitoring.toast.error'),
+        type: 'error'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!selectedTemplate?.id) return;
+
+    setIsLoading(true);
+    try {
+      const { success } = await deletePreset({
+        organisationId: organisationDetails.id,
+        presetId: selectedTemplate.id,
         user
       });
 
       if (success) {
         setToast({
           show: true,
-          message: t('workspace.remoteMonitoring.toast.presetSaved'),
+          message: t('workspace.remoteMonitoring.toast.presetDeleted'),
           type: 'success'
         });
         
-        // Refresh templates
-        await fetchAllTemplates();
+        // Fetch updated templates and select first default template
+        const updatedTemplates = await fetchAllTemplates();
         
-        // Reset form
-        setTemplateTitle('');
-        setObjectives([]);
-        setIsCustomMode(false);
+        // Select first default template if available
+        if (defaultTemplates.length > 0) {
+          const firstDefaultTemplate = defaultTemplates[0];
+          setSelectedTemplate(firstDefaultTemplate);
+          setIsCustomMode(false);
+          setIsEditMode(false);
+          setObjectives([]);
+          setTemplateTitle('');
+        }
       } else {
-        throw new Error('Failed to save template');
+        throw new Error('Failed to delete template');
       }
     } catch (error) {
-      console.error('Error saving template:', error);
+      console.error('Error deleting template:', error);
       setToast({
         show: true,
         message: t('workspace.remoteMonitoring.toast.error'),
@@ -199,6 +294,7 @@ const StepTwo = ({
                 onTemplateChange={setTemplateTitle}
                 onSaveTemplate={handleSaveTemplate}
                 isLoading={isLoading}
+                onDeleteTemplate={handleDeleteTemplate}
               />
             </div>
           </div>
