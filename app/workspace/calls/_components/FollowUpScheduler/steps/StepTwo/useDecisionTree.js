@@ -6,13 +6,12 @@ import { db } from '@/lib/firebase/config';
 export const useDecisionTree = (selectedTemplate, organisationDetails) => {
   const { currentLanguage } = useLanguage();
   const [nodes, setNodes] = useState([]);
-  const [activeNodes, setActiveNodes] = useState(new Set());
+  const [activeNodes, setActiveNodes] = useState(new Set(['GREETING']));
   const [loading, setLoading] = useState(true);
   const [allNodesData, setAllNodesData] = useState({});
 
   useEffect(() => {
     const fetchAllNodes = async () => {
-      console.log('🔍 Fetching all nodes...');
       setLoading(true);
       try {
         const nodesSnapshot = await getDocs(collection(db, 'nodes'));
@@ -68,6 +67,46 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
           paths: []  // Will be updated when template changes
         };
 
+        // Add custom objectives node
+        nodesData['CUSTOM_OBJECTIVES'] = {
+          id: 'CUSTOM_OBJECTIVES',
+          title: {
+            en: 'Custom Objectives',
+            es: 'Objetivos Personalizados'
+          },
+          description: {
+            en: 'Custom follow-up objectives',
+            es: 'Objetivos de seguimiento personalizados'
+          },
+          activationInstructions: {
+            en: '',
+            es: ''
+          },
+          paths: [{
+            targetNode: 'FINISH_CALL',
+            sourceHandle: 'CUSTOM_OBJECTIVES-source',
+            targetHandle: 'FINISH_CALL-target'
+          }]
+        };
+
+        // Add finish call node
+        nodesData['FINISH_CALL'] = {
+          id: 'FINISH_CALL',
+          title: {
+            en: 'Finish Call',
+            es: 'Finalizar Llamada'
+          },
+          description: {
+            en: 'End the follow-up call',
+            es: 'Finalizar la llamada de seguimiento'
+          },
+          activationInstructions: {
+            en: '',
+            es: ''
+          },
+          paths: []
+        };
+
         setAllNodesData(nodesData);
         setLoading(false);
       } catch (error) {
@@ -84,8 +123,12 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
   // Update nodes when template changes
   useEffect(() => {
     if (selectedTemplate && Object.keys(allNodesData).length > 0) {
-      console.log('📋 Setting active nodes from template:', selectedTemplate.activeNodes);
-      const activeNodesSet = new Set(['GREETING', ...selectedTemplate.activeNodes]);
+      // Only spread activeNodes if it exists and is an array
+      const templateNodes = Array.isArray(selectedTemplate.activeNodes) 
+        ? selectedTemplate.activeNodes 
+        : [];
+      
+      const activeNodesSet = new Set(['GREETING', ...templateNodes]);
       setActiveNodes(activeNodesSet);
       
       // Update GREETING node paths based on selected template
@@ -94,9 +137,9 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
         GREETING: {
           ...allNodesData.GREETING,
           paths: [{
-            targetNode: selectedTemplate.activeNodes[0] || 'ANAMNESIS',
+            targetNode: templateNodes[0] || 'ANAMNESIS',
             sourceHandle: 'GREETING-source',
-            targetHandle: `${selectedTemplate.activeNodes[0] || 'ANAMNESIS'}-target`
+            targetHandle: `${templateNodes[0] || 'ANAMNESIS'}-target`
           }]
         }
       };
@@ -106,6 +149,15 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
         .filter(node => activeNodesSet.has(node.id));
       
       setNodes(nodesArray);
+
+      // Update GREETING node paths for custom objectives
+      if (selectedTemplate?.type === 'customObjectives') {
+        updatedNodesData.GREETING.paths = [{
+          targetNode: 'CUSTOM_OBJECTIVES',
+          sourceHandle: 'GREETING-source',
+          targetHandle: 'CUSTOM_OBJECTIVES-target'
+        }];
+      }
     }
   }, [selectedTemplate, allNodesData]);
 
