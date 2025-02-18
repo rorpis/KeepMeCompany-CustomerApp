@@ -30,65 +30,66 @@ const StepTwo = ({
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchAllTemplates = async () => {
-      try {
-        // 1. Fetch default templates
-        const defaultTemplatesSnapshot = await getDocs(collection(db, 'defaultTemplates'));
-        const fetchedDefaultTemplates = defaultTemplatesSnapshot.docs.map(doc => ({
+  const fetchAllTemplates = async () => {
+    try {
+      // 1. Fetch default templates
+      const defaultTemplatesSnapshot = await getDocs(collection(db, 'defaultTemplates'));
+      const fetchedDefaultTemplates = defaultTemplatesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().title || {},
+        activeNodes: doc.data().activeNodes || [],
+        isCustom: false,
+        type: 'default'
+      }));
+      
+      let fetchedTreePresets = [];
+      let fetchedCustomObjectives = [];
+      
+      // 2. Fetch organization templates
+      if (organisationDetails?.id) {
+        // 2a. Fetch tree presets
+        const treePresetsSnapshot = await getDocs(
+          collection(db, `organisations/${organisationDetails.id}/treePresets`)
+        );
+        fetchedTreePresets = treePresetsSnapshot.docs.map(doc => ({
           id: doc.id,
-          title: doc.data().title || {},
+          title: doc.data().title || '',
           activeNodes: doc.data().activeNodes || [],
           isCustom: false,
-          type: 'default'
+          type: 'treePreset'
         }));
-        
-        let fetchedTreePresets = [];
-        let fetchedCustomObjectives = [];
-        
-        // 2. Fetch organization templates
-        if (organisationDetails?.id) {
-          // 2a. Fetch tree presets
-          const treePresetsSnapshot = await getDocs(
-            collection(db, `organisations/${organisationDetails.id}/treePresets`)
-          );
-          fetchedTreePresets = treePresetsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            title: doc.data().title || '',
-            activeNodes: doc.data().activeNodes || [],
-            isCustom: false,
-            type: 'treePreset'
-          }));
 
-          // 2b. Fetch custom objectives
-          const customObjectivesSnapshot = await getDocs(
-            collection(db, `organisations/${organisationDetails.id}/presets`)
-          );
-          fetchedCustomObjectives = customObjectivesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            title: doc.data().title || '',
-            objectives: doc.data().objectives || [],
-            isCustom: true,
-            type: 'customObjectives'
-          }));
-        }
-        
-        setDefaultTemplates(fetchedDefaultTemplates);
-        setTreePresets(fetchedTreePresets);
-        setCustomObjectives(fetchedCustomObjectives);
-        
-        // Always select the first default template if available
-        if (fetchedDefaultTemplates.length > 0) {
-          const firstDefaultTemplate = fetchedDefaultTemplates[0];
-          setSelectedTemplate(firstDefaultTemplate);
-          setIsCustomMode(false);
-          setIsEditMode(false);
-        }
-      } catch (error) {
-        console.error('Error fetching templates:', error);
+        // 2b. Fetch custom objectives
+        const customObjectivesSnapshot = await getDocs(
+          collection(db, `organisations/${organisationDetails.id}/presets`)
+        );
+        fetchedCustomObjectives = customObjectivesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          title: doc.data().title || '',
+          objectives: doc.data().objectives || [],
+          isCustom: true,
+          type: 'customObjectives'
+        }));
       }
-    };
+      
+      setDefaultTemplates(fetchedDefaultTemplates);
+      setTreePresets(fetchedTreePresets);
+      setCustomObjectives(fetchedCustomObjectives);
+      
+      // Always select the first default template if available
+      if (fetchedDefaultTemplates.length > 0) {
+        const firstDefaultTemplate = fetchedDefaultTemplates[0];
+        setSelectedTemplate(firstDefaultTemplate);
+        setIsCustomMode(false);
+        setIsEditMode(false);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    }
+  };
 
+  // Initial fetch
+  useEffect(() => {
     fetchAllTemplates();
   }, [organisationDetails?.id]);
 
@@ -137,7 +138,7 @@ const StepTwo = ({
         });
         
         // Refresh templates
-        fetchAllTemplates();
+        await fetchAllTemplates();
         
         // Reset form
         setTemplateTitle('');
