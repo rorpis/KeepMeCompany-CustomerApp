@@ -2,8 +2,6 @@ import { useLanguage } from '../../../../lib/contexts/LanguageContext';
 
 export const TranscriptView = ({ transcript, recordingURL }) => {
   const { t } = useLanguage();
-
-  console.log(transcript);
   
   if (!transcript?.length) return <div className="text-gray-500 italic">{t('workspace.calls.modal.noData.transcript')}</div>;
 

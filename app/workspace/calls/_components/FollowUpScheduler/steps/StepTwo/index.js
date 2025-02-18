@@ -309,7 +309,7 @@ const StepTwo = ({
         <SecondaryButton 
           onClick={() => onNext({
             templateTitle: isCustomMode ? templateTitle : selectedTemplate?.title,
-            activeNodes: selectedTemplate?.activeNodes || []
+            activeNodes: selectedTemplate?.activeNodes?.filter(node => node !== 'GREETING') || []
           })}
           disabled={isCustomMode ? objectives.length === 0 : !selectedTemplate}
         >

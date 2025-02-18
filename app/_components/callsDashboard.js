@@ -141,6 +141,7 @@ const formatCallData = (call, organisationDetails) => {
       patientName: patientDetails?.customerName || call.patientName || call.experience_custom_args?.patient_name || 'Unknown',
       userNumber: patientDetails?.phoneNumber || call.userNumber || call.experience_custom_args?.phone_number || 'Unknown',
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
+      activeNodes: call.activeNodes || call.experience_custom_args?.active_nodes || [],
       templateTitle: call.templateTitle || 'N/A',
       patientId: call.patientId || null,
       formattedTimestamp: formatTime(call.createdAt),
