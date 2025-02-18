@@ -53,7 +53,7 @@ const DecisionTree = ({
               className="w-[300px] mr-4 p-3 rounded-lg border border-gray-200 text-black placeholder-gray-500 bg-white"
             />
           ) : (
-            <h3 className="text-xl font-semibold text-gray-900">{templateTitle}</h3>
+            <h3> {" "}</h3>
           )
         )}
         
@@ -111,6 +111,7 @@ const DecisionTree = ({
         isCustomMode={isCustomMode}
         templateTitle={templateTitle}
         onTemplateChange={onTemplateChange}
+        organisationDetails={organisationDetails}
       />
 
       {showDeleteConfirm && (

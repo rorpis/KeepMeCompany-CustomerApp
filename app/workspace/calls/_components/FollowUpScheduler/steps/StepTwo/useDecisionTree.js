@@ -49,7 +49,8 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
           };
         });
 
-        // Add greeting node
+        // Add greeting node with message from organisation settings
+        const remoteMonitoringSettings = organisationDetails?.settings?.remoteMonitoring || {};
         nodesData['GREETING'] = {
           id: 'GREETING',
           title: {
@@ -57,8 +58,8 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
             es: 'Saludo'
           },
           description: {
-            en: `"Hello! this is Alex from the London Medical Centre"`,
-            es: `"¡Hola! soy Alex del Centro Médico de Londres"`
+            en: remoteMonitoringSettings.firstMessage || `"Hello!"`,
+            es: remoteMonitoringSettings.firstMessage || `"¡Hola!"`
           },
           activationInstructions: {
             en: '',
@@ -90,7 +91,7 @@ export const useDecisionTree = (selectedTemplate, organisationDetails) => {
     if (Object.keys(allNodesData).length === 0) {
       fetchAllNodes();
     }
-  }, []);
+  }, [organisationDetails]);
 
   // Update nodes when template changes
   useEffect(() => {

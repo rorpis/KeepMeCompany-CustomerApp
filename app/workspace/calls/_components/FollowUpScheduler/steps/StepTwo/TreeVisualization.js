@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import ReactFlow, {
   Background,
   useNodesState,
@@ -53,7 +53,8 @@ const ConversationNode = ({ data }) => {
   return (
     <div 
       className={`
-        relative flex flex-col border-2 border-white/10 rounded-lg p-4 min-w-[200px] max-w-[250px]
+        relative flex flex-col border-2 border-white/10 rounded-lg p-4 
+        min-w-[300px] max-w-[400px]
         ${nodeColor}
         ${data.isActive ? 'border-white/30' : 'border-white/10'}
         ${data.onToggle ? 'cursor-pointer hover:border-white/50' : ''}
@@ -260,14 +261,13 @@ const CustomEdge = ({
   );
 };
 
-// Update nodeTypes
-const nodeTypes = {
+// Move these completely outside the file scope
+const NODE_TYPES = {
   conversationNode: ConversationNode,
   objectivesNode: ObjectivesNode
 };
 
-// Add edgeTypes
-const edgeTypes = {
+const EDGE_TYPES = {
   custom: CustomEdge
 };
 
@@ -284,7 +284,8 @@ const TreeVisualization = ({
   onDeleteObjective,
   isCustomMode,
   templateTitle,
-  onTemplateChange
+  onTemplateChange,
+  organisationDetails
 }) => {
   const { currentLanguage, t } = useLanguage();
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState([]);
@@ -297,28 +298,39 @@ const TreeVisualization = ({
 
   useEffect(() => {
     if (isCustomMode) {
-      // Different spacing values for top and bottom
-      const topNodeSpacing = 150;
-      const bottomNodeSpacing = 100;
+      // Calculate greeting node height (approximate based on content length)
+      const greetingMessage = organisationDetails?.settings?.remoteMonitoring?.firstMessage || '';
+      const messageLines = Math.ceil(greetingMessage.length / 40); // Assume ~40 chars per line
+      const lineHeight = 24; // pixels per line
+      const nodePadding = 32; // padding inside node
+      const estimatedGreetingHeight = (messageLines * lineHeight) + nodePadding + 40; // 40px for title and margins
+      
+      // Calculate objectives node height dynamically based on text length
+      const baseObjectiveHeight = 65; // minimum height for each objective
+      const charsPerLine = 50; // approximate characters that fit per line
+      const objectivesPadding = 48; // padding inside objectives node
+      const addNewObjectiveHeight = 70; // height of the "add new objective" input
+
+      // Calculate height for each objective based on its content length
+      const totalObjectivesHeight = objectives.reduce((total, objective) => {
+        const lines = Math.ceil(objective.length / charsPerLine);
+        const objectiveHeight = Math.max(baseObjectiveHeight, (lines * lineHeight) + 32); // 32px for padding
+        return total + objectiveHeight;
+      }, 0);
+
+      const finalObjectivesHeight = totalObjectivesHeight + objectivesPadding + 
+        (isEditMode ? addNewObjectiveHeight : 0);
+      
       const horizontalCenter = 350;
       
-      // Base heights
-      const greetingY = 50;
+      // Calculate different spacings for top and bottom
+      const topNodeSpacing = Math.max(100, estimatedGreetingHeight + 30);
+      const bottomNodeSpacing = 60; // Smaller spacing for bottom gap
+
+      // Base heights with dynamic spacing
+      const greetingY = 80;
       const objectivesY = greetingY + topNodeSpacing;
-      
-      // Calculate objectives node height
-      const objectiveItemHeight = 65;
-      const objectivesPadding = 48;
-      const addNewObjectiveHeight = 70;
-      
-      const objectivesHeight = Math.max(
-        150,
-        objectives.length === 0 
-          ? addNewObjectiveHeight + objectivesPadding
-          : (objectives.length * objectiveItemHeight) + objectivesPadding + addNewObjectiveHeight
-      );
-      
-      const finishY = objectivesY + objectivesHeight + bottomNodeSpacing;
+      const finishY = objectivesY + bottomNodeSpacing + finalObjectivesHeight;
 
       // Get node content from Firebase data
       const finishContent = getNodeContent(nodes.find(n => n.id === 'FINISH_CALL') || {});
@@ -330,7 +342,10 @@ const TreeVisualization = ({
           position: { x: horizontalCenter, y: greetingY },
           data: {
             title: { en: 'Greeting', es: 'Saludo' },
-            description: { en: 'Initial greeting message', es: 'Mensaje inicial de saludo' },
+            description: { 
+              en: organisationDetails?.settings?.remoteMonitoring?.firstMessage || '"Hello!"',
+              es: organisationDetails?.settings?.remoteMonitoring?.firstMessage || '"¡Hola!"'
+            },
             nodeType: 'greeting',
             isActive: true
           }
@@ -405,7 +420,7 @@ const TreeVisualization = ({
         }
       }, 50);
     } else if (nodes && nodes.length > 0) {
-      // Convert nodes to ReactFlow format
+      // For default templates, update the autoLayoutNodes function call
       const reactFlowNodes = nodes.map(node => {
         const content = getNodeContent(node);
         return {
@@ -419,7 +434,9 @@ const TreeVisualization = ({
                      node.id === 'ANAMNESIS' ? 'anamnesis' : 'regular',
             isActive: activeNodes.has(node.id),
             onToggle: isEditMode ? () => onToggleNode(node.id) : undefined
-          }
+          },
+          // Add minimum dimensions for layout calculation
+          dimensions: { width: 300, height: 120 } // Minimum node dimensions
         };
       });
 
@@ -462,7 +479,7 @@ const TreeVisualization = ({
       }, 50);
     }
   }, [nodes, activeNodes, getNodeContent, isEditMode, currentLanguage, 
-      reactFlowInstance, isCustomMode, objectives]);
+      reactFlowInstance, isCustomMode, objectives, organisationDetails]);
 
   // Add new function to determine if a node should be interactive
   const isNodeInteractive = useCallback((node) => {
@@ -482,22 +499,23 @@ const TreeVisualization = ({
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
             onInit={onInit}
+            nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
             fitView
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable={true}
-            panOnScroll={true}
+            panOnScroll={false}
             zoomOnScroll={true}
+            panOnDrag={true}
+            preventScrolling={true}
             proOptions={{ hideAttribution: true }}
             fitViewOptions={{ 
               padding: 0.2,
               maxZoom: 1
             }}
             style={{ height: '100%' }}
-            preventScrolling={false}
             zoomOnDoubleClick={false}
             selectNodesOnDrag={false}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
@@ -507,7 +525,6 @@ const TreeVisualization = ({
             edgesFocusable={false}
             disableKeyboardA11y={true}
             onNodeClick={(_, node) => {
-              // Only allow interaction with objectives node in custom mode
               if (isNodeInteractive(node)) {
                 // Handle node click
               }
