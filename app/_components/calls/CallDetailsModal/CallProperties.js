@@ -58,6 +58,7 @@ export const CallProperties = ({ properties }) => {
     { key: 'Duration', value: properties.duration || 'N/A' },
     { key: 'Status', value: properties.status || 'N/A' },
     { key: 'Template', value: getTemplateTranslation(properties.templateTitle) || 'N/A' },
+    { key: 'Deducted Credits', value: properties.deductedCredits === true ? 'Yes' : 'No' }
   ]
 
   // return a table with the properties list
