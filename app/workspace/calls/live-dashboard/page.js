@@ -25,7 +25,7 @@ const getUniqueValues = (calls, key) => {
 
 const getInitialFilters = (calls) => {
   return {
-    status: getUniqueValues(calls, 'status'),
+    status: ['voicemail', 'failed', 'incomplete', 'in_progress', 'complete', 'queued', 'processed'],
     direction: getUniqueValues(calls, 'direction'),
     templateTitle: getUniqueValues(calls, 'templateTitle')
   };
@@ -33,15 +33,22 @@ const getInitialFilters = (calls) => {
 
 const getStatusPriority = (status) => {
   switch (status) {
-    case 'processed':
-      return 2;
-    case 'in_progress':
-      return 3;
-    case 'failed':
-      return 1;
-    default:
-      return 0;
+    case 'voicemail': return 1;
+    case 'failed': return 1;
+    case 'incomplete': return 3;
+    case 'in_progress': return 2;
+    case 'complete': return 4;
+    case 'queued': return 0;
+    default: return -1;  // Lower default priority
   }
+};
+
+const standardizeDate = (dateField) => {
+  if (!dateField) return null;
+  if (typeof dateField.toDate === 'function') {
+    return dateField.toDate();
+  }
+  return new Date(dateField);
 };
 
 const CallsDashboardPage = () => {
@@ -93,12 +100,13 @@ const CallsDashboardPage = () => {
           return {
             id: doc.id,
             ...data,
-            status: data.callDirection === 'inbound' ? 'processed' : 'processed',
-            type: data.callDirection === 'inbound' ? 'processed' : 'completed'
+            status: data.callDirection === 'inbound' ? 'processed' : 'completed',
+            type: data.callDirection === 'inbound' ? 'processed' : 'completed',
+            direction: data.callDirection || 'outbound'
           };
         });
         setConversations(allConversations);
-        setIsLoading(false); // Set loading to false after receiving first batch of data
+        setIsLoading(false);
       }
     );
 
@@ -166,23 +174,46 @@ const CallsDashboardPage = () => {
     try {
       // Start with all conversations
       const allCalls = conversations.map(conv => {
+        
+        // First check for voicemail - handle it as a processed call with voicemail status
+        if (conv.answeredBy === 'Voicemail') {
+          return {
+            ...conv,
+            type: 'processed',
+            status: 'voicemail',
+            viewed: conv.viewed || false,
+            direction: 'outbound',
+            call_sid: conv.callSid,
+            createdAt: standardizeDate(conv.createdAt || conv.timestamp),
+            templateTitle: conv.template || 'N/A',
+            systemNumber: conv.systemNumber || conv.system_number || conv.twilioNumber || 'Unknown',
+            twilioNumber: conv.twilioNumber || conv.systemNumber || conv.system_number,
+            recordingURL: conv.recordingURL || conv.recording_url,
+            transcriptURL: conv.transcriptURL || conv.transcript_url,
+            transcript: conv.transcript,
+            conversationHistory: conv.conversationHistory
+          };
+        }
+
+        // For inbound calls
         if (conv.callDirection === 'inbound') {
           return {
             ...conv,
             type: 'processed',
-            status: 'processed',
+            // If it's processed, check completedExperience
+            status: conv.completedExperience === false ? 'incomplete' : 'complete',
             viewed: conv.viewed || false,
             direction: 'inbound',
             templateTitle: 'patientIntake',
             call_sid: conv.callSid
           };
         }
-      
+
+        // For outbound calls
         const matchingProcessedCall = processedCalls.find(
           qCall => qCall.call_sid === conv.callSid
         );
         
-        // Handle both template formats
         const templateTitle = matchingProcessedCall?.template || conv.template;
         const finalTemplateTitle = typeof templateTitle === 'object' 
           ? (templateTitle.EN || templateTitle.en || Object.values(templateTitle)[0])
@@ -191,11 +222,22 @@ const CallsDashboardPage = () => {
         return {
           ...conv,
           type: 'processed',
-          status: 'processed',
+          // If it's processed, check completedExperience
+          status: conv.completedExperience === false ? 'incomplete' : 'complete',
           viewed: matchingProcessedCall?.viewed || false,
           call_sid: conv.callSid,
           direction: 'outbound',
-          templateTitle: finalTemplateTitle
+          templateTitle: finalTemplateTitle,
+          experience_custom_args: {
+            ...matchingProcessedCall?.experience_custom_args,
+            ...(conv.experience_custom_args || {})
+          },
+          objectives: matchingProcessedCall?.experience_custom_args?.objectives ||
+                      conv.experience_custom_args?.objectives || [],
+          activeNodes: matchingProcessedCall?.experience_custom_args?.active_nodes || 
+                       conv.experience_custom_args?.active_nodes || [],
+          patient_id: conv.patientId || matchingProcessedCall?.patient_id,
+          phone_number: conv.userNumber || matchingProcessedCall?.phone_number
         };
       });
 
@@ -203,7 +245,6 @@ const CallsDashboardPage = () => {
       
       // Add queued calls that don't have a matching conversation yet
       queuedCalls.forEach(queuedCall => {
-        // Handle template title with language keys
         const templateTitle = queuedCall.template;
         const finalTemplateTitle = typeof templateTitle === 'object' 
           ? (templateTitle.EN || templateTitle.en || Object.values(templateTitle)[0])
@@ -217,16 +258,13 @@ const CallsDashboardPage = () => {
           patientId: queuedCall.patient_id,
           userNumber: queuedCall.phone_number,
           objectives: queuedCall.experience_custom_args?.objectives,
-          templateTitle: finalTemplateTitle,
-          scheduled_for: {
-            date: queuedCall.scheduled_for?.[0]?.date,
-            time: queuedCall.scheduled_for?.[0]?.time
-          },
+          activeNodes: queuedCall.experience_custom_args?.active_nodes,
+          enqueued_at: standardizeDate(queuedCall.enqueued_at),
           status: 'queued',
           type: 'queued',
-          viewed: queuedCall.viewed || false,
-          formattedTimestamp: queuedCall.enqueued_at,
-          direction: 'outbound'
+          viewed: false,
+          direction: 'outbound',
+          templateTitle: finalTemplateTitle
         });
       });
 
@@ -258,28 +296,36 @@ const CallsDashboardPage = () => {
       // Add processed (failed) calls that don't have a matching conversation
       processedCalls.forEach(processedCall => {
         if (!conversationIds.has(processedCall.call_sid)) {
-          // Handle both template formats
-          const templateTitle = processedCall.template;
-          const finalTemplateTitle = typeof templateTitle === 'object' 
-            ? (templateTitle.EN || templateTitle.en || Object.values(templateTitle)[0])
-            : templateTitle || 'N/A';
+          const processedDate = standardizeDate(processedCall.processed_at || processedCall.createdAt);
+          
+          // Only add if the call is within the date range
+          const startDateTime = new Date(startDate);
+          const endDateTime = new Date(endDate);
+          endDateTime.setHours(23, 59, 59, 999); // Include the entire end date
 
-          allCalls.push({
-            id: processedCall.id,
-            call_sid: processedCall.call_sid,
-            patientName: processedCall.experience_custom_args?.patient_name,
-            patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
-            patientId: processedCall.patient_id,
-            userNumber: processedCall.phone_number,
-            objectives: processedCall.experience_custom_args?.objectives,
-            activeNodes: processedCall.experience_custom_args?.active_nodes,
-            createdAt: processedCall.processed_at,
-            status: 'failed',
-            type: 'failed',
-            viewed: processedCall.viewed || false,
-            direction: 'outbound',
-            templateTitle: finalTemplateTitle
-          });
+          if (processedDate >= startDateTime && processedDate <= endDateTime) {
+            const templateTitle = processedCall.template;
+            const finalTemplateTitle = typeof templateTitle === 'object' 
+              ? (templateTitle.EN || templateTitle.en || Object.values(templateTitle)[0])
+              : templateTitle || 'N/A';
+
+            allCalls.push({
+              id: processedCall.id,
+              call_sid: processedCall.call_sid,
+              patientName: processedCall.experience_custom_args?.patient_name,
+              patientDateOfBirth: processedCall.experience_custom_args?.patient_dob,
+              patientId: processedCall.patient_id,
+              userNumber: processedCall.phone_number,
+              objectives: processedCall.experience_custom_args?.objectives,
+              activeNodes: processedCall.experience_custom_args?.active_nodes,
+              createdAt: processedDate,
+              status: 'failed',
+              type: 'failed',
+              viewed: processedCall.viewed || false,
+              direction: 'outbound',
+              templateTitle: finalTemplateTitle
+            });
+          }
         }
       });
 
@@ -287,22 +333,33 @@ const CallsDashboardPage = () => {
       const callsBySid = new Map();
       
       allCalls.forEach(call => {
-        if (!call.call_sid) {
-          callsBySid.set(call.id, call);
-          return;
-        }
+        // Use appropriate date field based on call type
+        const callDate = call.status === 'queued' 
+          ? standardizeDate(call.enqueued_at) 
+          : standardizeDate(call.createdAt);
 
-        const existingCall = callsBySid.get(call.call_sid);
-        if (!existingCall) {
-          callsBySid.set(call.call_sid, call);
-          return;
-        }
+        const startDateTime = new Date(startDate);
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999); // Include the entire end date
 
-        const existingPriority = getStatusPriority(existingCall.status);
-        const newPriority = getStatusPriority(call.status);
-        
-        if (newPriority > existingPriority) {
-          callsBySid.set(call.call_sid, call);
+        if (callDate >= startDateTime && callDate <= endDateTime) {
+          // For queued calls, always use ID as key
+          const key = call.status === 'queued' ? call.id : (call.call_sid || call.id);
+          
+          const existingCall = callsBySid.get(key);
+          if (!existingCall) {
+            callsBySid.set(key, call);
+            return;
+          }
+
+          const existingPriority = getStatusPriority(existingCall.status);
+          const newPriority = getStatusPriority(call.status);
+          
+          // Keep queued calls when priorities are equal
+          if (newPriority > existingPriority || 
+             (newPriority === existingPriority && call.status === 'queued')) {
+            callsBySid.set(key, call);
+          }
         }
       });
 
@@ -310,27 +367,14 @@ const CallsDashboardPage = () => {
       const dedupedCalls = Array.from(callsBySid.values());
 
       // Sort by timestamp
-      return dedupedCalls.sort((a, b) => {
-        let dateA, dateB;
-
-        if (a.type === 'queued') {
-          dateA = new Date(`${a.scheduled_for?.date} ${a.scheduled_for?.time}`);
-        } else if (typeof a.createdAt?.toDate === 'function') {
-          dateA = a.createdAt.toDate();
-        } else {
-          dateA = new Date(a.createdAt);
-        }
-
-        if (b.type === 'queued') {
-          dateB = new Date(`${b.scheduled_for?.date} ${b.scheduled_for?.time}`);
-        } else if (typeof b.createdAt?.toDate === 'function') {
-          dateB = b.createdAt.toDate();
-        } else {
-          dateB = new Date(b.createdAt);
-        }
+      const sortedCalls = dedupedCalls.sort((a, b) => {
+        let dateA = standardizeDate(a.createdAt);
+        let dateB = standardizeDate(b.createdAt);
         
         return dateB - dateA;
       });
+
+      return sortedCalls;
     } finally {
       setIsProcessingData(false);
     }
@@ -342,12 +386,11 @@ const CallsDashboardPage = () => {
 
   // Filter calls based on status and viewed state
   const filteredCalls = useMemo(() => {
-    return mergedCalls.filter(call => {
+    const filtered = mergedCalls.filter(call => {
       // If any filter array is empty, don't show any calls
       if (!filters.status?.length || !filters.direction?.length || !filters.templateTitle?.length) {
         return false;
       }
-
       // Filter by status
       if (!filters.status.includes(call.status)) {
         return false;
@@ -369,6 +412,7 @@ const CallsDashboardPage = () => {
       }
       return call.viewed;
     });
+    return filtered;
   }, [mergedCalls, filters, activeTab]);
 
   // Use useEffect to set initial filters once mergedCalls is available
@@ -433,7 +477,7 @@ const CallsDashboardPage = () => {
             objectives: call.objectives,
             scheduledFor,
             templateTitle: call.templateTitle,
-            activeNodes: call.activeNodes // Add activeNodes to the request
+            activeNodes: call.activeNodes
           }),
         }
       );

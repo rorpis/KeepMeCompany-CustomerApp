@@ -39,10 +39,18 @@ const formatCallData = (call, organisationDetails) => {
     } else if (date instanceof Date) {
       d = date;
     } else {
-      d = new Date(date);
+      try {
+        d = new Date(date);
+      } catch (e) {
+        console.error('Invalid date:', date);
+        return '';
+      }
     }
 
-    if (isNaN(d.getTime())) return '';
+    if (isNaN(d.getTime())) {
+      console.error('Invalid date object:', date);
+      return '';
+    }
 
     return d;
   };
@@ -87,10 +95,40 @@ const formatCallData = (call, organisationDetails) => {
     return `${minutes}m ${seconds}s`;
   };
 
+  // Update status determination for processed calls
+  const determineCallStatus = (call) => {
+    // First check for voicemail
+    if (call.answeredBy === 'Voicemail') {
+      return 'voicemail';
+    }
+
+    // If it's a processed call, check completedExperience
+    if (call.type === 'processed') {
+      return call.completedExperience ? 'complete' : 'incomplete';
+    }
+
+    // For other types, maintain existing logic
+    if (!call.recordingURL) {
+      if (call.direction === 'inbound') {
+        if (isCallTooOld(call.createdAt)) {
+          return 'failed';
+        } else {
+          return 'in_progress';
+        }
+      } else {
+        return 'failed';
+      }
+    }
+
+    return call.completedExperience ? 'complete' : 'incomplete';
+  };
+
   if (call.type === 'queued') {
     const scheduledDate = call.scheduled_for?.date && call.scheduled_for?.time ? 
-      new Date(`${call.scheduled_for.date} ${call.scheduled_for.time}`) : 
-      null;
+      new Date(`${call.scheduled_for.date} ${call.scheduled_for.time}`) : null;
+    
+    // Use enqueued_at as fallback for the date
+    const callDate = scheduledDate || getFullDate(call.enqueued_at);
 
     const patientDetails = getPatientDetails(call.patientId);
 
@@ -102,13 +140,14 @@ const formatCallData = (call, organisationDetails) => {
       objectives: call.objectives || call.experience_custom_args?.objectives || [],
       templateTitle: call.templateTitle || 'N/A',
       patientId: call.patientId || null,
-      formattedTimestamp: scheduledDate ? formatTime(scheduledDate) : '',
-      fullDate: scheduledDate ? getFullDate(scheduledDate) : null,
+      formattedTimestamp: formatTime(callDate),
+      fullDate: callDate,
       status: 'queued',
       viewed: false,
       enqueued_at: call.enqueued_at,
       direction: 'outbound',
-      duration: calculateDuration(call.enqueued_at, call.scheduled_for?.date && call.scheduled_for?.time ? new Date(`${call.scheduled_for.date} ${call.scheduled_for.time}`) : null)
+      duration: calculateDuration(call.enqueued_at, scheduledDate),
+      deductedCredits: call.deductedCredits || null
     };
   }
 
@@ -128,12 +167,14 @@ const formatCallData = (call, organisationDetails) => {
       status: 'in_progress',
       viewed: false,
       direction: 'outbound',
-      duration: calculateDuration(call.createdAt, call.finishedAt)
+      duration: calculateDuration(call.createdAt, call.finishedAt),
+      deductedCredits: call.deductedCredits || null
     };
   }
 
-  else if (call.type === 'failed') {
+  else if (call.type === 'failed' || call.answeredBy === 'Voicemail') {
     const patientDetails = getPatientDetails(call.patientId);
+    const callDate = getFullDate(call.createdAt);
 
     return {
       id: call.id,
@@ -144,19 +185,27 @@ const formatCallData = (call, organisationDetails) => {
       activeNodes: call.activeNodes || call.experience_custom_args?.active_nodes || [],
       templateTitle: call.templateTitle || 'N/A',
       patientId: call.patientId || null,
-      formattedTimestamp: formatTime(call.createdAt),
-      fullDate: getFullDate(call.createdAt),
-      status: 'failed',
+      formattedTimestamp: formatTime(callDate),
+      fullDate: callDate,
+      status: call.answeredBy === 'Voicemail' ? 'voicemail' : 'failed',
       viewed: call.viewed || false,
       summaryURL: call.summaryURL || null,
       followUpSummary: call.followUpSummary || null,
-      direction: call.callDirection || 'outbound',
-      duration: calculateDuration(call.createdAt, call.finishedAt)
+      direction: call.direction === 'outbound-api' ? 'outbound' : (call.direction || 'outbound'),
+      duration: calculateDuration(callDate, call.finishedAt),
+      systemNumber: call.systemNumber || call.twilioNumber || 'Unknown',
+      twilioNumber: call.twilioNumber || call.systemNumber || 'Unknown',
+      recordingURL: call.recordingURL || call.recording_url,
+      transcriptURL: call.transcriptURL || call.transcript_url,
+      transcript: call.transcript,
+      conversationHistory: call.conversationHistory,
+      deductedCredits: call.deductedCredits || null
     };
   }
 
-  // For processed calls, check if there's a recording URL
+  // For processed calls
   const patientDetails = getPatientDetails(call.patientId);
+  const status = determineCallStatus(call);
 
   // Helper function to check if call is too old (> 8 minutes)
   const isCallTooOld = (createdAt) => {
@@ -165,20 +214,6 @@ const formatCallData = (call, organisationDetails) => {
     const eightMinutesAgo = new Date(Date.now() - 8 * 60 * 1000);
     return createdDate < eightMinutesAgo;
   };
-
-  // Determine call status
-  let status = 'processed';
-  if (!call.recordingURL) {
-    if (call.direction === 'inbound') {
-      if (isCallTooOld(call.createdAt)) {
-        status = 'failed';
-      } else {
-        status = 'in_progress';
-      }
-    } else {
-      status = 'failed';
-    }
-  }
 
   const completedObjectives = (call.CompletedGoals?.length) || 0;
   const totalGoals = (call.settings?.initial_goals?.length || 0) + (call.settings?.final_goals?.length - 1 || 0) + (call.settings?.max_goals_to_generate || 0);
@@ -191,7 +226,8 @@ const formatCallData = (call, organisationDetails) => {
     patientName: patientDetails?.customerName || call.patientName || call.patient?.name || call.experience_custom_args?.patient_name || 'Unknown',
     userNumber: call.userNumber || 'Unknown',
     twilioNumber: call.twilioNumber || 'Unknown',
-    objectives: call.objectives || [],
+    objectives: call.objectives || call.experience_custom_args?.objectives || [],
+    activeNodes: call.activeNodes || call.experience_custom_args?.active_nodes || [],
     templateTitle: call.templateTitle || 'N/A',
     patientId: call.patientId || null,
     formattedTimestamp: formatTime(call.createdAt),
@@ -205,7 +241,9 @@ const formatCallData = (call, organisationDetails) => {
     completion: completitionPct,
     followUpSummary: call.followUpSummary || null,
     direction: call.direction || call.callDirection || 'outbound',
-    duration: calculateDuration(call.createdAt, call.finishedAt)
+    duration: calculateDuration(call.createdAt, call.finishedAt),
+    systemNumber: call.twilioNumber || call.systemNumber || 'Unknown',
+    deductedCredits: call.deductedCredits || null
   };
 };
 
@@ -274,22 +312,47 @@ export function CallsDashboard({
   }, [formattedCalls, filters]);
 
   // Then group the filtered calls
-  const groupedCalls = filteredCalls.reduce((groups, call) => {
-    if (!call.fullDate) return groups;
-    
-    const dateStr = call.fullDate.toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+  const groupedCalls = useMemo(() => {
+    const groups = filteredCalls.reduce((acc, call) => {
+      if (!call.fullDate) {
+        return acc;
+      }
+      
+      const dateStr = call.fullDate.toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      if (!acc[dateStr]) {
+        acc[dateStr] = [];
+      }
+      acc[dateStr].push(call);
+      return acc;
+    }, {});
+
+    // Sort each date group by time
+    Object.keys(groups).forEach(dateKey => {
+      groups[dateKey].sort((a, b) => {
+        // Get time values from formattedTimestamp (HH:MM)
+        const timeA = a.formattedTimestamp ? 
+          a.formattedTimestamp.split(':').map(Number) : [0, 0];
+        const timeB = b.formattedTimestamp ? 
+          b.formattedTimestamp.split(':').map(Number) : [0, 0];
+        
+        // Compare hours first
+        if (timeA[0] !== timeB[0]) {
+          return timeB[0] - timeA[0]; // Descending order (newer first)
+        }
+        
+        // If hours are the same, compare minutes
+        return timeB[1] - timeA[1];
+      });
     });
     
-    if (!groups[dateStr]) {
-      groups[dateStr] = [];
-    }
-    groups[dateStr].push(call);
     return groups;
-  }, {});
+  }, [filteredCalls, language]);
 
   // Calculate counts for each tab
   const newCallsCount = formattedCalls.filter(call => !call.viewed).length;
@@ -483,7 +546,8 @@ export function CallsDashboard({
         duration: call.duration || 'N/A',
         status: call.status,
         summaryURL: call.summaryURL || 'N/A',
-        templateTitle: call.templateTitle || 'N/A'
+        templateTitle: call.templateTitle || 'N/A',
+        deductedCredits: call.deductedCredits || 'N/A'
       },
       patient: patientDetails ? {
         name: patientDetails.customerName,
@@ -621,7 +685,7 @@ export function CallsDashboard({
                           <span className={`px-2 py-1 rounded-full text-sm ${getStatusColor(call.status)}`}>
                             {call.status}
                           </span>
-                          {call.status === 'failed' && call.direction !== 'inbound' && (
+                          {(call.status === 'failed' || call.status === 'voicemail' || call.status === 'incomplete') && call.direction !== 'inbound' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -715,30 +779,38 @@ export function CallsDashboard({
   );
 }
 
-// Helper function for status colors
+// Update the status colors
 const getStatusColor = (status) => {
   switch (status) {
-    case 'processed':
+    case 'complete':
       return 'bg-green-100 text-green-800';
+    case 'incomplete':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'voicemail':
+      return 'bg-red-100 text-red-800'
     case 'failed':
       return 'bg-red-100 text-red-800';
     case 'in_progress':
       return 'bg-blue-100 text-blue-800';
     default:
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-gray-100 text-gray-800';
   }
 };
 
-// Helper function for row background colors
+// Update background colors
 const getStatusBackgroundColor = (status) => {
   switch (status) {
-    case 'processed':
+    case 'complete':
       return 'bg-green-50';
+    case 'incomplete':
+      return 'bg-yellow-50';
+    case 'voicemail':
+      return 'bg-red-50'
     case 'failed':
       return 'bg-red-50';
     case 'in_progress':
       return 'bg-blue-50';
     default:
-      return 'bg-yellow-50';
+      return 'bg-gray-50';
   }
 }; 

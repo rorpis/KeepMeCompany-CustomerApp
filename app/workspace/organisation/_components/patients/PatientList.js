@@ -55,9 +55,6 @@ export const PatientList = ({
   const [columnFilters, setColumnFilters] = useState({});
 
   const handleFileRead = (file) => {
-    console.log('File type:', file.type);
-    console.log('File name:', file.name);
-    
     if (file.type === 'text/csv') {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -475,7 +472,7 @@ export const PatientList = ({
 
           {/* Table container */}
           <div className="flex-1 overflow-hidden">
-            {patientList && patientList.length > 0 ? (
+            {localPatientList && localPatientList.length > 0 ? (
               <PatientListTable
                 patients={localPatientList}
                 allPatients={localPatientList}
