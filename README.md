@@ -1,1 +1,3 @@
-to test locally: docker compose -f docker-compose.dev.yml up --build
+Frontend
+
+KeepMeCompanyAI - Customer App
